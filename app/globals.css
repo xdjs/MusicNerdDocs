@@ -1,0 +1,88 @@
+/*
+ * Music Nerd docs theme. Values follow MusicNerdWeb's DESIGN.md: pink actions
+ * (#ff75d8, black text), a #1a1a1a dark canvas with cyan (#2ad4fc) links, and
+ * the ActivityFeed's light-mode ink and greys. Light follows the system unless
+ * the visitor picks a theme (data-theme on <html>).
+ */
+:root {
+  --docs-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --docs-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --docs-action: #ff75d8;
+  --docs-action-hover: #ff9ce3;
+  --docs-action-ink: #000000;
+  --docs-code-bg: #1e1b20;
+  --docs-code-surface: #2a252c;
+  --docs-code-ink: #f7fafc;
+  --docs-code-border: rgba(255, 255, 255, 0.08);
+
+  --docs-canvas: #ffffff;
+  --docs-surface: #ffffff;
+  --docs-surface-2: #f7f4f8;
+  --docs-surface-3: #efe9f0;
+  --docs-ink: #1a1a1a;
+  --docs-muted: #5a4d5e;
+  --docs-accent: #c44a8c;
+  --docs-accent-surface: #fbeef6;
+  --docs-border: #e0d8e2;
+  --docs-border-strong: #b9adbc;
+  --docs-danger: #9e3b2e;
+  --docs-danger-surface: #fff1ee;
+  --docs-danger-border: #f1d3cc;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --docs-canvas: #1a1a1a;
+    --docs-surface: #1f1f1f;
+    --docs-surface-2: #242424;
+    --docs-surface-3: #2d2d2d;
+    --docs-ink: #f7fafc;
+    --docs-muted: #a0aec0;
+    --docs-accent: #2ad4fc;
+    --docs-accent-surface: rgba(42, 212, 252, 0.08);
+    --docs-border: #374151;
+    --docs-border-strong: #4a5568;
+    --docs-danger: #ff9b8a;
+    --docs-danger-surface: rgba(255, 120, 100, 0.08);
+    --docs-danger-border: rgba(255, 120, 100, 0.3);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --docs-canvas: #1a1a1a;
+  --docs-surface: #1f1f1f;
+  --docs-surface-2: #242424;
+  --docs-surface-3: #2d2d2d;
+  --docs-ink: #f7fafc;
+  --docs-muted: #a0aec0;
+  --docs-accent: #2ad4fc;
+  --docs-accent-surface: rgba(42, 212, 252, 0.08);
+  --docs-border: #374151;
+  --docs-border-strong: #4a5568;
+  --docs-danger: #ff9b8a;
+  --docs-danger-surface: rgba(255, 120, 100, 0.08);
+  --docs-danger-border: rgba(255, 120, 100, 0.3);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--docs-canvas); color: var(--docs-ink); font-family: var(--docs-font); }
+a { color: inherit; }
+
+.site-header {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 16px;
+  max-width: 1440px; margin: 0 auto; padding: 12px 16px; background: var(--docs-canvas);
+  border-bottom: 1px solid var(--docs-border);
+}
+.site-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; letter-spacing: -0.02em; }
+.site-brand img { border-radius: 50%; }
+.site-brand span { color: var(--docs-muted); font-weight: 500; }
+.site-links { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.site-links a { padding: 7px 10px; border-radius: 999px; text-decoration: none; color: var(--docs-muted); }
+.site-links a:hover { color: var(--docs-ink); background: var(--docs-surface-2); }
+.site-links .site-action { background: var(--docs-action); color: var(--docs-action-ink); font-weight: 600; }
+.site-links .site-action:hover { background: var(--docs-action-hover); color: var(--docs-action-ink); }
+@media (max-width: 600px) { .site-links .site-hide-sm { display: none; } }

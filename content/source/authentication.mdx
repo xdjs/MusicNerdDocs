@@ -1,0 +1,30 @@
+---
+title: 'Authentication'
+description: 'Public endpoints, Privy access tokens, and the scheduler secret.'
+---
+
+Each endpoint's reference page states which of these it needs.
+
+## Public
+
+Read-only endpoints that expose nothing private need no credentials. Endpoints are public unless they return private data or change something.
+
+## Privy access token
+
+Endpoints that change an artist need the artist's approved claimant or a Music Nerd admin. Send the user's [Privy](https://www.privy.io) access token:
+
+```bash
+--header 'Authorization: Bearer YOUR_PRIVY_ACCESS_TOKEN'
+```
+
+In the Music Nerd web app the token comes from Privy's `getAccessToken()`. Tokens expire after about an hour; fetch a fresh one for each request.
+
+| Response | Meaning |
+| --- | --- |
+| `400` `artistId must be a UUID` | The artist ID in the path is malformed. |
+| `401` `Not signed in` | No token, an invalid or expired token, or no Music Nerd user for it. |
+| `403` `Not your artist` | The user is neither the artist's claimant nor an admin. |
+
+## Scheduler secret
+
+`GET /api/research/advance` is the research scheduler that Vercel Cron calls. When the deployment sets `CRON_SECRET`, it requires `Authorization: Bearer <CRON_SECRET>`.
