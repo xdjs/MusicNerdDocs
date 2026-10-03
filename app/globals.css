@@ -28,6 +28,9 @@
   --docs-danger: #9e3b2e;
   --docs-danger-surface: #fff1ee;
   --docs-danger-border: #f1d3cc;
+  /* Callout labels: the ActivityFeed's emerald in light, jellygreen in dark (DESIGN.md accents). */
+  --docs-tip-label: #059669;
+  --docs-warning-label: #8c651b;
   color-scheme: light;
 }
 
@@ -46,6 +49,8 @@
     --docs-danger: #ff9b8a;
     --docs-danger-surface: rgba(255, 120, 100, 0.08);
     --docs-danger-border: rgba(255, 120, 100, 0.3);
+    --docs-tip-label: #19ffb8;
+    --docs-warning-label: #f2c14e;
     color-scheme: dark;
   }
 }
@@ -64,6 +69,8 @@
   --docs-danger: #ff9b8a;
   --docs-danger-surface: rgba(255, 120, 100, 0.08);
   --docs-danger-border: rgba(255, 120, 100, 0.3);
+  --docs-tip-label: #19ffb8;
+  --docs-warning-label: #f2c14e;
   color-scheme: dark;
 }
 

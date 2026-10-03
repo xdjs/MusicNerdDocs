@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { buildPlaygroundCurl } from "@/lib/docs/playground/buildPlaygroundCurl";
 import { buildPlaygroundRequest } from "@/lib/docs/playground/buildPlaygroundRequest";
+import { initialParamValues } from "@/lib/docs/playground/initialParamValues";
 import { listMissingParams } from "@/lib/docs/playground/listMissingParams";
 import { sendPlaygroundRequest } from "@/lib/docs/playground/sendPlaygroundRequest";
 import type { PlaygroundOperation, PlaygroundResult } from "@/lib/docs/playground/types";
@@ -23,7 +24,7 @@ function invalidJson(body: string): string | null {
 }
 
 export function ApiPlayground({ operation, baseUrl }: { operation: PlaygroundOperation; baseUrl: string }) {
-  const [params, setParams] = useState<Record<string, string>>({});
+  const [params, setParams] = useState<Record<string, string>>(() => initialParamValues(operation.parameters));
   const [body, setBody] = useState(operation.body?.example ?? "");
   const [apiKey, setApiKey] = useStoredApiKey();
   const [result, setResult] = useState<PlaygroundResult | null>(null);
