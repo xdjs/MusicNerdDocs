@@ -42,7 +42,7 @@ export async function ApiReference({page}:{page:DocPage}) {
  const parameters=[...(pathItem.parameters||[]),...(operation.parameters||[])].map(param=>resolveReference(param,spec));
  const body=resolveReference(operation.requestBody,spec);
  const security=operation.security??spec.security;
- const request=buildCurl({method:page.api.method,endpoint:page.api.path,spec,operation,pathItem});
+ const request=buildCurl({method:page.api.method,endpoint:page.api.path,spec,operation,pathItem,baseUrl:siteConfig.apiUrl});
  return <div className="docs-api-content">
   <div className="docs-endpoint"><span className={`docs-method docs-method-${page.api.method.toLowerCase()}`}>{page.api.method}</span><code>{page.api.path}</code></div>
   <DocDescription text={operation.description}/>

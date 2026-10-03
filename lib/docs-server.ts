@@ -33,9 +33,9 @@ export function schemaExample(schema:ApiObject,spec:ApiObject,depth=0):unknown {
 }
 
 function shellQuote(value:string) { return `'${value.replace(/'/g, `'"'"'`)}'`; }
-export function buildCurl({method,endpoint,spec,operation,pathItem={}}:{method:string;endpoint:string;spec:ApiObject;operation:ApiObject;pathItem?:ApiObject}):string {
+export function buildCurl({method,endpoint,spec,operation,pathItem={},baseUrl}:{method:string;endpoint:string;spec:ApiObject;operation:ApiObject;pathItem?:ApiObject;baseUrl?:string}):string {
  const parameters=[...(pathItem.parameters||[]),...(operation.parameters||[])].map(parameter=>resolveReference(parameter,spec));
- const base=(operation.servers||pathItem.servers||spec.servers)?.[0]?.url||'https://musicnerd-api.vercel.app';
+ const base=baseUrl||(operation.servers||pathItem.servers||spec.servers)?.[0]?.url||'https://musicnerd-api.vercel.app';
  const route=endpoint.replace(/\{([^}]+)\}/g,(_match,name)=>`YOUR_${name.replace(/([a-z])([A-Z])/g,'$1_$2').toUpperCase()}`);
  const query=new URLSearchParams();
  for(const parameter of parameters.filter(parameter=>parameter.in==='query'&&parameter.required)) {

@@ -45,6 +45,7 @@ test('request examples replace path values, encode required query values, and re
  const curl=buildCurl({method:'GET',endpoint:'/api/artist/{artistId}',spec,operation});
  expect(curl).toMatch(/YOUR_ARTIST_ID\?q=song\+%26\+artist/);expect(curl).toMatch(/Authorization: Bearer YOUR_TOKEN/);expect(!curl.includes('optional')).toBeTruthy();
  const health=specs['health.json'];
+ expect(buildCurl({method:'GET',endpoint:'/api/health',spec,operation:{security:[]},baseUrl:'https://musicnerd-api-staging.vercel.app'})).toContain("--url 'https://musicnerd-api-staging.vercel.app/api/health'");
  const anonymous=buildCurl({method:'GET',endpoint:'/api/health',spec:health,operation:health.paths['/api/health'].get});expect(!anonymous.includes('--header')).toBeTruthy();
  const json=buildCurl({method:'POST',endpoint:'/api/artist',spec,operation:{security:[],requestBody:{content:{'application/json':{example:{name:"Artist's catalog"}}}}}});expect(json).toMatch(/Artist'"'"'s catalog/);
 });
