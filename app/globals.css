@@ -85,4 +85,8 @@ a { color: inherit; }
 .site-links a:hover { color: var(--docs-ink); background: var(--docs-surface-2); }
 .site-links .site-action { background: var(--docs-action); color: var(--docs-action-ink); font-weight: 600; }
 .site-links .site-action:hover { background: var(--docs-action-hover); color: var(--docs-action-ink); }
-@media (max-width: 600px) { .site-links .site-hide-sm { display: none; } }
+@media (max-width: 600px) {
+  .site-header { gap: 8px; }
+  .site-brand span, .site-links .site-hide-sm { display: none; }
+  .site-brand, .site-links a { white-space: nowrap; }
+}

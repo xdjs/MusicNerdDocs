@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             Music Nerd <span>Docs</span>
           </Link>
           <nav className="site-links" aria-label="Site">
-            <Link href="/api-reference">API reference</Link>
+            <Link className="site-hide-sm" href="/api-reference">API reference</Link>
             <a className="site-hide-sm" href={siteConfig.apiRepoUrl}>GitHub</a>
             <a className="site-action" href={siteConfig.appUrl}>Open Music Nerd</a>
           </nav>
