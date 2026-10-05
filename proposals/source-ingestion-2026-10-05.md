@@ -28,10 +28,10 @@ approval, URL and missing-text state before fetching and writing. Version-1 expl
 jobs keep their claimant/admin checks. No public request can choose version-2 state.
 Blocked/unsupported results finish visibly; reads never schedule or scrape.
 
-Web migration 0037 follows 0036 and retains the existing live-job index and conflict-query
+Web migration 0038 follows the source-kind prerequisite 0037 and retains the existing live-job index and conflict-query
 compatibility. Automatic jobs wait in an internal `queued` backlog, with per-source
 uniqueness; the API claims one per artist at a time and reports waiting jobs as `pending`
-through the public tools. Old workers ignore queued work. Apply 0037 before either new
+through the public tools. Old workers ignore queued work. Apply 0038 before either new
 API or Web writes, and release the compatible API worker before Web automatic queueing. This follow-up does not change the public endpoint, retention
 policy, question prompts or promise immediate Lore-summary regeneration.
 
@@ -41,3 +41,5 @@ policy, question prompts or promise immediate Lore-summary regeneration.
 - Missing approved URL text can be queued through authenticated HTTP and processed through the existing worker without overwriting text or writing after approval/ownership changes.
 - Outcomes survive a worker restart, safe retries do not duplicate writes, and no read triggers collection. Original passages reopen with stable current references.
 - New validation/authorization/checkpoint/HTTP extraction failures are covered red before green. Local and exact-preview checks distinguish mocked, real database, authenticated HTTP and manual source recovery evidence.
+
+Migration numbers were advanced after Web#1430 occupied 0036. Development had already received the equivalent source-kind and backlog SQL under their earlier names; no reapplication or production-history reconciliation is implied.
