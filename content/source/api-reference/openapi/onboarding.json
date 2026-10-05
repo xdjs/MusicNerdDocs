@@ -1,0 +1,369 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: onboarding",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/onboarding/{artistId}/chat": {
+      "post": {
+        "summary": "Onboarding chat turn",
+        "operationId": "postOnboardingChatTurn",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles \u2192 vault \u2192 interview \u2192 publish): a turn for a step that is not current gets an `error` event and the real step. Handlers are idempotent, so a repeated or interrupted turn resumes rather than repeats. A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "title": "open",
+                    "required": [
+                      "type"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "open"
+                      }
+                    },
+                    "description": "Start or resume. On a fresh claim this runs the whole auto-build: find profiles, search for sources, write the Lore and the About, and confirm every step."
+                  },
+                  {
+                    "type": "object",
+                    "title": "confirm_profiles",
+                    "required": [
+                      "type",
+                      "addedLinks",
+                      "removedSiteNames"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "confirm_profiles"
+                      },
+                      "addedLinks": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "url"
+                          ],
+                          "properties": {
+                            "url": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "removedSiteNames": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "Confirm the profiles step, adding and removing links."
+                  },
+                  {
+                    "type": "object",
+                    "title": "find_more_profiles",
+                    "required": [
+                      "type"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "find_more_profiles"
+                      },
+                      "addedLinks": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "url"
+                          ],
+                          "properties": {
+                            "url": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "removedSiteNames": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "Apply link changes and search again, without confirming the step."
+                  },
+                  {
+                    "type": "object",
+                    "title": "vault_review",
+                    "required": [
+                      "type",
+                      "decisions",
+                      "addedUrls"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "vault_review"
+                      },
+                      "decisions": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "sourceId",
+                            "status"
+                          ],
+                          "properties": {
+                            "sourceId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "approved",
+                                "rejected"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "addedUrls": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "Approve or reject sources and add new ones; confirms the sources step."
+                  },
+                  {
+                    "type": "object",
+                    "title": "interview_answer",
+                    "required": [
+                      "type",
+                      "questionKey",
+                      "answer"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "interview_answer"
+                      },
+                      "questionKey": {
+                        "type": "string"
+                      },
+                      "answer": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "`null` skips the question."
+                      },
+                      "question": {
+                        "type": "string",
+                        "description": "The question text, for grounded (`social_\u2026`) questions."
+                      }
+                    },
+                    "description": "Answer or skip one interview question."
+                  },
+                  {
+                    "type": "object",
+                    "title": "about_choice",
+                    "required": [
+                      "type",
+                      "mode",
+                      "doc"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "about_choice"
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "generate",
+                          "self"
+                        ]
+                      },
+                      "doc": {
+                        "type": "string"
+                      },
+                      "sources": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    },
+                    "description": "Generate the About from the doc, or write it yourself."
+                  },
+                  {
+                    "type": "object",
+                    "title": "publish",
+                    "required": [
+                      "type",
+                      "doc",
+                      "about",
+                      "expectedBio"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "publish"
+                      },
+                      "doc": {
+                        "type": "string"
+                      },
+                      "about": {
+                        "type": "string"
+                      },
+                      "sources": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      },
+                      "expectedBio": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The bio the draft started from; a different current bio is refused."
+                      }
+                    },
+                    "description": "Publish the About and save the doc; confirms the publish step."
+                  }
+                ]
+              },
+              "example": {
+                "type": "open"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A stream of turn events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "data: {\"kind\":\"chat\",\"text\":\"Your profile is yours. Building your page now, which takes a moment.\"}\n\ndata: {\"kind\":\"progress\",\"label\":\"Finding your profiles\",\"done\":false,\"group\":\"platform-search\"}\n\ndata: {\"kind\":\"complete\"}\n\n"
+              }
+            }
+          },
+          "400": {
+            "description": "The artist ID is not a UUID, the body is not JSON or not a known turn, or an array has more than 100 items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid turn"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Privy access token",
+        "description": "The signed-in user's Privy access token (`getAccessToken()` in the web app). The user must be the artist's approved claimant or a Music Nerd admin."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

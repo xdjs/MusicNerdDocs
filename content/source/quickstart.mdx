@@ -1,0 +1,30 @@
+---
+title: 'Quickstart'
+description: 'Make your first request to the Music Nerd API.'
+---
+
+## Check the API is up
+
+The health endpoint needs no credentials:
+
+```bash
+curl https://musicnerd-api.vercel.app/api/health
+```
+
+```json
+{ "status": "ok" }
+```
+
+## Call an endpoint for an artist
+
+Endpoints that change an artist need the artist's claimant (or an admin) signed in. Music Nerd signs requests with the user's Privy access token, sent as a Bearer token:
+
+```bash
+curl --request POST \
+  --url https://musicnerd-api.vercel.app/api/artist/YOUR_ARTIST_ID/research/refresh \
+  --header 'Authorization: Bearer YOUR_PRIVY_ACCESS_TOKEN'
+```
+
+See [Authentication](/authentication) for where that token comes from.
+
+<Tip>Every reference page has a **Try it** panel. Paste a token once and it is kept in that browser tab until you close it.</Tip>

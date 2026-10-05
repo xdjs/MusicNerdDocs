@@ -1,0 +1,22 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Music Nerd",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          { "group": "Getting started", "pages": ["index", "quickstart", "authentication"] }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          { "group": "Health", "pages": ["api-reference/health/get"] },
+          { "group": "Research", "pages": ["api-reference/research/advance", "api-reference/research/scheduler", "api-reference/artists/research-refresh"] },
+          { "group": "Onboarding", "pages": ["api-reference/onboarding/chat"] }
+        ]
+      }
+    ]
+  }
+}

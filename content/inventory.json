@@ -1,0 +1,12 @@
+{
+  "navigationPages": 8,
+  "guidePages": 3,
+  "apiPages": 5,
+  "specifications": [
+    "health.json",
+    "onboarding.json",
+    "research.json"
+  ],
+  "additionalOperations": [],
+  "gaps": []
+}
