@@ -1,6 +1,6 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { buildPlaygroundCurl } from "@/lib/docs/playground/buildPlaygroundCurl";
 import { buildPlaygroundRequest } from "@/lib/docs/playground/buildPlaygroundRequest";
 import { initialParamValues } from "@/lib/docs/playground/initialParamValues";
@@ -30,13 +30,15 @@ function invalidJson(body: string): string | null {
 }
 
 type Endpoint = { href: string; title: string; method: string };
+/** Descriptions rendered on the server (inline Markdown), keyed `auth` and `${in}:${name}`. */
+type Descriptions = { auth?: ReactNode; params: Record<string, ReactNode> };
 
 /**
  * The Try it button and its window: fields beside their descriptions, the live curl and the
  * response. It opens on `#try-it` (the endpoint switcher navigates there) and closes on a tap
  * outside or Escape, as Mintlify's does.
  */
-export function TryIt({ operation, baseUrl, staging, title, lead, endpoints }: { operation: PlaygroundOperation; baseUrl: string; staging: boolean; title: string; lead: string; endpoints: Endpoint[] }) {
+export function TryIt({ operation, baseUrl, staging, title, lead, endpoints, descriptions }: { operation: PlaygroundOperation; baseUrl: string; staging: boolean; title: string; lead: ReactNode; endpoints: Endpoint[]; descriptions: Descriptions }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -98,10 +100,10 @@ export function TryIt({ operation, baseUrl, staging, title, lead, endpoints }: {
             <div className="mn-tryit-fields">
               {lead && <p className="mn-tryit-lead">{lead}</p>}
               {!operation.runnable && <p className="mn-tryit-note">This one can’t run in the browser. Copy the curl and run it from a terminal.</p>}
-              <PlaygroundKeyField auth={operation.auth} description={operation.authDescription} value={apiKey} onChange={setApiKey} />
-              <PlaygroundParamFields title="Path" parameters={operation.parameters.filter((param) => param.in === "path")} values={params} onChange={setParam} />
-              <PlaygroundParamFields title="Query" parameters={operation.parameters.filter((param) => param.in === "query")} values={params} onChange={setParam} />
-              <PlaygroundParamFields title="Headers" parameters={operation.parameters.filter((param) => param.in === "header")} values={params} onChange={setParam} />
+              <PlaygroundKeyField auth={operation.auth} description={descriptions.auth} value={apiKey} onChange={setApiKey} />
+              <PlaygroundParamFields title="Path" parameters={operation.parameters.filter((param) => param.in === "path")} values={params} descriptions={descriptions.params} onChange={setParam} />
+              <PlaygroundParamFields title="Query" parameters={operation.parameters.filter((param) => param.in === "query")} values={params} descriptions={descriptions.params} onChange={setParam} />
+              <PlaygroundParamFields title="Headers" parameters={operation.parameters.filter((param) => param.in === "header")} values={params} descriptions={descriptions.params} onChange={setParam} />
               {operation.body && <PlaygroundBodyField contentType={operation.body.contentType} value={body} onChange={setBody} />}
             </div>
             <div className="mn-tryit-side">

@@ -55,6 +55,7 @@ export async function EndpointPage({page,footer}:{page:DocPage;footer?:ReactNode
  const security=operation.security??doc.security;
  const request=buildCurl({method:page.api.method,endpoint:page.api.path,spec:doc,operation,pathItem,baseUrl:siteConfig.apiUrl});
  const {lead,rest}=splitDescription(operation.description);
+ const playground=summarizeOperation({method:page.api.method,path:page.api.path,spec:doc});
  const endpoints=docs.filter(item=>item.api).map(item=>({href:docHref(item.slug),title:item.title,method:item.api!.method}));
  const responses=Object.entries(operation.responses||{}).map(([status,raw])=>{const response=resolveReference(raw as ApiObject,doc);const [mediaType,media]=Object.entries(response.content||{})[0]??[];return {status,mediaType,panel:<div className="mn-response-panel"><DocDescription text={response.description}/>{Object.entries(response.headers||{}).map(([name,value])=><div key={name} className="docs-property"><div className="docs-property-heading"><code>{name}</code><span>response header</span></div><DocDescription text={resolveReference(value as ApiObject,doc).description}/></div>)}{(media as ApiObject|undefined)?.schema&&<Schema value={(media as ApiObject).schema} spec={doc}/>}</div>};});
  return <div className="mn-endpoint-page">
@@ -65,7 +66,7 @@ export async function EndpointPage({page,footer}:{page:DocPage;footer?:ReactNode
    {rest&&<DocDescription text={rest}/>}
    {operation.deprecated&&<aside className="docs-callout docs-callout-warning"><span>Deprecated</span><p>This endpoint is marked deprecated in the source specification.</p></aside>}
    <CopyPage slug={page.slug}/>
-   <div className="mn-endpoint-bar"><EndpointPath method={page.api.method} path={page.api.path}/><TryIt operation={summarizeOperation({method:page.api.method,path:page.api.path,spec:doc})} baseUrl={siteConfig.apiUrl} staging={isStagingApiUrl(siteConfig.apiUrl)} title={page.title} lead={lead} endpoints={endpoints}/></div>
+   <div className="mn-endpoint-bar"><EndpointPath method={page.api.method} path={page.api.path}/><TryIt operation={playground} baseUrl={siteConfig.apiUrl} staging={isStagingApiUrl(siteConfig.apiUrl)} title={page.title} lead={lead&&<DocInlineDescription text={lead}/>} endpoints={endpoints} descriptions={{auth:playground.authDescription?<DocInlineDescription text={playground.authDescription}/>:undefined,params:Object.fromEntries(playground.parameters.filter(param=>param.description).map(param=>[`${param.in}:${param.name}`,<DocInlineDescription key={param.name} text={param.description}/>]))}}/></div>
   </header>
   <aside className="mn-examples" aria-label="Examples">
    <DocsCode language="bash" label="cURL">{request}</DocsCode>

@@ -1,5 +1,6 @@
 "use client";
 import type { PlaygroundResult } from "@/lib/docs/playground/types";
+import { statusLabel } from "@/lib/docs/ui/statusLabel";
 import { DocsCode } from "../docs-interactive";
 
 /** The live response in Try it: status, time and body, or a prompt to send. */
@@ -14,7 +15,7 @@ export function PlaygroundResponse({ result, pending }: { result: PlaygroundResu
           <DocsCode
             language={result.isJson ? "json" : "text"}
             label={`Response ${result.status}`}
-            heading={<span className="mn-response-head"><b className={result.status < 300 ? "mn-ok" : "mn-bad"}>{result.status}</b> {result.statusText || "Response"} · {result.elapsedMs} ms <i>live</i></span>}
+            heading={<span className="mn-response-head"><b className={result.status < 300 ? "mn-ok" : "mn-bad"}>{result.status}</b> {statusLabel(result.status, result.statusText)} · {result.elapsedMs} ms <i>live</i></span>}
           >
             {result.body || "(empty body)"}
           </DocsCode>

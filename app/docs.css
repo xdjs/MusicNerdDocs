@@ -74,6 +74,8 @@
 .tok-keyword, .tok-key { color: var(--mn-tok-key); }
 .tok-flag, .tok-string { color: var(--mn-tok-string); }
 .tok-literal { color: var(--mn-tok-literal); }
+/* The example cards wrap long lines, as in the design, instead of scrolling sideways. */
+.mn-examples .docs-code pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .docs-code-hint, .docs-copy-feedback { margin: 0; padding: 8px 10px 4px; font-size: 12px; color: var(--mn-faint); }
 .mn-status-tabs { display: flex; gap: 14px; font-family: var(--mn-mono); }
 .mn-status-tabs button { padding: 0 2px; border: 0; background: transparent; color: var(--mn-faint); font: 13px var(--mn-mono); cursor: pointer; }
