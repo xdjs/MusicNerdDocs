@@ -1,4 +1,3 @@
-import { Arrow } from '@/components/arrow';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { docs, docHref, type DocPage } from '@/lib/docs';
@@ -77,7 +76,6 @@ export async function EndpointPage({page,footer}:{page:DocPage;footer?:ReactNode
    {(['path','query','header','cookie'] as const).map(location=>{const list=parameters.filter(param=>param.in===location);return list.length?<section id={`${location}-parameters`} className="mn-section" key={location}><h2>{location.charAt(0).toUpperCase()+location.slice(1)} Parameters</h2>{list.map(param=><ParameterRow key={param.name} param={param} spec={doc}/>)}</section>:null;})}
    {body.content&&<section id="body" className="mn-section">{Object.entries(body.content).map(([format,media])=><div key={format}><div className="mn-section-head"><h2>Body</h2><span className="mn-media-type">{format}</span>{body.required&&<span className="docs-required-label">required</span>}</div><DocDescription text={body.description}/>{(media as ApiObject).schema&&<Schema value={(media as ApiObject).schema} spec={doc}/>}</div>)}</section>}
    <ResponseSwitcher responses={responses}/>
-   <section id="specification" className="mn-section docs-specification"><h2>OpenAPI</h2><p>The full operation, with every schema and example.</p><Link href={`/spec/${page.api.spec}`} download>Download {page.api.spec} <span aria-hidden="true"><Arrow direction="down" /></span></Link><details><summary>View operation source</summary><DocsCode language="json">{JSON.stringify(operation,null,2)}</DocsCode></details></section>
    {footer}
   </div>
  </div>;

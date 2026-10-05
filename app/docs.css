@@ -15,9 +15,13 @@
 .mn-copy-page { position: relative; display: inline-flex; margin-bottom: 22px; border: 1px solid var(--mn-border); border-radius: 10px; background: var(--mn-surface); font-size: 14px; }
 .mn-copy-page > button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 0; background: transparent; color: var(--mn-text); cursor: pointer; }
 .mn-copy-page > button + button { width: 34px; padding: 0; justify-content: center; border-left: 1px solid var(--mn-border); color: var(--mn-muted); }
-.mn-copy-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; min-width: 190px; padding: 6px; background: var(--mn-surface); border: 1px solid var(--mn-border); border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14); }
-.mn-copy-menu a { display: block; padding: 9px 10px; border-radius: 8px; text-decoration: none; color: var(--mn-text); }
-.mn-copy-menu a:hover { background: var(--mn-chip); }
+.mn-copy-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; width: 290px; padding: 6px; background: var(--mn-surface); border: 1px solid var(--mn-border); border-radius: 14px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14); }
+.mn-copy-menu > a, .mn-copy-menu > button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 6px 8px; border: 0; border-radius: 10px; background: transparent; text-align: left; text-decoration: none; color: var(--mn-text); cursor: pointer; }
+.mn-copy-menu > a:hover, .mn-copy-menu > button:hover, .mn-copy-menu > a:focus-visible, .mn-copy-menu > button:focus-visible { background: var(--mn-chip); }
+.mn-menu-icon { width: 32px; height: 32px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--mn-border); border-radius: 8px; background: var(--mn-surface); color: var(--mn-muted); }
+.mn-copy-menu strong { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 500; color: var(--mn-ink); }
+.mn-copy-menu small { display: block; margin-top: 1px; font-size: 12px; color: var(--mn-faint); }
+.mn-menu-external { color: var(--mn-faint); }
 
 /* Endpoint page */
 .mn-endpoint-page { display: grid; grid-template-columns: minmax(0, 1fr) 448px; grid-template-areas: "head examples" "main examples"; column-gap: 40px; align-items: start; }
@@ -58,10 +62,6 @@
 .docs-schema-details { margin-top: 4px; padding-left: 13px; border-left: 2px solid var(--mn-border); }
 .docs-schema-details > summary { cursor: pointer; font-size: 13px; color: var(--mn-link); padding: 4px 0; }
 .docs-schema-cycle { font-size: 13px; color: var(--mn-faint); }
-.docs-specification > p { font-size: 15px; color: var(--mn-body); }
-.docs-specification > a { display: inline-flex; gap: 10px; align-items: center; padding: 9px 14px; border: 1px solid var(--mn-border); border-radius: 10px; background: var(--mn-surface); text-decoration: none; font-size: 14px; }
-.docs-specification > details { margin-top: 14px; }
-.docs-specification > details > summary { cursor: pointer; font-size: 14px; color: var(--mn-faint); }
 
 /* Code cards: a header strip on a tinted card, the code on a lighter inner panel */
 .docs-code { margin: 0; padding: 0 4px 4px; background: var(--mn-card); border: 1px solid var(--mn-border); border-radius: 16px; min-width: 0; }
@@ -167,8 +167,7 @@
   .mn-endpoint-bar .mn-button { height: 38px; padding: 0 12px; }
   .docs-code-heading { min-height: 44px; }
   .docs-code-heading > button { width: 44px; height: 44px; }
-  .mn-endpoint-bar .mn-button, .docs-specification > a { min-height: 44px; }
-  .docs-code pre { padding: 12px 14px; }
+  .mn-endpoint-bar .mn-button,   .docs-code pre { padding: 12px 14px; }
   .docs-cards { grid-template-columns: 1fr; }
   .docs-api-overview a { grid-template-columns: 48px minmax(0, 1fr) 16px; }
   .docs-api-overview code { grid-column: 2; grid-row: 2; }
