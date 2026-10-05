@@ -28,9 +28,10 @@ export function summarizeOperation({ method, path, spec }: { method: string; pat
     .map((param: ApiObject) => resolveReference(param, spec))
     .filter((param) => LOCATIONS.includes(param.in))
     .filter((param) => param.in !== "header" || ![secretHeader, "authorization", "x-api-key"].includes(String(param.name).toLowerCase()))
-    .map((param): PlaygroundParam => ({ name: param.name, in: param.in, required: Boolean(param.required), type: paramType(param.schema), example: paramExample(param) }));
+    .map((param): PlaygroundParam => ({ name: param.name, in: param.in, required: Boolean(param.required), type: paramType(param.schema), example: paramExample(param), description: param.description ?? "" }));
   const body = summarizeBody(operation, spec);
   const streams = Object.keys(resolveReference(operation.responses?.["200"], spec).content ?? {}).includes("text/event-stream");
   const runnable = body?.contentType !== "multipart/form-data" && !streams;
-  return { method: method.toUpperCase(), path, parameters, body, auth, securitySchemes, runnable };
+  const authDescription = auth.type === "none" ? "" : (spec.components?.securitySchemes?.[securitySchemes[0]]?.description ?? "");
+  return { method: method.toUpperCase(), path, parameters, body, auth, authDescription, securitySchemes, runnable };
 }

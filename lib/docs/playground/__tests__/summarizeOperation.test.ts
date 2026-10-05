@@ -5,7 +5,7 @@ const spec = {
   components: {
     securitySchemes: {
       apiKeyAuth: { type: "apiKey", in: "header", name: "x-api-key" },
-      bearerAuth: { type: "http", scheme: "bearer" },
+      bearerAuth: { type: "http", scheme: "bearer", description: "A Privy access token." },
     },
     schemas: {
       Body: { type: "object", required: ["name"], properties: { name: { type: "string", example: "Nena" }, tags: { type: "array", items: { type: "string" } } } },
@@ -13,7 +13,7 @@ const spec = {
   },
   paths: {
     "/api/artists/{id}/profile": {
-      parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+      parameters: [{ name: "id", in: "path", required: true, description: "The artist's ID.", schema: { type: "string", format: "uuid" } }],
       get: {
         parameters: [{ name: "org_id", in: "query", schema: { type: "string" }, example: "org_123" }, { name: "x-api-key", in: "header", required: true, schema: { type: "string" } }],
         security: [{ apiKeyAuth: [] }, { bearerAuth: [] }],
@@ -35,8 +35,8 @@ describe("summarizeOperation", () => {
     expect(op.method).toBe("GET");
     expect(op.path).toBe("/api/artists/{id}/profile");
     expect(op.parameters).toEqual([
-      { name: "id", in: "path", required: true, type: "string", example: "" },
-      { name: "org_id", in: "query", required: false, type: "string", example: "org_123" },
+      { name: "id", in: "path", required: true, type: "string", example: "", description: "The artist's ID." },
+      { name: "org_id", in: "query", required: false, type: "string", example: "org_123", description: "" },
     ]);
     expect(op.auth).toEqual({ type: "apiKey", header: "x-api-key" });
     expect(op.securitySchemes).toEqual(["apiKeyAuth", "bearerAuth"]);
@@ -53,6 +53,7 @@ describe("summarizeOperation", () => {
     const op = summarize("POST", "/api/chat");
     expect(op.body?.example).toBe(JSON.stringify({ prompt: "hi" }, null, 2));
     expect(op.auth).toEqual({ type: "bearer" });
+    expect(op.authDescription).toBe("A Privy access token.");
     expect(op.runnable).toBe(false);
   });
   it("marks multipart uploads as not runnable", () => {
@@ -62,6 +63,7 @@ describe("summarizeOperation", () => {
   });
   it("reports no auth for an explicitly public operation", () => {
     expect(summarize("GET", "/api/public").auth).toEqual({ type: "none" });
+    expect(summarize("GET", "/api/public").authDescription).toBe("");
   });
   it("falls back to an empty object when the JSON body has no schema or example", () => {
     expect(summarize("POST", "/api/empty").body?.example).toBe("{}");

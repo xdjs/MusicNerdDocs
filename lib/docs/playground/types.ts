@@ -4,6 +4,8 @@ export type PlaygroundParam = {
   required: boolean;
   type: string;
   example: string;
+  /** The parameter's description, shown beside its field in Try it. */
+  description: string;
 };
 
 export type PlaygroundAuth =
@@ -18,6 +20,8 @@ export type PlaygroundOperation = {
   parameters: PlaygroundParam[];
   body?: { contentType: string; example: string };
   auth: PlaygroundAuth;
+  /** The credential's description from its security scheme, empty for a public operation. */
+  authDescription: string;
   securitySchemes: string[];
   /** False when the browser cannot drive the call (multipart upload, event stream). */
   runnable: boolean;
