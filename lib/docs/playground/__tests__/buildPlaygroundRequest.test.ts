@@ -4,12 +4,12 @@ import type { PlaygroundOperation } from "@/lib/docs/playground/types";
 
 const base = "https://api.example.test/api";
 const get: PlaygroundOperation = {
-  method: "GET", path: "/api/artists/{id}/profile", runnable: true, securitySchemes: [],
+  method: "GET", path: "/api/artists/{id}/profile", runnable: true, securitySchemes: [], authDescription: "",
   parameters: [
-    { name: "id", in: "path", required: true, type: "string", example: "" },
-    { name: "org_id", in: "query", required: false, type: "string", example: "" },
-    { name: "empty", in: "query", required: false, type: "string", example: "" },
-    { name: "x-trace", in: "header", required: false, type: "string", example: "" },
+    { name: "id", in: "path", required: true, type: "string", example: "", description: "" },
+    { name: "org_id", in: "query", required: false, type: "string", example: "", description: "" },
+    { name: "empty", in: "query", required: false, type: "string", example: "", description: "" },
+    { name: "x-trace", in: "header", required: false, type: "string", example: "", description: "" },
   ],
   auth: { type: "apiKey", header: "x-api-key" },
 };

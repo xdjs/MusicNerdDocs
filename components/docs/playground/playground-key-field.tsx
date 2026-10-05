@@ -1,18 +1,25 @@
 "use client";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { PlaygroundAuth } from "@/lib/docs/playground/types";
 
-export function PlaygroundKeyField({ auth, value, onChange }: { auth: PlaygroundAuth; value: string; onChange: (value: string) => void }) {
+/** The credential field in Try it: the header it fills, its description, and the input with its Bearer prefix. */
+export function PlaygroundKeyField({ auth, description, value, onChange }: { auth: PlaygroundAuth; description?: ReactNode; value: string; onChange: (value: string) => void }) {
   const id = useId();
   if (auth.type === "none") return null;
+  const header = auth.type === "bearer" ? "Authorization" : auth.header;
   return (
-    <div className="docs-playground-field docs-playground-key">
-      <label htmlFor={id}>
-        {auth.type === "bearer" ? "Bearer token" : "API key"}
-        <span>{auth.type === "bearer" ? "Authorization header" : `${auth.header} header`}</span>
-      </label>
-      <input id={id} type="password" autoComplete="off" spellCheck={false} data-1p-ignore value={value} onChange={(event) => onChange(event.target.value)} aria-describedby={`${id}-hint`} />
-      <p id={`${id}-hint`} className="docs-playground-hint">Kept in this browser tab only and cleared when it closes.</p>
-    </div>
+    <details className="mn-field-card" open>
+      <summary>Authorization</summary>
+      <div className="mn-field-row">
+        <div>
+          <p className="mn-chips"><code>{header}</code><span>string</span><em>required</em></p>
+          <p id={`${id}-hint`}>{description}{description ? " " : ""}Kept in this tab only.</p>
+        </div>
+        <label className="mn-input-group" htmlFor={id}>
+          {auth.type === "bearer" && <span>Bearer</span>}
+          <input id={id} type="password" autoComplete="off" spellCheck={false} data-1p-ignore placeholder="enter token" value={value} onChange={(event) => onChange(event.target.value)} aria-label={auth.type === "bearer" ? "Bearer token" : `${header} value`} aria-describedby={`${id}-hint`} />
+        </label>
+      </div>
+    </details>
   );
 }
