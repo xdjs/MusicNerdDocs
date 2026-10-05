@@ -9,12 +9,14 @@ Equal-weight word overlap can rank incidental words above a distinctive name or 
 ## Contract
 
 - Keep the six read operations, authentication, schemas and character/byte limits unchanged.
-- Rank overlapping windows of original text using corpus term rarity, saturating term frequency and length normalization (BM25). Normalize case, diacritics and within-word apostrophes for matching; never normalize the returned evidence or its offsets. Titles/descriptions remain metadata, never passage text or independent evidence.
+- Rank overlapping windows of original text using corpus term rarity, saturating term frequency and length normalization (BM25, k1=1.2 and b=0.75), plus three times the inverse document frequency of each adjacent non-stopword query pair. Normalize case, Latin accents, within-word apostrophes and English word forms for matching; never normalize returned evidence or offsets. The scoped artist name is omitted when other query terms remain. Titles/descriptions remain metadata, never passage text or independent evidence.
 - Preserve deterministic ties, source/revision identity, exact UTF-16 offsets and explicit coverage/truncation. A ranked window must still contain a query match after any budget reduction.
 - Do not emit a budget-clipped passage shorter than 256 characters. Complete naturally short evidence remains eligible. Stop or skip a candidate explicitly when the remaining budget cannot provide usable context; do not pad with metadata.
 - Original reading remains explicit through `readArtistSource`. The consumer should inspect a document's opening for authorship/scope, then relevant surrounding passages and qualifications. A rank score does not establish speaker identity, completeness, factual support or a connection.
 
 BM25 is a candidate lexical improvement, not a commitment to a vector/graph service or a general retrieval-quality claim. Use fixed conventional parameters before evaluating new cases. [Stanford's IR reference](https://nlp.stanford.edu/IR-book/html/htmledition/okapi-bm25-a-non-binary-model-1.html) describes term rarity, frequency saturation and length normalization; final acceptance depends on the Music Nerd evidence below.
+
+The initial BM25-only candidate introduced two context-reading regressions. Development regressions and synthetic unit cases motivated English inflections, phrase weighting and scoped-name handling; the phrase weight is an engineering heuristic, not part of standard BM25. English stemming uses the pinned `stemmer@2.0.1` package ([implementation](https://github.com/words/stemmer)). Non-English morphology and semantic equivalence remain limitations. Transfer annotations were frozen before changes, but their aggregate results were observed during candidate comparisons; this is not a blind benchmark.
 
 ## Verification
 

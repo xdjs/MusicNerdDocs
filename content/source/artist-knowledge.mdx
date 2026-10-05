@@ -18,7 +18,7 @@ The application binds artist ID, API origin and credential lookup when creating 
 1. `getArtistBrief` supplies bounded stored orientation and coverage. Generated Lore is labelled as a navigation aid.
 2. `getInterviewHistory` supplies exact question/answer and claim/correction field slices. Follow continuations to finish current corrections and retrieve the latest saved answer. Older permitted answers remain available. The host supplies the latest exact unsaved answer and current boundaries every turn.
 3. `listArtistSources` and `searchArtistKnowledge` locate original vault text and own social captions/transcripts.
-4. `readArtistSource` opens surrounding text at a specified source revision and UTF-16 offset. Continue through a long PDF rather than reading only its opening.
+4. `readArtistSource` opens original text at a specified source revision and UTF-16 offset. Inspect the opening for authorship and document scope, then read surrounding relevant passages and their qualifications. Continue through a long PDF as needed; the opening and search snippets alone may not answer the question.
 5. `getResearchStatus` reads sanitized durable job progress. An authorized `requestArtistResearch` wraps the existing Look again operation; it does not guarantee a new job or refetch every vault link.
 
 History reports `memory.boundaryState: not_implemented` and `constraintsComplete: false` while boundary storage is unavailable. `correctionsComplete` reports only the traversed corrections. An empty list or successful HTTP response must never be interpreted as complete interview memory. A skipped question is not automatically a permanent topic ban.
@@ -35,7 +35,11 @@ Only extracted vault body text is searchable evidence; a title or snippet alone 
 
 Listing and job/history pages return 20 records by default, at most 50. Search returns at most 10 original windows and 12,000 evidence characters. A source read returns at most 20,000 characters. History continues within long fields without paraphrasing an answer or correction. Responses are limited to 128 KiB; oversized data produces an explicit error.
 
-Initial retrieval scans stored originals lexically with overlapping context windows. It reports corpus coverage and does not claim semantic or hybrid retrieval superiority. A snapshot supports up to 5,000 rows per source/history table and 4 million serialized snapshot characters, including metadata; overflow returns 413, never a silently incomplete success. This bound must be evaluated before a broader archive rollout.
+Retrieval ranks overlapping original windows with BM25 term rarity/frequency/length weighting and a bonus for adjacent non-stopword query terms. Case, Latin accents, within-word apostrophes and English word forms are normalized for matching only; returned text, revisions and offsets remain exact. The already-bound artist name is omitted from ranking terms when other meaningful query terms exist. Titles/descriptions are not ranked as original evidence. This remains lexical retrieval; non-English morphology and semantic equivalence are not generally handled.
+
+A budget-clipped hit shorter than 256 characters is skipped rather than returned as a fragment; a complete naturally short source remains eligible. `truncated` records omitted eligible context. The agent must still open originals and resolve attribution, dates, scope and contradictions. Ranking and corpus coverage do not establish factual support or semantic/hybrid retrieval superiority.
+
+A snapshot supports up to 5,000 rows per source/history table and 4 million serialized snapshot characters, including metadata; overflow returns 413, never a silently incomplete success. This bound must be evaluated before a broader archive rollout.
 
 Cursors bind the artist, operation, filter and ordered corpus revision; a changed corpus returns 409. No match is an empty successful result with coverage. Authentication, missing evidence, changed revisions and database failures are separate errors. A database failure never becomes an empty successful history.
 
