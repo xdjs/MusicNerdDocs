@@ -1,10 +1,10 @@
 # Shared artist knowledge tools — proposed v1 contract
 
-Status: draft contract for [MusicNerdWeb#1424](https://github.com/xdjs/MusicNerdWeb/issues/1424), October 5, 2026. The knowledge endpoints below are **not implemented or deployed**. The existing research-refresh operation is identified separately. Social ingestion shipped through [MusicNerdAPI#18](https://github.com/xdjs/MusicNerdAPI/pull/18); that does not expose these tools or integrate the Web interviewer.
+Status: pre-implementation proposal for [MusicNerdWeb#1424](https://github.com/xdjs/MusicNerdWeb/issues/1424), October 5, 2026. The subsequent [implementation guide](../content/source/artist-knowledge.mdx) and [OpenAPI reference](../content/source/api-reference/openapi/knowledge.json) are the current read-interface contract. Runtime and release status are tracked in #1424. The adjacent proposal OpenAPI preserves the original design; it is not the current endpoint schema.
 
-This contract belongs in MusicNerdDocs before API implementation. The docs engine is still [Docs#1](https://github.com/xdjs/MusicNerdDocs/pull/1); this proposal is reviewable without merging that unrelated draft. The adjacent OpenAPI document is a draft interface, not a live reference. Before endpoint implementation, move it into `content/source/api-reference/openapi/knowledge.json`, add the reference pages and navigation, and regenerate the docs with the merged engine. Keep the existing refresh operation in its research specification rather than duplicating it.
+Docs#2 now includes [Docs#1](https://github.com/xdjs/MusicNerdDocs/pull/1) as an explicit engine dependency so the reference pages, navigation and generated content can be previewed. Docs#1 itself is unchanged. Social ingestion shipped through [MusicNerdAPI#18](https://github.com/xdjs/MusicNerdAPI/pull/18); the Web interviewer integration remains a separate phase.
 
-The later [requirements assessment](agent-requirements-assessment.md) records Pete’s source-verification, durable-boundary and held-out evaluation additions. Those are proposed scope refinements; the adjacent OpenAPI has not yet been revised to claim them implemented.
+The [baseline requirements assessment](agent-requirements-assessment.md) records Pete’s source-verification, durable-boundary and held-out evaluation additions. The current read contract explicitly exposes the remaining boundary-storage, historical-version and extraction gaps instead of claiming them complete.
 
 ## Outcome and boundaries
 

@@ -1,8 +1,8 @@
 # Agent requirements: current state and proposed changes
 
-Assessment date: October 5, 2026. Requested by Pete after reviewing side research. Owners remain [MusicNerdWeb#1424](https://github.com/xdjs/MusicNerdWeb/issues/1424) (shared API knowledge) and [#1422](https://github.com/xdjs/MusicNerdWeb/issues/1422) (interviewer/evaluation). Delivery stays **social ingestion → shared API tools → Web interviewer integration**.
+Baseline assessment date: October 5, 2026, before implementation. Requested by Pete after reviewing side research. Owners remain [MusicNerdWeb#1424](https://github.com/xdjs/MusicNerdWeb/issues/1424) (shared API knowledge) and [#1422](https://github.com/xdjs/MusicNerdWeb/issues/1422) (interviewer/evaluation). Delivery stays **social ingestion → shared API tools → Web interviewer integration**.
 
-This is a code/evidence assessment and scope proposal. No tool endpoint, schema, model, live prompt or interviewer behavior has changed as a result. “Experiment” below means the private API#19 CLI, not an active route. The adjacent [tool contract](artist-knowledge-tools.md) and [OpenAPI proposal](artist-knowledge.openapi.json) are drafts, not implemented operations. Proposed additions in this assessment have not yet been folded into a final endpoint schema.
+This preserves the pre-implementation code/evidence assessment and scope proposal. The subsequent read-interface implementation contract is in [the current guide](../content/source/artist-knowledge.mdx) and [reference schema](../content/source/api-reference/openapi/knowledge.json). Runtime and release state live in #1424. At this baseline, No tool endpoint, schema, model, live prompt or interviewer behavior has changed as a result. “Experiment” below means the private API#19 CLI, not an active route. The adjacent [tool contract](artist-knowledge-tools.md) and [OpenAPI proposal](artist-knowledge.openapi.json) are drafts, not implemented operations. Proposed additions in this assessment have not yet been folded into a final endpoint schema.
 
 ## What exists, what is planned, what is missing
 

@@ -35,7 +35,7 @@ Only extracted vault body text is searchable evidence; a title or snippet alone 
 
 Listing and job/history pages return 20 records by default, at most 50. Search returns at most 10 original windows and 12,000 evidence characters. A source read returns at most 20,000 characters. History continues within long fields without paraphrasing an answer or correction. Responses are limited to 128 KiB; oversized data produces an explicit error.
 
-Initial retrieval scans stored originals lexically with overlapping context windows. It reports corpus coverage and does not claim semantic or hybrid retrieval superiority. A snapshot supports up to 5,000 rows per source/history table and 4 million source/history text characters; overflow returns 413, never a silently incomplete success. This bound must be evaluated before a broader archive rollout.
+Initial retrieval scans stored originals lexically with overlapping context windows. It reports corpus coverage and does not claim semantic or hybrid retrieval superiority. A snapshot supports up to 5,000 rows per source/history table and 4 million serialized snapshot characters, including metadata; overflow returns 413, never a silently incomplete success. This bound must be evaluated before a broader archive rollout.
 
 Cursors bind the artist, operation, filter and ordered corpus revision; a changed corpus returns 409. No match is an empty successful result with coverage. Authentication, missing evidence, changed revisions and database failures are separate errors. A database failure never becomes an empty successful history.
 
