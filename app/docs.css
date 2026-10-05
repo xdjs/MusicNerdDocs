@@ -143,6 +143,9 @@
 .docs-api-overview strong { font-weight: 500; color: var(--mn-ink); }
 .docs-api-overview code { font: 12px var(--mn-mono); color: var(--mn-faint); overflow-wrap: anywhere; }
 
+@media (max-width: 1100px) {
+  .docs-layout { padding-inline: 24px; gap: 32px; }
+}
 @media (max-width: 1200px) {
   .mn-endpoint-page { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "examples" "main"; }
   .mn-endpoint-bar { margin-bottom: 18px; }
@@ -155,8 +158,9 @@
   .docs-sidebar { display: none; }
   .mn-article-head h1, .mn-endpoint-head h1 { font-size: 30px; }
   .mn-copy-page { margin-bottom: 20px; font-size: 15px; }
-  .mn-copy-page > button { height: 40px; }
-  .mn-copy-page > button + button { width: 40px; }
+  .mn-copy-page > button { height: 44px; }
+  .mn-copy-page > button + button { width: 44px; }
+  .mn-status-select select { height: 44px; padding: 0 10px; font-size: 15px; }
   .mn-endpoint-bar { gap: 6px; }
   .mn-endpoint-path { height: 38px; padding: 0 6px; gap: 5px; }
   .mn-path-sep { margin: 0 1px; }
