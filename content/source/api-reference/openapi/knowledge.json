@@ -860,7 +860,7 @@
       "post": {
         "operationId": "requestSourceExtraction",
         "summary": "Recover missing source text",
-        "description": "Draft; requires source_extract schema migration. Queue one to twenty approved vault URL records with missing bodies. Existing originals and uploaded files are never overwritten. HTTP-only extraction records blocked/empty/unsupported results; it does not guarantee a complete article. Call deliberately from trusted host code, never during a read. Use research/status for results.",
+        "description": "Draft; requires source_extract schema migration. Queue one to twenty approved vault URL records with missing bodies. Existing originals and uploaded files are never overwritten. HTTP-only extraction records blocked/empty/unsupported results; it does not guarantee a complete article. Call deliberately from trusted host code, never during a read. Use research/status for results.\n\nRead `getResearchStatus` for `extractionOutcomes` on the returned job: source ID, result status, capture time, HTTP status, stored character count and truncation. A completed job means each selected source was attempted. A blocked or empty result does not supply original evidence.",
         "security": [
           {
             "privyBearer": []
@@ -1800,7 +1800,8 @@
               "caption_extract",
               "lore_refresh",
               "source_search",
-              "latest_refresh"
+              "latest_refresh",
+              "source_extract"
             ]
           },
           "status": {
@@ -1835,6 +1836,61 @@
               "string",
               "null"
             ]
+          },
+          "extractionOutcomes": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "Present for source_extract. Attempt results; completion does not imply readable or editorially verified evidence.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ready",
+                    "blocked",
+                    "empty",
+                    "unsupported",
+                    "unavailable",
+                    "too_large",
+                    "skipped"
+                  ]
+                },
+                "capturedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "httpStatus": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 100,
+                  "maximum": 599
+                },
+                "storedChars": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50000
+                },
+                "truncated": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "sourceId",
+                "status",
+                "capturedAt",
+                "httpStatus",
+                "storedChars",
+                "truncated"
+              ]
+            }
           }
         },
         "required": [
