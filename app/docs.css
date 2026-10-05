@@ -113,8 +113,12 @@
 .docs-callout-tip > span { color: var(--mn-tip); }
 .docs-callout-warning > span { color: var(--mn-warning); }
 .docs-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 22px 0; }
-.docs-card { padding: 18px; border: 1px solid var(--mn-border); border-radius: 14px; background: var(--mn-surface); }
-.docs-card:hover { border-color: var(--mn-action); }
+.docs-card { position: relative; cursor: pointer; padding: 18px; border: 1px solid var(--mn-border); border-radius: 14px; background: var(--mn-surface); }
+.docs-card:hover, .docs-card:has(.docs-card-title:focus-visible) { border-color: var(--mn-action); }
+/* The title link covers the whole card, so a click anywhere on it opens the page. */
+.docs-card-title::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.docs-card-title:focus-visible { outline: none; }
+.docs-card:has(.docs-card-title:focus-visible) { outline: 2px solid var(--mn-action); outline-offset: 2px; }
 .docs-card-title { display: flex; justify-content: space-between; gap: 12px; text-decoration: none; color: var(--mn-ink); font-size: 16px; }
 .docs-card-title > strong { font-weight: 600; }
 .docs-card > div { margin-top: 8px; font-size: 14px; line-height: 1.6; color: var(--mn-faint); }
