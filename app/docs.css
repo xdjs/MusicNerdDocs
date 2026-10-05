@@ -171,7 +171,8 @@
   .mn-endpoint-bar .mn-button { height: 38px; padding: 0 12px; }
   .docs-code-heading { min-height: 44px; }
   .docs-code-heading > button { width: 44px; height: 44px; }
-  .mn-endpoint-bar .mn-button,   .docs-code pre { padding: 12px 14px; }
+  .mn-endpoint-bar .mn-button { min-height: 44px; }
+  .docs-code pre { padding: 12px 14px; }
   .docs-cards { grid-template-columns: 1fr; }
   .docs-api-overview a { grid-template-columns: 48px minmax(0, 1fr) 16px; }
   .docs-api-overview code { grid-column: 2; grid-row: 2; }
