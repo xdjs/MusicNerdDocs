@@ -8,7 +8,7 @@ export function SearchResults({ results, query, onNavigate }: { results: NavPage
   if (!query.trim()) return null;
   return (
     <div className="mn-search-results">
-      <p role="status">{results.length ? `${results.length}${results.length === 30 ? "+" : ""} results` : "No matches. Try an endpoint or a task."}</p>
+      <p role="status">{results.length ? `${results.length}${results.length === 30 ? "+" : ""} ${results.length === 1 ? "result" : "results"}` : "No matches. Try an endpoint or a task."}</p>
       {results.map((page) => (
         <Link key={page.slug} href={docHref(page.slug)} onClick={onNavigate}>
           {page.api && <MethodPill method={page.api.method} />}

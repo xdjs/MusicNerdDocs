@@ -1,5 +1,6 @@
 /* Try it: a large window over a dimmed page. Native <dialog>, so Escape and a tap outside close it. */
 .mn-tryit { margin: auto; width: calc(100vw - 96px); max-width: 1184px; height: calc(100dvh - 96px); max-height: 904px; border-radius: 24px; background: var(--mn-surface); box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22); }
+.mn-tryit-body:focus { outline: none; }
 .mn-tryit-body { height: 100%; display: flex; flex-direction: column; gap: 22px; padding: 16px; overflow: hidden; }
 .mn-tryit-bar { display: flex; align-items: center; gap: 10px; }
 .mn-endpoint-switch { position: relative; width: 320px; flex: none; display: flex; align-items: center; height: 42px; border: 1.5px solid var(--mn-action); border-radius: 12px; background: var(--mn-surface); }
@@ -44,7 +45,7 @@
 
 @media (max-width: 1000px) {
   .mn-tryit-grid { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
-  .mn-tryit-fields, .mn-tryit-side { overflow: visible; }
+  .mn-tryit-fields, .mn-tryit-side { overflow: visible; min-height: auto; }
   .mn-endpoint-switch { width: 240px; }
 }
 @media (max-width: 800px) {

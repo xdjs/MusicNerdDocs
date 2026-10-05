@@ -136,6 +136,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 dialog { padding: 0; border: 0; color: var(--mn-ink); }
 dialog::backdrop { background: var(--mn-backdrop); }
 .mn-drawer { margin: 0; width: min(332px, 85vw); max-width: none; height: 100dvh; max-height: none; background: var(--mn-surface); border-right: 1px solid var(--mn-border); }
+.mn-drawer-body:focus { outline: none; }
 .mn-drawer-body { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; padding: 16px 16px 32px; }
 .mn-drawer-top { display: flex; align-items: center; justify-content: space-between; }
 .mn-tab-select { position: relative; display: flex; }
@@ -171,9 +172,10 @@ dialog::backdrop { background: var(--mn-backdrop); }
   .mn-phone-only { display: inline-flex; }
   .mn-header-links { gap: 0; }
   .mn-crumbs { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 8px; font-size: 15px; }
-  .mn-crumbs p { margin: 0; display: flex; gap: 10px; min-width: 0; color: var(--mn-faint); white-space: nowrap; overflow: hidden; }
-  .mn-crumbs p > :last-child { color: var(--mn-ink); overflow: hidden; text-overflow: ellipsis; }
-  .mn-crumbs p > span[aria-hidden] { color: var(--mn-sep); }
+  .mn-crumbs > p { margin: 0; display: flex; gap: 10px; min-width: 0; color: var(--mn-faint); white-space: nowrap; overflow: hidden; }
+  .mn-crumbs > p > :last-child { color: var(--mn-ink); overflow: hidden; text-overflow: ellipsis; }
+  .mn-crumbs > p > span[aria-hidden] { color: var(--mn-sep); }
   .mn-sidebar-nav, .mn-nav-group > a { font-size: 16px; }
   .mn-nav-group > a, .mn-nav-app { min-height: 44px; }
+  .mn-brand { min-height: 44px; }
 }

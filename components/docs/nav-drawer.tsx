@@ -20,7 +20,7 @@ export function NavDrawer({ pages, tabs }: { pages: NavPage[]; tabs: { name: str
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
       </button>
       <dialog ref={dialog} className="mn-drawer" aria-label="Navigation" onClick={(event) => closeOnBackdrop(event, close)}>
-        <div className="mn-drawer-body">
+        <div className="mn-drawer-body" tabIndex={-1} autoFocus>
           <div className="mn-drawer-top">
             <Brand onNavigate={close} />
             <ThemeToggle />

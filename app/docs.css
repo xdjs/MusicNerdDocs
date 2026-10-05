@@ -77,7 +77,8 @@
 /* The example cards wrap long lines, as in the design, instead of scrolling sideways. */
 .mn-examples .docs-code pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .docs-code-hint, .docs-copy-feedback { margin: 0; padding: 8px 10px 4px; font-size: 12px; color: var(--mn-faint); }
-.mn-status-tabs { display: flex; gap: 14px; font-family: var(--mn-mono); }
+.mn-status-tabs { display: flex; align-self: stretch; gap: 14px; font-family: var(--mn-mono); }
+.docs-code-heading > span:has(> .mn-status-tabs) { align-items: stretch; }
 .mn-status-tabs button { padding: 0 2px; border: 0; background: transparent; color: var(--mn-faint); font: 13px var(--mn-mono); cursor: pointer; }
 .mn-status-tabs button[aria-selected="true"] { color: var(--mn-ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--mn-action); }
 .docs-code-group { margin: 22px 0; }
@@ -160,7 +161,9 @@
   .mn-endpoint-path { height: 38px; padding: 0 6px; gap: 5px; }
   .mn-path-sep { margin: 0 1px; }
   .mn-endpoint-bar .mn-button { height: 38px; padding: 0 12px; }
+  .docs-code-heading { min-height: 44px; }
   .docs-code-heading > button { width: 44px; height: 44px; }
+  .mn-endpoint-bar .mn-button, .docs-specification > a { min-height: 44px; }
   .docs-code pre { padding: 12px 14px; }
   .docs-cards { grid-template-columns: 1fr; }
   .docs-api-overview a { grid-template-columns: 48px minmax(0, 1fr) 16px; }

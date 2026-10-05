@@ -78,7 +78,7 @@ export function TryIt({ operation, baseUrl, staging, title, lead, endpoints, des
         <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z" /></svg>
       </button>
       <dialog ref={dialog} className="mn-tryit" aria-label={`Try it: ${title}`} onClick={(event) => closeOnBackdrop(event, () => dialog.current?.close())} onClose={onClose}>
-        <div className="mn-tryit-body">
+        <div className="mn-tryit-body" tabIndex={-1} autoFocus>
           <div className="mn-tryit-bar">
             <label className="mn-endpoint-switch">
               <span className="mn-sr-only">Endpoint</span>
