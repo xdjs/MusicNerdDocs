@@ -1,0 +1,397 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: research",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/research/advance": {
+      "post": {
+        "summary": "Advance research",
+        "operationId": "advanceResearch",
+        "security": [],
+        "description": "Runs one slice of queued research and returns. Research jobs (`artist_research_jobs`) run in slices that each fit one request; the web app's research pump calls this while an artist's page is open, and the scheduler resumes anything left. Safe to call concurrently: jobs are claimed atomically under a lease.\n\nPass `artistId` to run only that artist's jobs, and `kinds` to run only some kinds.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "Run only this artist's jobs."
+                  },
+                  "kinds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "social_ingest",
+                        "caption_extract",
+                        "lore_refresh",
+                        "source_search",
+                        "latest_refresh"
+                      ]
+                    },
+                    "description": "Run only jobs of these kinds."
+                  }
+                }
+              },
+              "example": {
+                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                "kinds": [
+                  "latest_refresh"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A slice ran, or nothing was waiting (`ran: false`). A failure inside the slice is reported as `{ status: \"error\", error: \"advance failed\", ran: false }` with status 200.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "ran"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "ran": {
+                      "type": "boolean",
+                      "description": "Whether a slice ran. `false` means nothing was claimable."
+                    },
+                    "jobId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "The job the slice belonged to."
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "social_ingest",
+                        "caption_extract",
+                        "lore_refresh",
+                        "source_search",
+                        "latest_refresh"
+                      ],
+                      "description": "The job's kind."
+                    },
+                    "artistId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "progress": {
+                      "type": "string",
+                      "description": "A short description of what the slice did."
+                    },
+                    "done": {
+                      "type": "boolean",
+                      "description": "Whether the job finished with this slice."
+                    },
+                    "waiting": {
+                      "type": "boolean",
+                      "description": "The job is waiting on an outside run (an Apify scrape); call again later."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "ran": true,
+                  "jobId": "6baabdd8-e8f3-4c09-8edb-71a71f7342ae",
+                  "kind": "social_ingest",
+                  "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                  "progress": "collected 12 posts",
+                  "done": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`artistId` is not a UUID, or `kinds` names a kind this API does not run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Run the research scheduler",
+        "operationId": "runResearchScheduler",
+        "security": [
+          {
+            "cronSecret": []
+          }
+        ],
+        "description": "The scheduler Vercel Cron calls. Takes slices until its time budget runs out (the function's 60 s limit, less a reserve), skipping jobs that are waiting on an outside run. Requires `Authorization: Bearer <CRON_SECRET>` when the deployment sets `CRON_SECRET`.",
+        "responses": {
+          "200": {
+            "description": "The slices that ran this tick.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "ran",
+                    "slices"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "error"
+                      ]
+                    },
+                    "ran": {
+                      "type": "boolean"
+                    },
+                    "slices": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ran": {
+                            "type": "boolean",
+                            "description": "Whether a slice ran. `false` means nothing was claimable."
+                          },
+                          "jobId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "The job the slice belonged to."
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "social_ingest",
+                              "caption_extract",
+                              "lore_refresh",
+                              "source_search",
+                              "latest_refresh"
+                            ],
+                            "description": "The job's kind."
+                          },
+                          "artistId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "progress": {
+                            "type": "string",
+                            "description": "A short description of what the slice did."
+                          },
+                          "done": {
+                            "type": "boolean",
+                            "description": "Whether the job finished with this slice."
+                          },
+                          "waiting": {
+                            "type": "boolean",
+                            "description": "The job is waiting on an outside run (an Apify scrape); call again later."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "ran": false,
+                  "slices": []
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`CRON_SECRET` is set and the request does not carry it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/research/refresh": {
+      "post": {
+        "summary": "Look again",
+        "operationId": "refreshArtistResearch",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The \"Look again\" button: rebuilds the artist's Lore from their current documents and re-reads their recent posts. Social research has a 30-minute cooldown after the last run, and waits while Update Latest is checking Instagram. The response message says which of these happened.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What was started, in words for the artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "message": "Rebuilding Lore from your current documents. Checking recent posts. Your bio will stay unchanged."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The artist ID is not a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The refresh could not be started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Couldn't start that"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Privy access token",
+        "description": "The signed-in user's Privy access token (`getAccessToken()` in the web app). The user must be the artist's approved claimant or a Music Nerd admin."
+      },
+      "cronSecret": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The deployment's `CRON_SECRET`."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

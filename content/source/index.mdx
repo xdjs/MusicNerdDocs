@@ -1,0 +1,23 @@
+---
+title: 'Music Nerd API'
+description: 'Artist profiles, research and onboarding, behind Music Nerd and open to other clients.'
+---
+
+The Music Nerd API serves the data behind [Music Nerd](https://www.musicnerd.xyz) and runs the research that builds an artist's profile: finding their profiles, reading what's written about them, and writing their Lore and About.
+
+Base URL: `https://musicnerd-api.vercel.app`. Staging, on the staging database: `https://musicnerd-api-staging.vercel.app`. These docs call production when you read them on their production URL, and staging on a preview.
+
+Every reference page has a **Try it** panel that sends the request from your browser and shows the live response.
+
+<CardGroup cols="2">
+  <Card title="Quickstart" href="/quickstart">Make your first request in under a minute.</Card>
+  <Card title="Authentication" href="/authentication">Which endpoints are public, and how to sign the rest.</Card>
+  <Card title="API reference" href="/api-reference">Every endpoint, its request and its responses.</Card>
+  <Card title="For AI tools" href="/llms.txt">The whole site as Markdown: `llms.txt` and `llms-full.txt`.</Card>
+</CardGroup>
+
+## Conventions
+
+- Responses are flat JSON: `{ "status": "ok", ... }` on success and `{ "status": "error", "error": "<message>" }` on failure. There is no `data` wrapper.
+- Every endpoint answers CORS preflight, so a browser on any origin can call it.
+- Artist and account IDs are UUIDs. The same artist has a different ID in staging and production.
