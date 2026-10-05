@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { initialParamValues } from "@/lib/docs/playground/initialParamValues";
 import type { PlaygroundParam } from "@/lib/docs/playground/types";
 
-const param = (overrides: Partial<PlaygroundParam>): PlaygroundParam => ({ name: "id", in: "path", required: true, type: "string", example: "", ...overrides });
+const param = (overrides: Partial<PlaygroundParam>): PlaygroundParam => ({ name: "id", in: "path", required: true, type: "string", example: "", description: "", ...overrides });
 
 describe("initialParamValues", () => {
   it("starts each field with its spec example, keyed by location and name", () => {

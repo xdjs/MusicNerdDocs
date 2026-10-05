@@ -3,9 +3,9 @@ import { listMissingParams } from "@/lib/docs/playground/listMissingParams";
 import type { PlaygroundParam } from "@/lib/docs/playground/types";
 
 const params: PlaygroundParam[] = [
-  { name: "id", in: "path", required: true, type: "string", example: "" },
-  { name: "org_id", in: "query", required: false, type: "string", example: "" },
-  { name: "limit", in: "query", required: true, type: "integer", example: "" },
+  { name: "id", in: "path", required: true, type: "string", example: "", description: "" },
+  { name: "org_id", in: "query", required: false, type: "string", example: "", description: "" },
+  { name: "limit", in: "query", required: true, type: "integer", example: "", description: "" },
 ];
 
 describe("listMissingParams", () => {
