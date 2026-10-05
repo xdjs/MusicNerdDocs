@@ -12,7 +12,26 @@ Bound HTTP HTML reads by timeout, response bytes and redirects; reject private/r
 
 `getResearchStatus` exposes sanitized extraction outcomes: source ID, result category, captured time, HTTP status, stored character count and truncation. Never return job state wholesale, credentials, raw payloads or private source URLs. Knowledge reads remain side-effect free. A completed job means its sources were attempted, not that every source is readable or factually supports a question.
 
-This HTTP-only slice records browser-required/blocked sources rather than treating a search snippet as original evidence. Manual browser recovery for the requested production audit is kept distinguishable from automated ingestion. Durable browser-provider integration, immutable historical source retention, ingestion immediately after Web add/approve, and active topic boundaries remain separate unfinished phase-2 work.
+This HTTP-only slice records browser-required/blocked sources rather than treating a search snippet as original evidence. Manual browser recovery for the requested production audit is kept distinguishable from automated ingestion. Durable browser-provider integration, immutable historical source retention and active topic boundaries remain separate unfinished phase-2 work.
+
+## Automatic ingestion follow-up (October 5)
+
+Web add/approval transactions will queue one missing approved URL per durable job, including
+trusted contributor additions and admin bulk approval. Pending sources, uploads and existing
+originals are excluded. Per-source live uniqueness prevents duplicates without dropping new
+sources when another job is running. Queue failures roll back the source mutation.
+
+Internal version-2 job state records the source and approved claim generation and inherits
+the addition/approval activity. This is narrowly authorized ingestion of an approved public
+source, not impersonation of its contributor. The API worker rechecks the claim, lease,
+approval, URL and missing-text state before fetching and writing. Version-1 explicit API
+jobs keep their claimant/admin checks. No public request can choose version-2 state.
+Blocked/unsupported results finish visibly; reads never schedule or scrape.
+
+Web migration 0037 follows 0036, retaining one-live-job protection for existing/manual kinds
+and adding per-source automatic extraction uniqueness. Release the compatible API worker
+before Web automatic queueing. This follow-up does not change the public endpoint, retention
+policy, question prompts or promise immediate Lore-summary regeneration.
 
 ## Done when
 
