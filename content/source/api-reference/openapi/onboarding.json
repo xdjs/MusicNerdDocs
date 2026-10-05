@@ -334,6 +334,111 @@
           }
         }
       }
+    },
+    "/api/onboarding/{artistId}/state": {
+      "get": {
+        "summary": "Onboarding state",
+        "operationId": "getOnboardingState",
+        "security": [],
+        "description": "Where an artist's onboarding build is: which steps are confirmed and when. The artist's profile page polls this while the build runs, about every 2 seconds, and repaints each section as its step confirms: Links on `profiles`, Lore on `vault`, About on `publish`. It stops once `complete` is true.\n\nPublic: no credentials. It returns only step names and confirmation times. Responses aren't cached.\n\nOn a fresh claim the auto-build (`open` on the onboarding chat) confirms `profiles`, then `vault`, then `interview` and `publish` together when the About is saved: about 5, 9 and 22 seconds in on staging. An artist with no onboarding, or an ID that isn't an artist, returns every step `null` and `currentStep` `profiles`.",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist's onboarding state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingState"
+                },
+                "examples": {
+                  "complete": {
+                    "summary": "Built (Bio Ritmo on staging)",
+                    "value": {
+                      "status": "ok",
+                      "complete": true,
+                      "currentStep": null,
+                      "steps": {
+                        "profiles": "2026-10-02T23:33:42.122Z",
+                        "vault": "2026-10-02T23:33:46.437Z",
+                        "interview": "2026-10-02T23:33:58.667Z",
+                        "publish": "2026-10-02T23:33:58.667Z"
+                      }
+                    }
+                  },
+                  "building": {
+                    "summary": "Mid-build: profiles and sources done, writing the About",
+                    "value": {
+                      "status": "ok",
+                      "complete": false,
+                      "currentStep": "interview",
+                      "steps": {
+                        "profiles": "2026-10-02T23:33:42.122Z",
+                        "vault": "2026-10-02T23:33:46.437Z",
+                        "interview": null,
+                        "publish": null
+                      }
+                    }
+                  },
+                  "notStarted": {
+                    "summary": "Not started",
+                    "value": {
+                      "status": "ok",
+                      "complete": false,
+                      "currentStep": "profiles",
+                      "steps": {
+                        "profiles": null,
+                        "vault": null,
+                        "interview": null,
+                        "publish": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`artistId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist id"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The state couldn't be read. Retry; don't treat it as \"not started\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Onboarding state unavailable"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -361,6 +466,85 @@
           },
           "error": {
             "type": "string"
+          }
+        }
+      },
+      "OnboardingState": {
+        "type": "object",
+        "required": [
+          "status",
+          "complete",
+          "currentStep",
+          "steps"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "True once `publish` is confirmed: the profile is built. The page stops polling here."
+          },
+          "currentStep": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "profiles",
+              "vault",
+              "interview",
+              "publish",
+              null
+            ],
+            "description": "The first step, in order, without a confirmation. `null` once all four are confirmed. `profiles` for an artist that hasn't started."
+          },
+          "steps": {
+            "type": "object",
+            "required": [
+              "profiles",
+              "vault",
+              "interview",
+              "publish"
+            ],
+            "description": "When each step was confirmed (ISO 8601, UTC), or `null` if it hasn't been.",
+            "properties": {
+              "profiles": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Profiles found and linked. The Links section can show them."
+              },
+              "vault": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Sources saved. The Lore section can show them."
+              },
+              "interview": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "The interview step. The auto-build confirms it together with `publish`."
+              },
+              "publish": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "The Lore and About written. The About can show."
+              }
+            }
           }
         }
       }
