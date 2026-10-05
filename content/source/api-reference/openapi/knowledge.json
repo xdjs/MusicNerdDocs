@@ -1000,7 +1000,7 @@
             }
           },
           "409": {
-            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "description": "A source extraction job is already pending or running for this artist.",
             "content": {
               "application/json": {
                 "schema": {
