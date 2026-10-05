@@ -1,7 +1,7 @@
 {
-  "navigationPages": 15,
+  "navigationPages": 16,
   "guidePages": 4,
-  "apiPages": 11,
+  "apiPages": 12,
   "specifications": [
     "health.json",
     "knowledge.json",

@@ -53,7 +53,8 @@
               "api-reference/knowledge/search",
               "api-reference/knowledge/read-source",
               "api-reference/knowledge/history",
-              "api-reference/knowledge/research-status"
+              "api-reference/knowledge/research-status",
+              "api-reference/knowledge/extract"
             ]
           }
         ]
