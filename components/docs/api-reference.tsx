@@ -1,12 +1,20 @@
 import { Arrow } from '@/components/arrow';
 import Link from 'next/link';
-import type { DocPage } from '@/lib/docs';
+import type { ReactNode } from 'react';
+import { docs, docHref, type DocPage } from '@/lib/docs';
 import { getDocSpec, resolveReference, buildCurl, type ApiObject } from '@/lib/docs-server';
 import { DocsCode } from './docs-interactive';
 import { DocDescription, DocInlineDescription } from './docs-content';
-import { ApiPlayground } from './playground/api-playground';
+import { TryIt } from './playground/try-it';
 import { summarizeOperation } from '@/lib/docs/playground/summarizeOperation';
+import { responseExamples } from '@/lib/docs/ui/responseExamples';
+import { splitDescription } from '@/lib/docs/ui/splitDescription';
+import { isStagingApiUrl } from '@/lib/docs/ui/isStagingApiUrl';
 import { siteConfig } from '@/lib/config';
+import { CopyPage } from './copy-page';
+import { EndpointPath } from './endpoint-bar';
+import { ResponseExamplesCard } from './response-examples-card';
+import { ResponseSwitcher } from './response-switcher';
 
 function typeName(schema:ApiObject): string {
  if(schema.$ref)return schema.$ref.split('/').pop();
@@ -29,29 +37,47 @@ function Schema({value,spec,depth=0,seen=[]}:{value:ApiObject;spec:ApiObject;dep
   {schema.additionalProperties&&<details className="docs-schema-details"><summary>Additional properties</summary>{typeof schema.additionalProperties==='object'?<Schema value={schema.additionalProperties} spec={spec} depth={depth+1} seen={visited}/>:<p>Additional keys are allowed.</p>}</details>}
  </div>;
 }
-function Examples({media,spec,label}:{media:ApiObject;spec:ApiObject;label:string}) {
- const examples=media.examples?Object.entries(media.examples).map(([name,raw])=>({name,...resolveReference(raw as ApiObject,spec)})):media.example!==undefined?[{name:label,value:media.example}]:[];
- return <>{examples.map((example:ApiObject)=><div key={example.name}><DocDescription text={example.summary||example.description}/>{example.value!==undefined&&<DocsCode language="json" label={example.name}>{typeof example.value==='string'?example.value:JSON.stringify(example.value,null,2)}</DocsCode>}{example.externalValue&&<Link href={example.externalValue}>View example</Link>}</div>)}</>;
+function ParameterRow({param,spec}:{param:ApiObject;spec:ApiObject}) {
+ return <div className="docs-property"><div className="docs-property-heading"><code>{param.name}</code><span>{typeName(param.schema||{})}</span>{param.required&&<em>required</em>}</div><DocDescription text={param.description}/>{param.schema?.enum&&<p className="docs-property-values">Values: {param.schema.enum.map((v:unknown)=>JSON.stringify(v)).join(', ')}</p>}{param.schema?.default!==undefined&&<p className="docs-property-values">Default: {JSON.stringify(param.schema.default)}</p>}{param.schema?.properties&&<Schema value={param.schema} spec={spec}/>}</div>;
 }
-export async function ApiReference({page}:{page:DocPage}) {
+function Authorizations({security,spec}:{security:ApiObject[]|undefined;spec:ApiObject}) {
+ const schemes=[...new Set((security??[]).flatMap(item=>Object.keys(item)))].map(name=>({name,scheme:spec.components?.securitySchemes?.[name]||{}}));
+ return <section id="authorizations" className="mn-section"><h2>Authorizations</h2>{security?.length===0?<p className="mn-section-note">None. This endpoint is public.</p>:schemes.length?schemes.map(({name,scheme})=>{const bearer=scheme.scheme==='bearer';return <div className="docs-property" key={name}><div className="docs-property-heading"><code>{bearer?'Authorization':scheme.name||name}</code><span>string</span><span>{bearer?'header':scheme.in||'header'}</span><em>required</em></div><DocDescription text={`${bearer?'Bearer authentication header of the form `Bearer <token>`. ':''}${scheme.description||''}`}/></div>;}):<p className="mn-section-note">See the <Link href="/authentication">authentication guide</Link>.</p>}</section>;
+}
+export async function EndpointPage({page,footer}:{page:DocPage;footer?:ReactNode}) {
  if(!page.api?.spec)return null;
- const spec=await getDocSpec(page.api.spec);
- const pathItem=spec.paths[page.api.path]||{};
+ const doc=await getDocSpec(page.api.spec);
+ const pathItem=doc.paths[page.api.path]||{};
  const operation=pathItem[page.api.method.toLowerCase()];
  if(!operation)return <aside className="docs-callout docs-callout-warning"><span>Reference note</span><p>{page.gap}</p></aside>;
- const parameters=[...(pathItem.parameters||[]),...(operation.parameters||[])].map(param=>resolveReference(param,spec));
- const body=resolveReference(operation.requestBody,spec);
- const security=operation.security??spec.security;
- const request=buildCurl({method:page.api.method,endpoint:page.api.path,spec,operation,pathItem,baseUrl:siteConfig.apiUrl});
- return <div className="docs-api-content">
-  <div className="docs-endpoint"><span className={`docs-method docs-method-${page.api.method.toLowerCase()}`}>{page.api.method}</span><code>{page.api.path}</code></div>
-  <DocDescription text={operation.description}/>
-  {operation.deprecated&&<aside className="docs-callout docs-callout-warning"><span>Deprecated</span><p>This endpoint is marked deprecated in the source specification.</p></aside>}
-  <section id="authentication"><h2>Authentication</h2>{security?.length===0?<p>This endpoint does not require authentication.</p>:security?.length?<div>{security.map((item:ApiObject,index:number)=><div key={index}>{Object.entries(item).map(([name,scopes])=>{const scheme=spec.components?.securitySchemes?.[name]||{};return <p key={name}><code>{scheme.name||name}</code> {scheme.in?`in ${scheme.in}`:scheme.scheme||scheme.type||''}{Array.isArray(scopes)&&scopes.length?` · scopes: ${scopes.join(', ')}`:''}</p>;})}</div>)}</div>:<p>See the <Link href="/authentication">authentication guide</Link> for API key and account access requirements.</p>}</section>
-  <section id="request-example"><h2>Request</h2><DocsCode language="bash" label="cURL">{request}</DocsCode>{parameters.some(param=>param.in==='query'||param.in==='path')&&<p className="docs-small-note">Replace the YOUR_ placeholders with your values. Required query parameters are included; optional parameters are listed below.</p>}<ApiPlayground operation={summarizeOperation({method:page.api.method,path:page.api.path,spec})} baseUrl={siteConfig.apiUrl}/></section>
-  {parameters.length>0&&<section id="parameters"><h2>Parameters</h2>{['path','query','header','cookie'].map(location=>{const list=parameters.filter(param=>param.in===location);return list.length?<div className="docs-parameter-group" key={location}><h3>{location.charAt(0).toUpperCase()+location.slice(1)} parameters</h3>{list.map(param=><div className="docs-property" key={param.name}><div className="docs-property-heading"><code>{param.name}</code><span>{typeName(param.schema||{})}</span>{param.required&&<em>required</em>}</div><DocDescription text={param.description}/>{param.schema?.enum&&<p className="docs-property-values">Values: {param.schema.enum.map((v:unknown)=>JSON.stringify(v)).join(', ')}</p>}{param.schema?.default!==undefined&&<p className="docs-property-values">Default: {JSON.stringify(param.schema.default)}</p>}{param.schema?.properties&&<Schema value={param.schema} spec={spec}/>}</div>)}</div>:null;})}</section>}
-  {body.content&&<section id="request-body"><h2>Request body {body.required&&<span className="docs-required-label">required</span>}</h2><DocDescription text={body.description}/>{Object.entries(body.content).map(([format,media])=><div key={format}><p className="docs-media-type">{format}</p>{(media as ApiObject).schema&&<Schema value={(media as ApiObject).schema} spec={spec}/>}<Examples media={media as ApiObject} spec={spec} label="Request example"/></div>)}</section>}
-  <section id="responses"><h2>Responses</h2><div className="docs-responses">{Object.entries(operation.responses||{}).map(([status,raw])=>{const response=resolveReference(raw as ApiObject,spec);return <details key={status} open={status.startsWith('2')}><summary><span className={`docs-status ${status.startsWith('2')?'docs-status-success':''}`}>{status}</span><span><DocInlineDescription text={response.description?.split('\n')[0]||'Response'}/></span><i aria-hidden="true">+</i></summary><div className="docs-response-body"><DocDescription text={response.description?.includes('\n')?response.description:undefined}/>{Object.entries(response.headers||{}).map(([name,value])=><div key={name} className="docs-property"><div className="docs-property-heading"><code>{name}</code><span>response header</span></div><DocDescription text={resolveReference(value as ApiObject,spec).description}/></div>)}{Object.entries(response.content||{}).map(([format,media])=><div key={format}><p className="docs-media-type">{format}</p>{(media as ApiObject).schema&&<Schema value={(media as ApiObject).schema} spec={spec}/>}<Examples media={media as ApiObject} spec={spec} label={`${status} example`}/></div>)}{!response.content&&<p className="docs-small-note">No response body schema is specified.</p>}</div></details>;})}</div></section>
-  <section id="specification" className="docs-specification"><h2>Full specification</h2><p>Download the OpenAPI file for complete schemas, constraints, and examples.</p><Link href={`/spec/${page.api.spec}`} download>Download {page.api.spec} <span aria-hidden="true"><Arrow direction="down" /></span></Link><details><summary>View operation source</summary><DocsCode language="json">{JSON.stringify(operation,null,2)}</DocsCode></details></section>
+ const parameters=[...(pathItem.parameters||[]),...(operation.parameters||[])].map(param=>resolveReference(param,doc));
+ const body=resolveReference(operation.requestBody,doc);
+ const security=operation.security??doc.security;
+ const request=buildCurl({method:page.api.method,endpoint:page.api.path,spec:doc,operation,pathItem,baseUrl:siteConfig.apiUrl});
+ const {lead,rest}=splitDescription(operation.description);
+ const endpoints=docs.filter(item=>item.api).map(item=>({href:docHref(item.slug),title:item.title,method:item.api!.method}));
+ const responses=Object.entries(operation.responses||{}).map(([status,raw])=>{const response=resolveReference(raw as ApiObject,doc);const [mediaType,media]=Object.entries(response.content||{})[0]??[];return {status,mediaType,panel:<div className="mn-response-panel"><DocDescription text={response.description}/>{Object.entries(response.headers||{}).map(([name,value])=><div key={name} className="docs-property"><div className="docs-property-heading"><code>{name}</code><span>response header</span></div><DocDescription text={resolveReference(value as ApiObject,doc).description}/></div>)}{(media as ApiObject|undefined)?.schema&&<Schema value={(media as ApiObject).schema} spec={doc}/>}</div>};});
+ return <div className="mn-endpoint-page">
+  <header className="mn-endpoint-head">
+   <p className="mn-label">{page.group}</p>
+   <h1>{page.title}</h1>
+   {lead&&<p className="mn-lead"><DocInlineDescription text={lead}/></p>}
+   {rest&&<DocDescription text={rest}/>}
+   {operation.deprecated&&<aside className="docs-callout docs-callout-warning"><span>Deprecated</span><p>This endpoint is marked deprecated in the source specification.</p></aside>}
+   <CopyPage slug={page.slug}/>
+   <div className="mn-endpoint-bar"><EndpointPath method={page.api.method} path={page.api.path}/><TryIt operation={summarizeOperation({method:page.api.method,path:page.api.path,spec:doc})} baseUrl={siteConfig.apiUrl} staging={isStagingApiUrl(siteConfig.apiUrl)} title={page.title} lead={lead} endpoints={endpoints}/></div>
+  </header>
+  <aside className="mn-examples" aria-label="Examples">
+   <DocsCode language="bash" label="cURL">{request}</DocsCode>
+   <ResponseExamplesCard examples={responseExamples(operation,doc)}/>
+  </aside>
+  <div className="mn-endpoint-main">
+   <Authorizations security={security} spec={doc}/>
+   {(['path','query','header','cookie'] as const).map(location=>{const list=parameters.filter(param=>param.in===location);return list.length?<section id={`${location}-parameters`} className="mn-section" key={location}><h2>{location.charAt(0).toUpperCase()+location.slice(1)} Parameters</h2>{list.map(param=><ParameterRow key={param.name} param={param} spec={doc}/>)}</section>:null;})}
+   {body.content&&<section id="body" className="mn-section">{Object.entries(body.content).map(([format,media])=><div key={format}><div className="mn-section-head"><h2>Body</h2><span className="mn-media-type">{format}</span>{body.required&&<span className="docs-required-label">required</span>}</div><DocDescription text={body.description}/>{(media as ApiObject).schema&&<Schema value={(media as ApiObject).schema} spec={doc}/>}</div>)}</section>}
+   <ResponseSwitcher responses={responses}/>
+   <section id="specification" className="mn-section docs-specification"><h2>OpenAPI</h2><p>The full operation, with every schema and example.</p><Link href={`/spec/${page.api.spec}`} download>Download {page.api.spec} <span aria-hidden="true"><Arrow direction="down" /></span></Link><details><summary>View operation source</summary><DocsCode language="json">{JSON.stringify(operation,null,2)}</DocsCode></details></section>
+   {footer}
+  </div>
  </div>;
 }
