@@ -22,7 +22,7 @@ export function SiteHeader({ pages, tabs }: { pages: NavPage[]; tabs: { name: st
         <HeaderSearch pages={pages} />
         <nav aria-label="Site" className="mn-header-links">
           <a href={siteConfig.apiRepoUrl} className="mn-desktop-only">GitHub</a>
-          <a href={siteConfig.appUrl} className="mn-button mn-desktop-only">
+          <a href={siteConfig.appUrl} className="mn-button mn-desktop-only" target="_blank" rel="noopener noreferrer">
             Open Music Nerd
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
           </a>

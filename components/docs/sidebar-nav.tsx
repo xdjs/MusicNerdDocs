@@ -14,7 +14,7 @@ export function SidebarNav({ pages, onNavigate }: { pages: NavPage[]; onNavigate
   return (
     <nav aria-label="Documentation" className="mn-sidebar-nav">
       <div className="mn-nav-links">
-        <a href={siteConfig.appUrl} className="mn-nav-app">
+        <a href={siteConfig.appUrl} className="mn-nav-app" target="_blank" rel="noopener noreferrer">
           <span aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 4h6v6M20 4 10 14M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
           </span>
