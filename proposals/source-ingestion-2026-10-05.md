@@ -28,9 +28,11 @@ approval, URL and missing-text state before fetching and writing. Version-1 expl
 jobs keep their claimant/admin checks. No public request can choose version-2 state.
 Blocked/unsupported results finish visibly; reads never schedule or scrape.
 
-Web migration 0037 follows 0036, retaining one-live-job protection for existing/manual kinds
-and adding per-source automatic extraction uniqueness. Release the compatible API worker
-before Web automatic queueing. This follow-up does not change the public endpoint, retention
+Web migration 0037 follows 0036 and retains the existing live-job index and conflict-query
+compatibility. Automatic jobs wait in an internal `queued` backlog, with per-source
+uniqueness; the API claims one per artist at a time and reports waiting jobs as `pending`
+through the public tools. Old workers ignore queued work. Apply 0037 before either new
+API or Web writes, and release the compatible API worker before Web automatic queueing. This follow-up does not change the public endpoint, retention
 policy, question prompts or promise immediate Lore-summary regeneration.
 
 ## Done when
