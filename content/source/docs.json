@@ -14,7 +14,7 @@
         "groups": [
           { "group": "Health", "pages": ["api-reference/health/get"] },
           { "group": "Research", "pages": ["api-reference/research/advance", "api-reference/research/scheduler", "api-reference/artists/research-refresh"] },
-          { "group": "Onboarding", "pages": ["api-reference/onboarding/chat"] }
+          { "group": "Onboarding", "pages": ["api-reference/onboarding/chat", "api-reference/onboarding/state"] }
         ]
       }
     ]
