@@ -419,7 +419,7 @@
       "get": {
         "operationId": "readArtistSource",
         "summary": "Read an original passage",
-        "description": "Implementation preview contract \u2014 not released. Read the requested revision and window. Adjust boundaries to preserve Unicode. A changed revision returns 409; first version does not promise immutable historical storage. No arbitrary URL fetch.",
+        "description": "Retention preview contract: read the exact requested current or retained source revision. Current eligibility and claimant/admin access are rechecked in one read-only snapshot. Older retained text includes version.state=historical, currentRevision and capturedAt; no silent substitution. Captures begin when the migration is deployed and are deleted with the source. Unknown/pre-retention revisions return 409. No arbitrary URL fetch, model call or write.",
         "security": [
           {
             "privyBearer": []
@@ -532,7 +532,7 @@
             }
           },
           "409": {
-            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "description": "Requested revision was not retained; revision_changed. Reload current metadata explicitly; never silently substitute it.",
             "content": {
               "application/json": {
                 "schema": {
@@ -552,7 +552,7 @@
             }
           },
           "413": {
-            "description": "The stored corpus or one response exceeds the supported bounds; no partial successful corpus is returned.",
+            "description": "Response exceeds 128 KiB, or historical lookup exceeds 512 snapshots / 4 million serialized snapshot characters; revision_history_too_large for the latter.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1557,6 +1557,36 @@
           },
           "truncated": {
             "type": "boolean"
+          },
+          "version": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "currentRevision",
+              "capturedAt"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "current",
+                  "historical"
+                ]
+              },
+              "currentRevision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "capturedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Retention time, not publication/event time; null for a current read."
+              }
+            }
           }
         },
         "required": [
@@ -1565,7 +1595,8 @@
           "totalChars",
           "nextStart",
           "returnedChars",
-          "truncated"
+          "truncated",
+          "version"
         ],
         "description": "Requested window from the pinned revision. nextStart continues the same revision; null means exhausted. Legacy empty/unreadable extraction is a successful empty window with unknown/failed extraction state where known, not proof of complete extraction."
       },
