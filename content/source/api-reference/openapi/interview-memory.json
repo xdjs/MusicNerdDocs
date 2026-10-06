@@ -1,0 +1,664 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mandatory interview memory",
+    "version": "0.1.0",
+    "description": "Planned third delivery slice; not released. Schema and API implementation are required before Web consumption."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/artist/{id}/interview/memory": {
+      "get": {
+        "summary": "Read mandatory interview memory",
+        "description": "Current claimant/admin only. Latest exact saved answer, all corrections and active scoped boundaries. No top-k omission. Follow revision-bound continuations; the host must assemble every exact field before drafting. Public research credentials grant no access. Sitting must be the latest offered sitting or the next one being prepared; stale sitting requests return 409.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sitting",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "maxChars",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 20000,
+              "default": 12000
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current claimant/admin required for private operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or offered question unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State or revision changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Mandatory memory or active boundary limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Memory storage or authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/interview/boundaries": {
+      "post": {
+        "summary": "Save an explicit interview boundary",
+        "description": "Capture the artist\u2019s exact instruction from an existing offered question. Scope is this sitting or until explicitly retracted. A plain skip does not create this record. Idempotent request IDs, current authority and audit commit together.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoundaryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current claimant/admin required for private operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or offered question unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State or revision changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Mandatory memory or active boundary limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Memory storage or authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "requestId",
+                  "questionKey",
+                  "wording",
+                  "scope"
+                ],
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "questionKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "wording": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  },
+                  "scope": {
+                    "enum": [
+                      "sitting",
+                      "until_retracted"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/interview/boundaries/{boundaryId}/retract": {
+      "post": {
+        "summary": "Retract an interview boundary",
+        "description": "Retract an exact current boundary revision under claimant/admin authority, with immutable wording and attribution. Repeat retraction is idempotent.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "boundaryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoundaryResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current claimant/admin required for private operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or offered question unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State or revision changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Mandatory memory or active boundary limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Memory storage or authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "revision"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "PrivyAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Current artist claimant or administrator Privy access token."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error",
+          "code"
+        ],
+        "properties": {
+          "status": {
+            "const": "error"
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "Memory": {
+        "type": "object",
+        "required": [
+          "status",
+          "snapshotId",
+          "sitting",
+          "latestAnswer",
+          "totalEntries",
+          "entries",
+          "constraintsComplete",
+          "budget"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "snapshotId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "sitting": {
+            "type": "integer"
+          },
+          "latestAnswer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "entryId",
+                  "revision"
+                ],
+                "properties": {
+                  "entryId": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            ]
+          },
+          "totalEntries": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "entryId",
+                "revision",
+                "kind",
+                "fields",
+                "metadata"
+              ],
+              "properties": {
+                "entryId": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "kind": {
+                  "enum": [
+                    "latest_answer",
+                    "correction",
+                    "boundary"
+                  ]
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "text",
+                      "start",
+                      "end",
+                      "totalChars",
+                      "complete"
+                    ],
+                    "properties": {
+                      "name": {
+                        "enum": [
+                          "question",
+                          "answer",
+                          "claim",
+                          "correction",
+                          "wording"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "totalChars": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "complete": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "metadata": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "constraintsComplete": {
+            "type": "boolean"
+          },
+          "budget": {
+            "type": "object",
+            "properties": {
+              "returnedChars": {
+                "type": "integer"
+              },
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "Boundary": {
+        "type": "object",
+        "required": [
+          "id",
+          "revision",
+          "wording",
+          "scope",
+          "sitting",
+          "questionKey",
+          "createdAt",
+          "retractedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "wording": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "scope": {
+            "enum": [
+              "sitting",
+              "until_retracted"
+            ]
+          },
+          "sitting": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "questionKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "retractedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "BoundaryResult": {
+        "type": "object",
+        "required": [
+          "status",
+          "boundary"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "boundary": {
+            "$ref": "#/components/schemas/Boundary"
+          }
+        }
+      }
+    }
+  }
+}

@@ -76,6 +76,8 @@ An article, interview, release page or individual post is a Lore candidate. A su
 
 ## Mandatory interview memory (separate API slice)
 
+The detailed [memory contract](interview-memory.md) specifies the mandatory read, explicit scoped boundary capture/retraction, exact-field pagination and host completeness gate.
+
 A claimant/admin memory read returns the latest exact persisted answer, all applicable corrections and active explicit topic boundaries, plus completeness and a continuation when needed. Boundaries retain the artist's exact wording, originating answer/turn, scope, lifetime and retraction. A skip alone does not create a permanent boundary. No generic autonomous memory-write tool is added.
 
 Web injects this memory and the latest exact unsaved answer on every turn, including retries and context pruning. Older permitted answers are retrieved through shared history tools as needed. Missing/partial/error memory prevents a question from being presented as fully checked. Offer/sitting chronology is fixed independently from answer update timestamps.

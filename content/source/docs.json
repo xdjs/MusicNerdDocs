@@ -62,6 +62,14 @@
               "api-reference/knowledge/research-status",
               "api-reference/knowledge/extract"
             ]
+          },
+          {
+            "group": "Interview memory",
+            "pages": [
+              "api-reference/interview/memory",
+              "api-reference/interview/boundary",
+              "api-reference/interview/retract-boundary"
+            ]
           }
         ]
       }
