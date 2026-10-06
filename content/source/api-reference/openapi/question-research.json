@@ -564,8 +564,8 @@
     },
     "/api/artist/{id}/research/evidence/{evidenceId}": {
       "get": {
-        "summary": "Read a retained discovery original",
-        "description": "Read exact immutable revision and UTF-16 window. Public research requires confirmed identity and eligible curation. Revoked/wrong/incorrect evidence is unavailable; no silent revision substitution.",
+        "summary": "Read a public research original",
+        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Uploaded/private material and interview history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
         "security": [
           {
             "PrivyAuth": []
@@ -590,7 +590,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid"
+              "description": "URL-encoded sourceId from a returned reference, or a discovery evidence UUID"
             }
           },
           {
@@ -608,7 +608,8 @@
             "schema": {
               "type": "integer",
               "minimum": 0,
-              "default": 0
+              "default": 0,
+              "maximum": 4000000
             }
           },
           {

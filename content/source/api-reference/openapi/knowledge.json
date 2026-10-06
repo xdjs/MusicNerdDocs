@@ -16,7 +16,7 @@
       "get": {
         "operationId": "getArtistBrief",
         "summary": "Get artist orientation",
-        "description": "Implementation preview contract \u2014 not released. Use stored facts and a generated navigation summary to choose evidence to inspect; no generation, source fetch or job enqueue. Current history/constraints must be loaded separately.",
+        "description": "Use stored facts and a generated navigation summary to choose evidence to inspect; no generation, source fetch or job enqueue. Current history/constraints must be loaded separately.",
         "security": [
           {
             "privyBearer": []
@@ -122,7 +122,7 @@
       "get": {
         "operationId": "listArtistSources",
         "summary": "List accessible sources",
-        "description": "Implementation preview contract \u2014 not released. Metadata for approved vault sources and own social captions/transcripts. Approval is not public publication. Unknown legacy readiness is explicit.",
+        "description": "Metadata for approved vault sources and own social captions/transcripts. Approval is not public publication. Unknown legacy readiness is explicit.",
         "security": [
           {
             "privyBearer": []
@@ -264,7 +264,7 @@
       "get": {
         "operationId": "searchArtistKnowledge",
         "summary": "Find original evidence",
-        "description": "Implementation preview contract \u2014 not released. Search all accessible stored source text or declare omitted coverage. Do not search only the start of a long source. Match qualification and source identity survive ranking. History/corrections are loaded with getInterviewHistory, never dependent on a semantic hit.",
+        "description": "Search all accessible stored source text or declare omitted coverage. Do not search only the start of a long source. Match qualification and source identity survive ranking. History/corrections are loaded with getInterviewHistory, never dependent on a semantic hit.",
         "security": [
           {
             "privyBearer": []
@@ -419,7 +419,7 @@
       "get": {
         "operationId": "readArtistSource",
         "summary": "Read an original passage",
-        "description": "Retention preview contract: read the exact requested current or retained source revision. Current eligibility and claimant/admin access are rechecked in one read-only snapshot. Older retained text includes version.state=historical, currentRevision and capturedAt; no silent substitution. Captures begin when the migration is deployed and are deleted with the source. Unknown/pre-retention revisions return 409. No arbitrary URL fetch, model call or write. Set includeVersion=true to opt in. Without it, preserve the released current-only response shape and 409 behavior.",
+        "description": "Released original-source retention: read the exact requested current or retained source revision. Current eligibility and claimant/admin access are rechecked in one read-only snapshot. Older retained text includes version.state=historical, currentRevision and capturedAt; no silent substitution. Captures begin when the migration is deployed and are deleted with the source. Unknown/pre-retention revisions return 409. No arbitrary URL fetch, model call or write. Set includeVersion=true to opt in. Without it, preserve the released current-only response shape and 409 behavior.",
         "security": [
           {
             "privyBearer": []
@@ -578,7 +578,7 @@
       "get": {
         "operationId": "getInterviewHistory",
         "summary": "Read answers and corrections",
-        "description": "Implementation preview contract \u2014 not released. Artist-scoped exact answer/correction field slices, corrections first, then offer order and ID. Current correction traversal completeness is separate from unavailable durable boundaries. The client supplies the latest exact unsaved answer independently.",
+        "description": "Artist-scoped exact answer/correction field slices, corrections first, then offer order and ID. Current correction traversal completeness is separate from unavailable durable boundaries. The client supplies the latest exact unsaved answer independently.",
         "security": [
           {
             "privyBearer": []
@@ -742,7 +742,7 @@
       "get": {
         "operationId": "getResearchStatus",
         "summary": "Read research progress",
-        "description": "Implementation preview contract \u2014 not released. Strict storage read with sanitized job fields and current evidence coverage. Does not run workers, create jobs or expose raw provider state.",
+        "description": "Strict storage read with sanitized job fields and current evidence coverage. Does not run workers, create jobs or expose raw provider state.",
         "security": [
           {
             "privyBearer": []
@@ -870,7 +870,7 @@
       "post": {
         "operationId": "requestSourceExtraction",
         "summary": "Recover missing source text",
-        "description": "Draft; requires source_extract schema migration. Queue one to twenty approved vault URL records with missing bodies. Existing originals and uploaded files are never overwritten. HTTP-only extraction records blocked/empty/unsupported results; it does not guarantee a complete article. Call deliberately from trusted host code, never during a read. Use research/status for results.\n\nRead `getResearchStatus` for `extractionOutcomes` on the returned job: source ID, result status, capture time, HTTP status, stored character count and truncation. A completed job means each selected source was attempted. A blocked or empty result does not supply original evidence.",
+        "description": "Released with the source_extract schema migration. Queue one to twenty approved vault URL records with missing bodies. Existing originals and uploaded files are never overwritten. HTTP-only extraction records blocked/empty/unsupported results; it does not guarantee a complete article. Call deliberately from trusted host code, never during a read. Use research/status for results.\n\nRead `getResearchStatus` for `extractionOutcomes` on the returned job: source ID, result status, capture time, HTTP status, stored character count and truncation. A completed job means each selected source was attempted. A blocked or empty result does not supply original evidence.",
         "security": [
           {
             "privyBearer": []
@@ -1842,7 +1842,8 @@
               "lore_refresh",
               "source_search",
               "latest_refresh",
-              "source_extract"
+              "source_extract",
+              "question_research"
             ]
           },
           "status": {
