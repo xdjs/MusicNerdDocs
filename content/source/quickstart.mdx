@@ -17,12 +17,12 @@ curl https://musicnerd-api.vercel.app/api/health
 
 ## Call an endpoint for an artist
 
-Endpoints that change an artist need the artist's claimant (or an admin) signed in. Music Nerd signs requests with the user's Privy access token, sent as a Bearer token:
+Endpoints that change an artist need the artist's claimant (or an admin) signed in. Music Nerd signs requests with the user's access token, sent as a Bearer token:
 
 ```bash
 curl --request POST \
   --url https://musicnerd-api.vercel.app/api/artist/YOUR_ARTIST_ID/research/refresh \
-  --header 'Authorization: Bearer YOUR_PRIVY_ACCESS_TOKEN'
+  --header 'Authorization: Bearer YOUR_ACCESS_TOKEN'
 ```
 
 Copy your token at [musicnerd.net/access](https://musicnerd.net/access) after signing in. [Authentication](/authentication) has the steps.

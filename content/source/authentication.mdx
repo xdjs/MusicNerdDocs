@@ -1,6 +1,6 @@
 ---
 title: 'Authentication'
-description: 'Public endpoints, Privy access tokens, and the scheduler secret.'
+description: 'Public endpoints, access tokens, and the scheduler secret.'
 ---
 
 Each endpoint's reference page states which of these it needs.
@@ -9,19 +9,22 @@ Each endpoint's reference page states which of these it needs.
 
 Read-only endpoints that expose nothing private need no credentials. Endpoints are public unless they return private data or change something.
 
-## Privy access token
+## Access token
 
-Endpoints that change an artist need the artist's approved claimant or a Music Nerd admin. They take the user's [Privy](https://www.privy.io) access token as a Bearer token.
+Endpoints that change an artist need the artist's approved claimant or a Music Nerd admin. They take the user's access token as a Bearer token.
 
 To get one:
 
 1. Sign in at [musicnerd.net](https://musicnerd.net): open the menu at the top right and choose **Log In**.
 2. Open [musicnerd.net/access](https://musicnerd.net/access).
 3. Select **Copy token**.
+
+   ![The access page at musicnerd.net/access, with Copy token and Refresh token buttons under the token](/images/access-token-page.png)
+
 4. Send it on each request:
 
 ```bash
---header 'Authorization: Bearer YOUR_PRIVY_ACCESS_TOKEN'
+--header 'Authorization: Bearer YOUR_ACCESS_TOKEN'
 ```
 
 Or paste it into the **Try it** panel on any reference page.

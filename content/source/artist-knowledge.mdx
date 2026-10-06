@@ -9,7 +9,7 @@ MusicNerdAPI stores shared artist evidence. MusicNerdWeb and other agents use th
 
 ## Authentication and scope
 
-Use the current user's Privy access token. Vault material and interview history require the artist's approved claimant or a Music Nerd admin. Every request, including pagination and passage expansion, rechecks authorization. Source approval is not permission to publish private vault material. Responses use `Cache-Control: private, no-store`.
+Use the current user's access token. Vault material and interview history require the artist's approved claimant or a Music Nerd admin. Every request, including pagination and passage expansion, rechecks authorization. Source approval is not permission to publish private vault material. Responses use `Cache-Control: private, no-store`.
 
 The application binds artist ID, API origin and credential lookup when creating tools. The model receives none of those as tool arguments. Six read tools are available; `requestArtistResearch` is added only when the host enables the existing authenticated refresh operation. Reads make no provider or model calls.
 
