@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test, expect } from 'vitest';
 const { buildCurl, resolveReference }: typeof import('../lib/docs-server') = await import(new URL('../lib/docs-server.ts',import.meta.url).href);
 const { resolveDocsHref }: typeof import('../lib/docs-paths') = await import(new URL('../lib/docs-paths.ts',import.meta.url).href);
@@ -19,9 +19,10 @@ test('every navigation page is built, and every OpenAPI operation has a referenc
  }
 });
 
-test('guide links resolve to pages on this site',()=>{
+test('guide links resolve to pages or public files on this site',()=>{
  const valid=new Set(['/','/api-reference','/llms.txt','/llms-full.txt',...pages.map((page:{slug:string})=>`/${page.slug}`)]);
- for(const page of pages)for(const [,url] of page.body.matchAll(/(?:href="|\]\()(\/[^"\s)]+)/g))expect(valid.has(resolveDocsHref(url).split('#')[0]), `Broken docs link ${page.slug}: ${url}`).toBeTruthy();
+ const isPublicFile=(url:string)=>existsSync(new URL(`../public${url}`,import.meta.url));
+ for(const page of pages)for(const [,url] of page.body.matchAll(/(?:href="|\]\()(\/[^"\s)]+)/g))expect(valid.has(resolveDocsHref(url).split('#')[0])||isPublicFile(url), `Broken docs link ${page.slug}: ${url}`).toBeTruthy();
  expect(resolveDocsHref('https://docs.musicnerd.xyz/quickstart#call')).toBe('/quickstart#call');
  expect(resolveDocsHref('/index')).toBe('/');
 });

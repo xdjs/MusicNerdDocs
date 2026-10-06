@@ -16,6 +16,15 @@
 .mn-copy-page > button { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 0; background: transparent; color: var(--mn-text); cursor: pointer; }
 .mn-copy-page > button + button { width: 34px; padding: 0; justify-content: center; border-left: 1px solid var(--mn-border); color: var(--mn-muted); }
 .mn-copy-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; width: 290px; padding: 6px; background: var(--mn-surface); border: 1px solid var(--mn-border); border-radius: 14px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14); }
+@media (min-width: 801px) {
+  /* Desktop: Copy page sits on the title's row, right-aligned (Sweetman, 2026-10-06). Phones keep it on its own line. */
+  .mn-article-head, .mn-endpoint-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center; }
+  .mn-article-head > *, .mn-endpoint-head > * { grid-column: 1 / -1; }
+  .mn-article-head > h1, .mn-endpoint-head > h1 { grid-column: 1; grid-row: 2; }
+  .mn-article-head > .mn-copy-page, .mn-endpoint-head > .mn-copy-page { grid-column: 2; grid-row: 2; justify-self: end; align-self: center; margin: 0 0 10px; }
+  .mn-article-head > .mn-label, .mn-endpoint-head > .mn-label { grid-row: 1; }
+  .mn-article-head > .mn-copy-page .mn-copy-menu, .mn-endpoint-head > .mn-copy-page .mn-copy-menu { left: auto; right: 0; }
+}
 .mn-copy-menu > a, .mn-copy-menu > button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 6px 8px; border: 0; border-radius: 10px; background: transparent; text-align: left; text-decoration: none; color: var(--mn-text); cursor: pointer; }
 .mn-copy-menu > a:hover, .mn-copy-menu > button:hover, .mn-copy-menu > a:focus-visible, .mn-copy-menu > button:focus-visible { background: var(--mn-chip); }
 .mn-menu-icon { width: 32px; height: 32px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--mn-border); border-radius: 8px; background: var(--mn-surface); color: var(--mn-muted); }
@@ -103,6 +112,7 @@
 .docs-prose a:not(.docs-card-title) { color: var(--mn-link); text-underline-offset: 3px; }
 .docs-prose ul, .docs-prose ol { padding-left: 22px; }
 .docs-prose li { margin: 6px 0; }
+.docs-prose img { display: block; width: 100%; max-width: 640px; height: auto; margin: 14px 0; border: 1px solid var(--mn-border); border-radius: 12px; }
 .docs-prose code:not(pre code) { font-family: var(--mn-mono); font-size: 0.85em; padding: 1px 5px; background: var(--mn-chip); border-radius: 5px; }
 .docs-prose .docs-code { margin: 22px 0; }
 .docs-prose hr { border: 0; border-top: 1px solid var(--mn-border); margin: 32px 0; }
