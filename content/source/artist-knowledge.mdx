@@ -3,7 +3,7 @@ title: "Artist knowledge for agents"
 description: "Retrieve original artist evidence, exact history and explicit coverage through one API."
 ---
 
-<Warning>Implementation preview contract. These endpoints are not released. Persistent topic boundaries, durable link ingestion and historical version retention remain tracked work in MusicNerdWeb#1424.</Warning>
+<Warning>The shared reads and durable approved-link ingestion are released. Historical source retention described below is a new preview contract pending its schema/API rollout. Persistent topic boundaries and Web interviewer integration remain tracked work in MusicNerdWeb#1424 and #1422.</Warning>
 
 MusicNerdAPI stores shared artist evidence. MusicNerdWeb and other agents use the same HTTP reads. A source summary can suggest what to open; every factual premise must resolve to original text. The interviewer integration follows in a separate Web PR.
 
@@ -25,11 +25,15 @@ History reports `memory.boundaryState: not_implemented` and `constraintsComplete
 
 ## Original evidence and revisions
 
-Source identity names its record and content type, never its ranking position. A SHA-256 revision covers citation-relevant metadata and exact stored text. Listing/search returns source IDs and revisions; a read against changed content returns 409. Historical copies are not retained by this first read interface. A removed or newly ineligible source is unavailable even if a caller has an old reference.
+Set `includeVersion=true` to opt into retained reads and their version metadata. The updated SDK sets this automatically. Without this parameter, the released current-only behavior and response shape remain unchanged (409 if the content changed), so existing strict clients keep working.
+
+Source identity names its record and content type, never its ranking position. A SHA-256 revision covers citation-relevant metadata and exact stored text. Listing/search returns current source IDs and revisions. In the retention preview, reading a retained older revision returns that exact original passage with `version.state: historical`, the `currentRevision` and its retention `capturedAt`. A current read reports `version.state: current` and a null capture time. The capture time is when the database retained the old version, not when the source was published or the event occurred. An unknown or pre-retention revision returns `409 revision_changed`; the API never substitutes current text. A removed or newly ineligible source is unavailable even if a caller has an old reference.
 
 Passage offsets are zero-based, half-open UTF-16 code units. Windows preserve surrogate pairs. Page numbers/audio times stay null without a trustworthy extraction map. Titles/descriptions are publisher metadata, distinct from body text. A social account username does not verify the speaker; event dates and original/repost relationships remain unknown unless established. Upload/publication time never supplies an event date.
 
 Only extracted vault body text is searchable evidence; a title or snippet alone does not make a source readable. Reel transcripts retain provider provenance and speaker uncertainty. Legacy website extraction may be capped at 50,000 characters and reel text at 12,000. Text presence does not certify complete PDF/OCR extraction.
+
+Retention covers approved Lore bodies (including extracted PDFs), own-post captions and supported stored reel transcripts from deployment of the capture migration forward. It does not recover already-overwritten content, version generated summaries or retain past answers/corrections in this slice. Updates retain the previous eligible evidence in the same database transaction. Ordinary reads do not write or scrape. Deleting the source deletes retained copies; revoked approval, ownership or source eligibility blocks access to old copies too. Historical text remains evidence of what the source previously said and must be read alongside current corrections, never silently treated as current truth.
 
 ## Bounds and failures
 
@@ -38,6 +42,8 @@ Listing and job/history pages return 20 records by default, at most 50. Search r
 Retrieval ranks overlapping original windows with BM25 term rarity/frequency/length weighting and a bonus for adjacent non-stopword query terms. Case, Latin accents, within-word apostrophes and English word forms are normalized for matching only; returned text, revisions and offsets remain exact. The already-bound artist name is omitted from ranking terms when other meaningful query terms exist. Titles/descriptions are not ranked as original evidence. This remains lexical retrieval; non-English morphology and semantic equivalence are not generally handled.
 
 A budget-clipped hit shorter than 256 characters is skipped rather than returned as a fragment; a complete naturally short source remains eligible. `truncated` records omitted eligible context. The agent must still open originals and resolve attribution, dates, scope and contradictions. Ranking and corpus coverage do not establish factual support or semantic/hybrid retrieval superiority.
+
+A passage read loads only its source. If the current revision differs, lookup is bounded to 512 retained snapshots and 4 million serialized snapshot characters for that source; overflow returns `413 revision_history_too_large`, never a substituted revision. Current reads do not load version history. Historical lookup also enforces the existing response/window bounds.
 
 A snapshot supports up to 5,000 rows per source/history table and 4 million serialized snapshot characters, including metadata; overflow returns 413, never a silently incomplete success. This bound must be evaluated before a broader archive rollout.
 
