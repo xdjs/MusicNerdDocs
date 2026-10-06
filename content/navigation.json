@@ -9,6 +9,12 @@
           "quickstart",
           "authentication"
         ]
+      },
+      {
+        "group": "Agent knowledge",
+        "pages": [
+          "artist-knowledge"
+        ]
       }
     ]
   },
@@ -34,6 +40,18 @@
         "pages": [
           "api-reference/onboarding/chat",
           "api-reference/onboarding/state"
+        ]
+      },
+      {
+        "group": "Artist knowledge",
+        "pages": [
+          "api-reference/knowledge/brief",
+          "api-reference/knowledge/sources",
+          "api-reference/knowledge/search",
+          "api-reference/knowledge/read-source",
+          "api-reference/knowledge/history",
+          "api-reference/knowledge/research-status",
+          "api-reference/knowledge/extract"
         ]
       }
     ]

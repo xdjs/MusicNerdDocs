@@ -1,0 +1,1847 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd shared artist knowledge \u2014 draft contract",
+    "version": "0.1.0-proposal",
+    "description": "Six proposed read operations plus the existing research refresh. New knowledge/status routes are not deployed. See artist-knowledge-tools.md and MusicNerdWeb#1424. Authentication protects private vault/history material; no anonymous raw evidence tier."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Current API project; proposed routes are NOT available yet."
+    }
+  ],
+  "paths": {
+    "/api/artist/{id}/knowledge/brief": {
+      "get": {
+        "operationId": "getArtistBrief",
+        "summary": "Get artist orientation (proposed)",
+        "description": "DRAFT \u2014 not deployed. Use stored facts and a generated navigation summary to choose evidence to inspect; no generation, source fetch or job enqueue. Current history/constraints must be loaded separately.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded stored evidence; Cache-Control: private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Brief"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Privy authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source unavailable after artist authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request throttled; respect Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry, when supplied.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable; never represented as an empty successful corpus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge/sources": {
+      "get": {
+        "operationId": "listArtistSources",
+        "summary": "List accessible sources (proposed)",
+        "description": "DRAFT \u2014 not deployed. Metadata for approved vault sources and own social captions/transcripts. Approval is not public publication. Unknown legacy readiness is explicit.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum records; response character/byte budgets may require an earlier continuation.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque artist/filter-bound continuation. A changed ordered corpus returns 409.",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "Optional source-kind filter.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vault",
+                "social_caption",
+                "reel_transcript"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded stored evidence; Cache-Control: private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Privy authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source unavailable after artist authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request throttled; respect Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry, when supplied.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable; never represented as an empty successful corpus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge/search": {
+      "get": {
+        "operationId": "searchArtistKnowledge",
+        "summary": "Find original evidence (proposed)",
+        "description": "DRAFT \u2014 not deployed. Search all accessible stored source text or declare omitted coverage. Do not search only the start of a long source. Match qualification and source identity survive ranking. History/corrections are loaded with getInterviewHistory, never dependent on a semantic hit.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "description": "Research question or keywords.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum original passages.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 5
+            }
+          },
+          {
+            "name": "maxChars",
+            "in": "query",
+            "required": false,
+            "description": "Maximum total evidence text characters.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 12000,
+              "default": 6000
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "Optional source-kind filter.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vault",
+                "social_caption",
+                "reel_transcript"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded stored evidence; Cache-Control: private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Search"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Privy authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source unavailable after artist authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request throttled; respect Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry, when supplied.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable; never represented as an empty successful corpus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge/sources/{sourceId}": {
+      "get": {
+        "operationId": "readArtistSource",
+        "summary": "Read an original passage (proposed)",
+        "description": "DRAFT \u2014 not deployed. Read the requested revision and window. Adjust boundaries to preserve Unicode. A changed revision returns 409; first version does not promise immutable historical storage. No arbitrary URL fetch.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "description": "Namespaced source record; must belong to this artist.",
+            "schema": {
+              "type": "string",
+              "pattern": "^(vault:[0-9a-f-]{36}|social:[0-9a-f-]{36}:(caption|transcript))$"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "query",
+            "required": true,
+            "description": "Revision returned by source listing or search.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "UTF-16 offset; beyond source length is invalid.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "maxChars",
+            "in": "query",
+            "required": false,
+            "description": "Maximum original-text window.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 20000,
+              "default": 6000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded stored evidence; Cache-Control: private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRead"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Privy authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source unavailable after artist authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request throttled; respect Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry, when supplied.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable; never represented as an empty successful corpus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge/history": {
+      "get": {
+        "operationId": "getInterviewHistory",
+        "summary": "Read answers and corrections (proposed)",
+        "description": "DRAFT \u2014 not deployed. Exact artist-scoped history; existing schema has no separate session membership. Corrections first, then fixed offer order with ID tie-breakers. Pending offers, explicit skips and answers remain distinct. Continue until constraintsComplete; active unsaved boundaries are always supplied by the caller.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum records; response character/byte budgets may require an earlier continuation.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque artist/filter-bound continuation. A changed ordered corpus returns 409.",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "maxChars",
+            "in": "query",
+            "required": false,
+            "description": "Text budget; a long entry returns explicit continuation.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 20000,
+              "default": 12000
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "Filter history; defaults to all. Answer-only traversal cannot claim current constraints are loaded.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "answers",
+                "corrections"
+              ]
+            }
+          },
+          {
+            "name": "sitting",
+            "in": "query",
+            "required": false,
+            "description": "Restrict answers to this sitting; current corrections remain included unless kind=answers.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded stored evidence; Cache-Control: private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Privy authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source unavailable after artist authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request throttled; respect Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry, when supplied.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable; never represented as an empty successful corpus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/research/status": {
+      "get": {
+        "operationId": "getResearchStatus",
+        "summary": "Read research progress (proposed)",
+        "description": "DRAFT \u2014 not deployed. Strict storage read with sanitized job fields and current evidence coverage. Does not run workers, create jobs or expose raw provider state.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum records; response character/byte budgets may require an earlier continuation.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Opaque artist/filter-bound continuation. A changed ordered corpus returns 409.",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded stored evidence; Cache-Control: private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid Privy authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not the approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source unavailable after artist authorization.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Evidence revision or ordered corpus changed; restart from current metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Request throttled; respect Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before retry, when supplied.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable; never represented as an empty successful corpus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/research/refresh": {
+      "post": {
+        "operationId": "refreshArtistResearch",
+        "summary": "Request research refresh (existing)",
+        "description": "Existing operation wrapped by requestArtistResearch. Rebuild stored Lore and check social posts under existing ownership/cooldown rules. No arbitrary website/PDF refresh, no synchronous scraping, no completed-job promise. Call research/status separately. Keep this operation in research.json when integrating with the docs engine.",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Artist ID in this deployment environment. Authorize claimant/admin on each call.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Existing message response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refresh"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid artist ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not your artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Could not start research.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Privy access token",
+        "description": "Existing authenticated Music Nerd user, approved artist claimant or admin. Credentials remain outside model arguments."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_input",
+              "unauthenticated",
+              "forbidden",
+              "not_found",
+              "revision_changed",
+              "corpus_changed",
+              "throttled",
+              "storage_unavailable"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "error",
+          "code"
+        ]
+      },
+      "LegacyError": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "error"
+        ]
+      },
+      "Coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "eligibleSources": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "readableSources": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "searchedSources": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "eligibleSources",
+          "readableSources",
+          "searchedSources",
+          "complete",
+          "limitations"
+        ],
+        "description": "Coverage of stored eligible records, not a claim that all external material or PDF pages were extracted. For non-search reads, searchedSources is zero. Legacy extraction limits must be explicit."
+      },
+      "Budget": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "returnedChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "returnedChars",
+          "truncated",
+          "nextCursor"
+        ]
+      },
+      "Provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "type": "string",
+            "enum": [
+              "vault_link",
+              "vault_upload",
+              "social_caption",
+              "provider_transcript"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "speaker": {
+            "type": "string",
+            "enum": [
+              "not_applicable",
+              "unverified",
+              "verified"
+            ]
+          }
+        },
+        "required": [
+          "origin",
+          "provider",
+          "method",
+          "speaker"
+        ]
+      },
+      "Extraction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "queued",
+              "running",
+              "failed",
+              "unknown"
+            ]
+          },
+          "storedChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "readiness",
+          "storedChars",
+          "truncated",
+          "limitations"
+        ]
+      },
+      "Source": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "pattern": "^(vault:[0-9a-f-]{36}|social:[0-9a-f-]{36}:(caption|transcript))$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "vault",
+              "social_caption",
+              "reel_transcript"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "titleTruncated": {
+            "type": "boolean"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Includes empty stored evidence, so unreadable/unknown sources remain identifiable without claiming readable content."
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Preserve available precision; do not invent a time for a date-only publication."
+          },
+          "ingestedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "extraction": {
+            "$ref": "#/components/schemas/Extraction"
+          }
+        },
+        "required": [
+          "sourceId",
+          "kind",
+          "title",
+          "titleTruncated",
+          "url",
+          "revision",
+          "publishedAt",
+          "ingestedAt",
+          "provenance",
+          "extraction"
+        ]
+      },
+      "Passage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string"
+          },
+          "page": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "startSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "endSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "source",
+          "revision",
+          "start",
+          "end",
+          "text",
+          "page",
+          "startSeconds",
+          "endSeconds"
+        ],
+        "description": "Exact original-text window. Offsets are half-open UTF-16 code units into the requested evidence revision; surrogate pairs are not split. Page/audio locations are null without a verified extraction map. end-start equals text.length in JavaScript."
+      },
+      "Brief": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "generatedLoreSummary": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "summaryIsEvidence": {
+            "type": "boolean",
+            "const": false
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "historyRequired": {
+            "type": "boolean",
+            "const": true
+          },
+          "returnedChars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6000
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "artistId",
+          "name",
+          "bio",
+          "generatedLoreSummary",
+          "summaryIsEvidence",
+          "coverage",
+          "historyRequired",
+          "returnedChars",
+          "truncated"
+        ],
+        "description": "Stored profile and bounded generated orientation only. No synthesis or refresh. Load history/corrections before drafting. A generated summary is never independent cited evidence."
+      },
+      "SourceList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "maxItems": 50
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          }
+        },
+        "required": [
+          "status",
+          "sources",
+          "coverage",
+          "budget"
+        ]
+      },
+      "Search": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "passages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Passage"
+            },
+            "maxItems": 10
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "returnedChars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 12000
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "passages",
+          "coverage",
+          "returnedChars",
+          "truncated"
+        ],
+        "description": "Top ranked matches, not an exhaustive archive. Empty matches with accurate coverage is a success. Search may be incomplete only with explicit limitations. Expand a hit by source ID/revision; do not claim no relevant history from no matches."
+      },
+      "SourceRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "passage": {
+            "$ref": "#/components/schemas/Passage"
+          },
+          "totalChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextStart": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "returnedChars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "passage",
+          "totalChars",
+          "nextStart",
+          "returnedChars",
+          "truncated"
+        ],
+        "description": "Requested window from the pinned revision. nextStart continues the same revision; null means exhausted. Legacy empty/unreadable extraction is a successful empty window with unknown/failed extraction state where known, not proof of complete extraction."
+      },
+      "HistoryEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entryId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "answer",
+              "correction"
+            ]
+          },
+          "questionKey": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "answerState": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "answered",
+                  "skipped",
+                  "offered"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sitting": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "offeredAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "answerUpdatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "correctionKind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "text",
+                "start",
+                "end",
+                "totalChars",
+                "complete"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "enum": [
+                    "question",
+                    "answer",
+                    "claim",
+                    "correction"
+                  ]
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "totalChars": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "complete": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "description": "Verbatim field slices. Normal answers include question and answer; corrections include claim and correction. Continuation may contain one field only. Null answer remains explicit. All field text counts toward the total character budget. The cursor resumes the same entry revision and unfinished field before the next entry."
+          }
+        },
+        "required": [
+          "entryId",
+          "revision",
+          "kind",
+          "questionKey",
+          "answerState",
+          "sitting",
+          "offeredAt",
+          "answerUpdatedAt",
+          "source",
+          "correctionKind",
+          "fields"
+        ],
+        "description": "Exact question/answer or claim/correction field slices with explicit continuation for long fields. Do not infer skipped versus offered status from null alone. Never summarize or silently truncate the artist\u2019s text."
+      },
+      "History": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            },
+            "maxItems": 50
+          },
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "constraintsComplete": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "entries",
+          "budget",
+          "constraintsComplete"
+        ],
+        "description": "constraintsComplete is true only after all current corrections in the requested traversal have been returned, including continuations. A client must also carry current unsaved instructions/answers independently. Never reconstruct offer time from answer-update time."
+      },
+      "Job": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "social_ingest",
+              "caption_extract",
+              "lore_refresh",
+              "source_search",
+              "latest_refresh",
+              "source_extract"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "cursor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "errorCategory": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "extractionOutcomes": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "Present for source_extract. Attempt results; completion does not imply readable or editorially verified evidence.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sourceId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ready",
+                    "blocked",
+                    "empty",
+                    "unsupported",
+                    "unavailable",
+                    "too_large",
+                    "skipped"
+                  ]
+                },
+                "capturedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "httpStatus": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 100,
+                  "maximum": 599
+                },
+                "storedChars": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50000
+                },
+                "truncated": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "sourceId",
+                "status",
+                "capturedAt",
+                "httpStatus",
+                "storedChars",
+                "truncated"
+              ]
+            }
+          }
+        },
+        "required": [
+          "jobId",
+          "kind",
+          "status",
+          "cursor",
+          "total",
+          "updatedAt",
+          "errorCategory"
+        ],
+        "description": "Sanitized progress only. Do not return raw state, last_error, run/dataset credentials, provider payloads or SQL. A job being done does not establish evidence completeness."
+      },
+      "ResearchStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            },
+            "maxItems": 50
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/Coverage"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          }
+        },
+        "required": [
+          "status",
+          "jobs",
+          "coverage",
+          "budget"
+        ]
+      },
+      "Refresh": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "description": "Existing response. May describe cooldown, ongoing work or inability to start; not a receipt promising a new job or complete source refetch."
+      }
+    }
+  }
+}
