@@ -4,6 +4,8 @@ Scope: the next foundation slice of [Web#1424](https://github.com/xdjs/MusicNerd
 
 ## Contract
 
+Set `includeVersion=true` to opt into retained reads and their version metadata. The updated SDK sets this automatically. Without this parameter, the released current-only behavior and response shape remain unchanged (409 if the content changed), so existing strict clients keep working.
+
 `GET /api/artist/{id}/knowledge/sources/{sourceId}` keeps its existing validated inputs, Privy claimant/admin authorization, window limits and no-store headers. The response adds `version: { state, currentRevision, capturedAt }`. For a current revision, state is `current` and capture time is null. For a retained revision, state is `historical`, passage metadata/text belong to the requested revision, and currentRevision names the currently eligible evidence. Capture time is retention time, not an event/publication timestamp. Unknown or pre-retention revisions retain `409 revision_changed`. Missing/deleted/ineligible sources return 404 after artist authorization; claim revocation returns 403. Storage errors return 503, never an empty success.
 
 Search and listing continue to return only current eligible evidence. No new public access, agent write operation, provider call or source-search behavior is introduced. Generated summaries, answer/correction version history and topic-boundary capture are separate work. Consumers must not use historical text to override current corrections or imply it is the current account of an event.
