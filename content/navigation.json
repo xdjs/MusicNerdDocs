@@ -32,7 +32,12 @@
         "pages": [
           "api-reference/research/advance",
           "api-reference/research/scheduler",
-          "api-reference/artists/research-refresh"
+          "api-reference/artists/research-refresh",
+          "api-reference/research/question",
+          "api-reference/research/question-status",
+          "api-reference/research/discoveries",
+          "api-reference/research/review-discovery",
+          "api-reference/research/research-evidence"
         ]
       },
       {

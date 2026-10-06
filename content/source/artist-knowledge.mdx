@@ -3,7 +3,7 @@ title: "Artist knowledge for agents"
 description: "Retrieve original artist evidence, exact history and explicit coverage through one API."
 ---
 
-<Warning>The shared reads and durable approved-link ingestion are released. Historical source retention described below is a new preview contract pending its schema/API rollout. Persistent topic boundaries and Web interviewer integration remain tracked work in MusicNerdWeb#1424 and #1422.</Warning>
+<Warning>The shared reads and durable approved-link ingestion are released. Historical source retention is released (Web#1440, API#23 and Docs#7, 2026-10-06). Persistent topic boundaries and Web interviewer integration remain tracked work in MusicNerdWeb#1424 and #1422.</Warning>
 
 MusicNerdAPI stores shared artist evidence. MusicNerdWeb and other agents use the same HTTP reads. A source summary can suggest what to open; every factual premise must resolve to original text. The interviewer integration follows in a separate Web PR.
 
@@ -27,7 +27,7 @@ History reports `memory.boundaryState: not_implemented` and `constraintsComplete
 
 Set `includeVersion=true` to opt into retained reads and their version metadata. The updated SDK sets this automatically. Without this parameter, the released current-only behavior and response shape remain unchanged (409 if the content changed), so existing strict clients keep working.
 
-Source identity names its record and content type, never its ranking position. A SHA-256 revision covers citation-relevant metadata and exact stored text. Listing/search returns current source IDs and revisions. In the retention preview, reading a retained older revision returns that exact original passage with `version.state: historical`, the `currentRevision` and its retention `capturedAt`. A current read reports `version.state: current` and a null capture time. The capture time is when the database retained the old version, not when the source was published or the event occurred. An unknown or pre-retention revision returns `409 revision_changed`; the API never substitutes current text. A removed or newly ineligible source is unavailable even if a caller has an old reference.
+Source identity names its record and content type, never its ranking position. A SHA-256 revision covers citation-relevant metadata and exact stored text. Listing/search returns current source IDs and revisions. Reading a retained older revision returns that exact original passage with `version.state: historical`, the `currentRevision` and its retention `capturedAt`. A current read reports `version.state: current` and a null capture time. The capture time is when the database retained the old version, not when the source was published or the event occurred. An unknown or pre-retention revision returns `409 revision_changed`; the API never substitutes current text. A removed or newly ineligible source is unavailable even if a caller has an old reference.
 
 Passage offsets are zero-based, half-open UTF-16 code units. Windows preserve surrogate pairs. Page numbers/audio times stay null without a trustworthy extraction map. Titles/descriptions are publisher metadata, distinct from body text. A social account username does not verify the speaker; event dates and original/repost relationships remain unknown unless established. Upload/publication time never supplies an event date.
 
