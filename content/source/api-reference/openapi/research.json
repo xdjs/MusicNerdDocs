@@ -364,8 +364,8 @@
       "privyBearer": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "Privy access token",
-        "description": "The signed-in user's Privy access token (`getAccessToken()` in the web app). The user must be the artist's approved claimant or a Music Nerd admin."
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. The user must be the artist's approved claimant or a Music Nerd admin."
       },
       "cronSecret": {
         "type": "http",

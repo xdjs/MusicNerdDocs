@@ -56,7 +56,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -198,7 +198,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -353,7 +353,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -512,7 +512,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -676,7 +676,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -804,7 +804,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -990,7 +990,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid Privy authentication.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1038,7 +1038,7 @@
       "privyBearer": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "Privy access token",
+        "bearerFormat": "Access token",
         "description": "Existing authenticated Music Nerd user, approved artist claimant or admin. Credentials remain outside model arguments."
       }
     },
