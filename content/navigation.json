@@ -53,6 +53,15 @@
           "api-reference/knowledge/research-status",
           "api-reference/knowledge/extract"
         ]
+      },
+      {
+        "group": "Interview response review (draft)",
+        "pages": [
+          "api-reference/interview-responses/list",
+          "api-reference/interview-responses/read",
+          "api-reference/interview-responses/revise",
+          "api-reference/interview-responses/versions"
+        ]
       }
     ]
   }
