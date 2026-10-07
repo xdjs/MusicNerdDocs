@@ -39,7 +39,7 @@ A successful enqueue returns HTTP 202 immediately with `{status:"ok", jobId, sta
 
 The worker searches original text and reads surrounding context before deciding whether external research is needed. Approved public URL Lore and own public social posts are eligible. Uploaded/private material and exact interview history are excluded from public research, even when the same server credential is used by another agent. Claimant interview tools retain their separate richer authorization boundary. Metadata and generated summaries do not establish facts.
 
-Search returns stable source/revision/UTF-16 positions. A bounded evidence check must resolve its support to exact original passages. A nonempty search is not by itself sufficient evidence. An unavailable database is a failure, not proof of a missing fact. A fresh-post request cannot be satisfied by undated or old material merely because words match.
+Public saved-source selection returns up to four original windows, with at most two from one source so a long interview cannot crowd every shorter matching source out. General questions use stored evidence; clients must not invent a recent-only window or drop requested source/attribution constraints while translating a question. Search returns stable source/revision/UTF-16 positions. A bounded evidence check must resolve its support to exact original passages. A nonempty search is not by itself sufficient evidence. An unavailable database is a failure, not proof of a missing fact. A fresh-post request cannot be satisfied by undated or old material merely because words match.
 
 ## Provider choice and budget
 
