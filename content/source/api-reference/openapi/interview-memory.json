@@ -283,6 +283,116 @@
             }
           }
         }
+      },
+      "get": {
+        "summary": "List active interview boundaries",
+        "description": "Current claimant/admin only. Manage active instructions independently of mandatory model memory: reads only unretracted boundaries applying to the requested sitting, never answers or corrections. Returns at most five complete boundary objects per page with exact wording and retraction revisions. Follow nextCursor to see more; cursors bind to the artist, sitting and active boundary revisions. If boundaries or sitting change, discard the old list and restart after 409. The sitting must be the latest known offered/session sitting or the next one being prepared. This read does not generate questions, widen model-memory limits, or modify data. Responses are private and no-store.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sitting",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoundaryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current claimant/admin required for private operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or offered question unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State or revision changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Memory storage or authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/artist/{id}/interview/boundaries/{boundaryId}/retract": {
@@ -604,6 +714,7 @@
           "scope",
           "sitting",
           "questionKey",
+          "question",
           "createdAt",
           "retractedAt"
         ],
@@ -641,6 +752,10 @@
               "string",
               "null"
             ]
+          },
+          "question": {
+            "type": "string",
+            "description": "Exact offered question captured when this instruction was saved."
           }
         }
       },
@@ -656,6 +771,38 @@
           },
           "boundary": {
             "$ref": "#/components/schemas/Boundary"
+          }
+        }
+      },
+      "BoundaryPage": {
+        "type": "object",
+        "required": [
+          "status",
+          "sitting",
+          "boundaries",
+          "nextCursor"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "sitting": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "boundaries": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/Boundary"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Continuation for the same active boundary list; null after the final page."
           }
         }
       }

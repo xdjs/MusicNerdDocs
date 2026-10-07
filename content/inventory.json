@@ -1,7 +1,7 @@
 {
-  "navigationPages": 30,
+  "navigationPages": 31,
   "guidePages": 4,
-  "apiPages": 26,
+  "apiPages": 27,
   "specifications": [
     "health.json",
     "interview-memory.json",

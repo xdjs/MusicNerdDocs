@@ -63,6 +63,7 @@
         "group": "Interview memory and sessions",
         "pages": [
           "api-reference/interview/memory",
+          "api-reference/interview/list-boundaries",
           "api-reference/interview/boundary",
           "api-reference/interview/retract-boundary",
           "api-reference/interview/session-state",
