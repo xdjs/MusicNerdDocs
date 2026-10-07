@@ -171,7 +171,8 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
+              "pattern": "^[a-f0-9]{64}$",
+              "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             }
           }
         ],
@@ -565,7 +566,8 @@
           },
           "revision": {
             "type": "string",
-            "pattern": "^[a-f0-9]{64}$"
+            "pattern": "^[a-f0-9]{64}$",
+            "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           }
         },
         "required": [
@@ -615,7 +617,10 @@
         "additionalProperties": false,
         "properties": {
           "status": {
-            "const": "error"
+            "type": "string",
+            "enum": [
+              "error"
+            ]
           },
           "error": {
             "type": "string"
@@ -635,7 +640,10 @@
         "additionalProperties": false,
         "properties": {
           "status": {
-            "const": "ok"
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
           },
           "responses": {
             "type": "array",
@@ -661,7 +669,10 @@
         "additionalProperties": false,
         "properties": {
           "status": {
-            "const": "ok"
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
           },
           "response": {
             "$ref": "#/components/schemas/Response"
@@ -681,7 +692,10 @@
         "additionalProperties": false,
         "properties": {
           "status": {
-            "const": "ok"
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
           },
           "versions": {
             "type": "array",
@@ -708,7 +722,8 @@
         "properties": {
           "expectedRevision": {
             "type": "string",
-            "pattern": "^[a-f0-9]{64}$"
+            "pattern": "^[a-f0-9]{64}$",
+            "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
           "answer": {
             "type": "string",
