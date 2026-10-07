@@ -14,7 +14,7 @@
     "/api/artist/{id}/interview/memory": {
       "get": {
         "summary": "Read mandatory interview memory",
-        "description": "Current claimant/admin only. Latest exact saved answer, all corrections and active scoped boundaries. No top-k omission. Follow revision-bound continuations; the host must assemble every exact field before drafting. Public research credentials grant no access. Sitting must be the latest offered sitting or the next one being prepared; stale sitting requests return 409.",
+        "description": "Current claimant/admin only. Latest exact saved answer, all corrections and active scoped boundaries. No top-k omission. Follow revision-bound continuations; the host must assemble every exact field before drafting. Public research credentials grant no access. Sitting must be the latest known offered/session sitting or the next one being prepared; stale sitting requests return 409.",
         "security": [
           {
             "PrivyAuth": []
