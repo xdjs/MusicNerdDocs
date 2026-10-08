@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Music Nerd interview response revisions \u2014 draft",
+    "title": "Music Nerd interview response revisions",
     "version": "1.0.0",
-    "description": "Draft, unreleased API contract for private artist interview review. Separate from starting or generating interviews."
+    "description": "Private artist interview review and exact response revisions. Separate from starting or generating interviews."
   },
   "servers": [
     {
@@ -16,7 +16,7 @@
       "get": {
         "operationId": "listInterviewResponses",
         "summary": "List saved interview responses",
-        "description": "Draft implementation contract; not yet released. Reads answered questions only. No collection or generation. Preserves question, sitting and offer time. History begins with retained records, not reconstructed earlier edits. Reads fail explicitly above 2,000 records or 1,000,000 stored characters; exact response text is never silently truncated. Each response permits at most 50,000 answer characters and 10,000 question characters. Edits are limited to 2,000 answer characters. Earlier revisions use the same bounded history budget.",
+        "description": "Reads answered questions only. No collection or generation. Preserves question, sitting and offer time. History begins with retained records, not reconstructed earlier edits. Reads fail explicitly above 2,000 records or 1,000,000 stored characters; exact response text is never silently truncated. Each response permits at most 50,000 answer characters and 10,000 question characters. Edits are limited to 2,000 answer characters. Earlier revisions use the same bounded history budget.",
         "security": [
           {
             "privyBearer": []
@@ -140,7 +140,7 @@
       "get": {
         "operationId": "readInterviewResponse",
         "summary": "Read an exact interview response",
-        "description": "Draft implementation contract; not yet released. Without revision, returns current wording. A revision resolves the exact retained response and reports whether it is current. Older versions are historical evidence, not the current artist answer.",
+        "description": "Without revision, returns current wording. A revision resolves the exact retained response and reports whether it is current. Older versions are historical evidence, not the current artist answer.",
         "security": [
           {
             "privyBearer": []
@@ -262,7 +262,7 @@
       "patch": {
         "operationId": "reviseInterviewResponse",
         "summary": "Revise a saved interview response",
-        "description": "Draft implementation contract; not yet released. The authenticated current claimant/admin edits an answered question. expectedRevision rejects stale overwrites. Exact question, sitting and offeredAt are immutable. Earlier wording is retained, current knowledge history reads the new answer, and the edit is audited. A byte-identical answer is a no-op. note describes the edit and is not artist evidence. Edits do not automatically publish a new bio. No blank/delete/skip conversion. The edit, version archive, activity attribution and Lore refresh queue entry commit atomically; a queue failure rolls the edit back. Older generated Lore may remain visible until the queued refresh completes. Request bodies are bounded to 20,000 bytes.",
+        "description": "The authenticated current claimant/admin edits an answered question. expectedRevision rejects stale overwrites. Exact question, sitting and offeredAt are immutable. Earlier wording is retained, current knowledge history reads the new answer, and the edit is audited. A byte-identical answer is a no-op. note describes the edit and is not artist evidence. Edits do not automatically publish a new bio. No blank/delete/skip conversion. The edit, version archive, activity attribution and Lore refresh queue entry commit atomically; a queue failure rolls the edit back. Older generated Lore may remain visible until the queued refresh completes. Request bodies are bounded to 20,000 bytes.",
         "security": [
           {
             "privyBearer": []
@@ -387,7 +387,7 @@
       "get": {
         "operationId": "listInterviewResponseVersions",
         "summary": "List response versions",
-        "description": "Draft implementation contract; not yet released. Current and retained earlier response versions, newest first. Current ownership is rechecked. Every entry has exact original wording and a stable revision; no reconstruction of unretained past edits.",
+        "description": "Current and retained earlier response versions, newest first. Current ownership is rechecked. Every entry has exact original wording and a stable revision; no reconstruction of unretained past edits.",
         "security": [
           {
             "privyBearer": []
