@@ -36,7 +36,12 @@
             "pages": [
               "api-reference/research/advance",
               "api-reference/research/scheduler",
-              "api-reference/artists/research-refresh"
+              "api-reference/artists/research-refresh",
+              "api-reference/research/question",
+              "api-reference/research/question-status",
+              "api-reference/research/discoveries",
+              "api-reference/research/review-discovery",
+              "api-reference/research/research-evidence"
             ]
           },
           {
@@ -56,6 +61,20 @@
               "api-reference/knowledge/history",
               "api-reference/knowledge/research-status",
               "api-reference/knowledge/extract"
+            ]
+          },
+          {
+            "group": "Interview memory and sessions",
+            "pages": [
+              "api-reference/interview/memory",
+              "api-reference/interview/list-boundaries",
+              "api-reference/interview/boundary",
+              "api-reference/interview/retract-boundary",
+              "api-reference/interview/session-state",
+              "api-reference/interview/start-session",
+              "api-reference/interview/offer-question",
+              "api-reference/interview/save-answer",
+              "api-reference/interview/finish-session"
             ]
           },
           {

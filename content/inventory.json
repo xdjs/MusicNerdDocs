@@ -1,12 +1,15 @@
 {
-  "navigationPages": 21,
+  "navigationPages": 35,
   "guidePages": 4,
-  "apiPages": 17,
+  "apiPages": 31,
   "specifications": [
     "health.json",
+    "interview-memory.json",
     "interview-responses.json",
+    "interview-sessions.json",
     "knowledge.json",
     "onboarding.json",
+    "question-research.json",
     "research.json"
   ],
   "additionalOperations": [],
