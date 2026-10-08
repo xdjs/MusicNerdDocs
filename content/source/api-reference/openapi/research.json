@@ -255,7 +255,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The \"Look again\" button: rebuilds the artist's Lore from their current documents and re-reads their recent posts. Social research has a 30-minute cooldown after the last run, and waits while Update Latest is checking Instagram. The response message says which of these happened.",
+        "description": "The \"Look again\" button normally rebuilds the artist's Lore from current stored sources and re-reads recent posts. Omit the body for that existing behavior. To recover Lore from already stored sources without a social scrape or caption re-extraction, send `{ \"mode\": \"lore-only\" }`. Both modes require the approved claimant or an admin. The Lore request is claim-checked and deduplicated while live; repeated manual requests within 30 minutes do not queue another rebuild. The normal social mode retains its separate 30-minute cooldown and waits while Update Latest checks Instagram. A response says what was queued, not that a rebuild has already completed.",
         "parameters": [
           {
             "name": "id",
@@ -300,7 +300,7 @@
             }
           },
           "400": {
-            "description": "The artist ID is not a UUID.",
+            "description": "The artist ID is not a UUID, or the optional JSON body/mode is invalid.",
             "content": {
               "application/json": {
                 "schema": {
@@ -352,6 +352,28 @@
                   "status": "error",
                   "error": "Couldn't start that"
                 }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "lore-only"
+                    ],
+                    "description": "Optional stored-source-only recovery. Omit for the existing Lore plus social refresh."
+                  }
+                }
+              },
+              "example": {
+                "mode": "lore-only"
               }
             }
           }
