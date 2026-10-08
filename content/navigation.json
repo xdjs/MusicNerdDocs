@@ -72,6 +72,15 @@
           "api-reference/interview/save-answer",
           "api-reference/interview/finish-session"
         ]
+      },
+      {
+        "group": "Interview response review",
+        "pages": [
+          "api-reference/interview-responses/list",
+          "api-reference/interview-responses/read",
+          "api-reference/interview-responses/revise",
+          "api-reference/interview-responses/versions"
+        ]
       }
     ]
   }
