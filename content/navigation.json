@@ -55,7 +55,7 @@
         ]
       },
       {
-        "group": "Interview response review (draft)",
+        "group": "Interview response review",
         "pages": [
           "api-reference/interview-responses/list",
           "api-reference/interview-responses/read",
