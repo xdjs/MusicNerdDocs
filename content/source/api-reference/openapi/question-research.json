@@ -14,7 +14,7 @@
     "/api/artist/{id}/research/questions": {
       "post": {
         "summary": "Request question-directed research",
-        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Release catalogs and InProcess moments are not yet in this corpus. If stored evidence is insufficient, an unscoped latest overview checks a connected Instagram, TikTok, or X account (in that preference order), within existing provider budgets. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time.",
+        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Stored Spotify/Deezer release catalogs and InProcess moments share durable snapshots with the public Latest endpoint. Provider refreshes run only in queued latest_refresh work; question/status/original reads never refresh these providers. If stored evidence is insufficient, an unscoped latest overview checks a connected Instagram, TikTok, or X account (in that preference order), within existing provider budgets. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time. When the outside-research daily budget (5 jobs per artist, 100 globally) is exhausted, the server can reserve a saved-only job under a separate budget with the same 5/100 bounds. Saved-only mode is server-selected, not caller-controlled: at most one saved-evidence assessment, no external search, page fetch, scraper or transcription. If saved evidence is insufficient, the job ends unresolved with outsideResearchReason=quota. Exhausting both budgets returns saved_evidence_quota (429); research_busy remains distinct. Completed matching jobs can be reused independently of these admission limits, subject to current eligibility and cache lifetime. Cache identity preserves topic and all source/date/evidence constraints; reuse is not restricted to an arbitrary last-ten-jobs window.",
         "security": [
           {
             "PrivyAuth": []
@@ -901,6 +901,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "outsideResearchReason": {
+            "type": "string",
+            "enum": [
+              "quota"
+            ],
+            "description": "Outside research is unavailable; saved-only research may still complete. If unresolved, explain that saved sources were checked and outside research is capped."
           }
         }
       },
@@ -917,7 +924,8 @@
         ],
         "properties": {
           "sourceId": {
-            "type": "string"
+            "type": "string",
+            "description": "Stable current source reference, including latest:<spotify|deezer|inprocess>:<64hex> provider snapshot originals. Removing/changing the connected account or successfully refreshing away a hidden/removed item makes its old reference unavailable; changed originals have a different revision."
           },
           "revision": {
             "type": "string"
@@ -975,6 +983,18 @@
               "boolean",
               "null"
             ]
+          },
+          "activityDate": {
+            "type": "string",
+            "description": "Optional provider activity date. Preserves YYYY, YYYY-MM or full date/time precision. Never substitutes for source publication time."
+          },
+          "activityDateKind": {
+            "type": "string",
+            "enum": [
+              "release",
+              "moment"
+            ],
+            "description": "Meaning of activityDate. Exact catalog release-date claims require original catalog text, not publishedAt."
           }
         }
       },

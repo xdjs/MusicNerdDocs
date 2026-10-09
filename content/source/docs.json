@@ -34,6 +34,7 @@
           {
             "group": "Research",
             "pages": [
+              "api-reference/artists/latest",
               "api-reference/research/advance",
               "api-reference/research/scheduler",
               "api-reference/artists/research-refresh",
