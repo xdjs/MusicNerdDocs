@@ -799,8 +799,12 @@
             "enum": [
               "instagram",
               "tiktok",
-              "x"
-            ]
+              "x",
+              "inprocess",
+              "spotify",
+              "deezer"
+            ],
+            "description": "Restrict evidence to this platform, including when targetUrl is supplied. InProcess and catalog providers use stored Latest snapshots. If these cannot answer, research ends unresolved with provider_latest_refresh_required; no unrelated social provider is selected. Conflicting platform and target URL ends unresolved with source_platform_mismatch."
           },
           "fromDate": {
             "type": "string",
