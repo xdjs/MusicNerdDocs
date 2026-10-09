@@ -822,6 +822,18 @@
             ],
             "default": "relevance",
             "description": "Use latest for a newest-available activity overview or newest post on a requested platform. Selects dated originals in descending order without requiring topic keyword overlap or imposing a seven-day cutoff. Explicit fromDate/toDate bounds still apply. Use relevance for a specific topic or fact; latest is not proof of current exhaustive coverage. For latest release_date requests, prefer eligible catalog originals with activityDateKind=release after applying explicit source and date constraints. If none exist, other eligible originals may be read as candidates; their publication dates never establish release dates."
+          },
+          "excludeSourceUrls": {
+            "type": "array",
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000,
+              "pattern": "^https?://"
+            },
+            "description": "Exact public citation URLs already discussed; excluded before evidence selection and included in request identity."
           }
         }
       },

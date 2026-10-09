@@ -2,3 +2,9 @@
 title: 'Request question research'
 openapi: 'POST /api/artist/{id}/research/questions'
 ---
+
+### Broader follow-ups and recoverable assessment errors
+
+Clients can provide `excludeSourceUrls` (at most 10 distinct HTTP(S) URLs, each at most 2,000 characters) when a listener asks for other activity. These are exact public citation URLs already discussed, not private conversation or instructions. Exclusions are part of the request identity and apply before saved-evidence selection; they do not authorize new providers or bypass source/date constraints. A broader recent-activity follow-up uses `retrieval: "latest"` without anchoring itself to the previous single original.
+
+If a saved-evidence assessment returns an invalid structured model response, the durable worker allows one additional assessment on a later slice, rereading current originals. The retry is recorded and counted: saved-only work permits at most two model calls, ordinary work at most three. It does not search or scrape as part of the retry. Network failures, timeouts and unknown execution outcomes are not automatically retried. A second invalid result remains a failed operation, not a finding that evidence does not exist.
