@@ -786,7 +786,8 @@
               "stored",
               "recent"
             ],
-            "default": "stored"
+            "default": "stored",
+            "description": "For relevance retrieval, recent defaults to the past seven days unless fromDate is supplied. For latest retrieval, newest available evidence may be older; answers must preserve its actual date and coverage limitations."
           },
           "targetUrl": {
             "type": "string",
@@ -808,6 +809,15 @@
           "toDate": {
             "type": "string",
             "format": "date"
+          },
+          "retrieval": {
+            "type": "string",
+            "enum": [
+              "relevance",
+              "latest"
+            ],
+            "default": "relevance",
+            "description": "Use latest for a newest-available activity overview or newest post on a requested platform. Selects dated originals in descending order without requiring topic keyword overlap or imposing a seven-day cutoff. Explicit fromDate/toDate bounds still apply. Use relevance for a specific topic or fact; latest is not proof of current exhaustive coverage."
           }
         }
       },
