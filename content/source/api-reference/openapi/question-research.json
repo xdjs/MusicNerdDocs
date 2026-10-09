@@ -3,7 +3,7 @@
   "info": {
     "title": "Question-directed artist research",
     "version": "0.1.0",
-    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation."
+    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation. Web Ask About reserves a bounded planning slot before its model call: at most 10 new question plans per artist and 200 globally over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries."
   },
   "servers": [
     {
