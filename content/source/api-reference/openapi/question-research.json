@@ -14,7 +14,7 @@
     "/api/artist/{id}/research/questions": {
       "post": {
         "summary": "Request question-directed research",
-        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. No scraping in enqueue. Never approves Lore or attaches a profile.",
+        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Release catalogs and InProcess moments are not yet in this corpus. If stored evidence is insufficient, an unscoped latest overview checks a connected Instagram, TikTok, or X account (in that preference order), within existing provider budgets. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time.",
         "security": [
           {
             "PrivyAuth": []
@@ -565,7 +565,7 @@
     "/api/artist/{id}/research/evidence/{evidenceId}": {
       "get": {
         "summary": "Read a public research original",
-        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Uploaded/private material and interview history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
+        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID public_answer:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Published responses already visible in Latest are eligible with exact response text; edited responses invalidate old revisions and unpublished/deleted responses become unavailable. Uploaded/private material, private interview sessions and correction history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
         "security": [
           {
             "PrivyAuth": []
