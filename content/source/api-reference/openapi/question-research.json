@@ -3,7 +3,7 @@
   "info": {
     "title": "Question-directed artist research",
     "version": "0.1.0",
-    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation."
+    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation. Web Ask About reserves a bounded planning slot before its model call: at most 10 new question plans per artist and 200 globally over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries."
   },
   "servers": [
     {
@@ -14,7 +14,7 @@
     "/api/artist/{id}/research/questions": {
       "post": {
         "summary": "Request question-directed research",
-        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. No scraping in enqueue. Never approves Lore or attaches a profile.",
+        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Stored Spotify/Deezer release catalogs and InProcess moments share durable snapshots with the public Latest endpoint. Provider refreshes run only in queued latest_refresh work; question/status/original reads never refresh these providers. If stored evidence is insufficient, an unscoped latest overview checks a connected Instagram, TikTok, or X account (in that preference order), within existing provider budgets. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time. When the outside-research daily budget (5 jobs per artist, 100 globally) is exhausted, the server can reserve a saved-only job under a separate budget with the same 5/100 bounds. Saved-only mode is server-selected, not caller-controlled: at most one saved-evidence assessment, no external search, page fetch, scraper or transcription. If saved evidence is insufficient, the job ends unresolved with outsideResearchReason=quota. Exhausting both budgets returns saved_evidence_quota (429); research_busy remains distinct. Completed matching jobs can be reused independently of these admission limits, subject to current eligibility and cache lifetime. Cache identity preserves topic and all source/date/evidence constraints; reuse is not restricted to an arbitrary last-ten-jobs window.",
         "security": [
           {
             "PrivyAuth": []
@@ -565,7 +565,7 @@
     "/api/artist/{id}/research/evidence/{evidenceId}": {
       "get": {
         "summary": "Read a public research original",
-        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Uploaded/private material and interview history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
+        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID public_answer:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Published responses already visible in Latest are eligible with exact response text; edited responses invalidate old revisions and unpublished/deleted responses become unavailable. Uploaded/private material, private interview sessions and correction history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
         "security": [
           {
             "PrivyAuth": []
@@ -786,7 +786,8 @@
               "stored",
               "recent"
             ],
-            "default": "stored"
+            "default": "stored",
+            "description": "For relevance retrieval, recent defaults to the past seven days unless fromDate is supplied. For latest retrieval, newest available evidence may be older; answers must preserve its actual date and coverage limitations."
           },
           "targetUrl": {
             "type": "string",
@@ -798,8 +799,12 @@
             "enum": [
               "instagram",
               "tiktok",
-              "x"
-            ]
+              "x",
+              "inprocess",
+              "spotify",
+              "deezer"
+            ],
+            "description": "Restrict evidence to this platform, including when targetUrl is supplied. InProcess and catalog providers use stored Latest snapshots. If these cannot answer, research ends unresolved with provider_latest_refresh_required; no unrelated social provider is selected. Conflicting platform and target URL ends unresolved with source_platform_mismatch."
           },
           "fromDate": {
             "type": "string",
@@ -808,6 +813,36 @@
           "toDate": {
             "type": "string",
             "format": "date"
+          },
+          "retrieval": {
+            "type": "string",
+            "enum": [
+              "relevance",
+              "latest"
+            ],
+            "default": "relevance",
+            "description": "Use latest for a newest-available activity overview or newest post on a requested platform. Selects dated originals in descending order without requiring topic keyword overlap or imposing a seven-day cutoff. Explicit fromDate/toDate bounds still apply. Use relevance for a specific topic or fact; latest is not proof of current exhaustive coverage. For latest release_date requests, prefer eligible catalog originals with activityDateKind=release after applying explicit source and date constraints. If none exist, other eligible originals may be read as candidates; their publication dates never establish release dates."
+          },
+          "excludeSourceUrls": {
+            "type": "array",
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2000,
+              "pattern": "^https?://"
+            },
+            "description": "Exact public citation URLs already discussed; excluded before evidence selection and included in request identity."
+          },
+          "answerScope": {
+            "type": "string",
+            "enum": [
+              "focused",
+              "overview"
+            ],
+            "default": "focused",
+            "description": "Use overview for a broad account of recent activity, focused for a specific post, release or detail. For overview + latest + reporting, saved evidence considers up to six original windows within a total 12,000-character budget; the existing assessment selects up to three useful originals, grouping related activity and preserving qualifications. One activity is permitted when only one is supported. External collection budgets do not expand. Overview is part of cache identity; omitted or focused retains prior behavior. This is not evidence of comprehensive provider freshness."
           }
         }
       },
@@ -891,6 +926,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "outsideResearchReason": {
+            "type": "string",
+            "enum": [
+              "quota"
+            ],
+            "description": "Outside research is unavailable; saved-only research may still complete. If unresolved, explain that saved sources were checked and outside research is capped."
           }
         }
       },
@@ -907,7 +949,8 @@
         ],
         "properties": {
           "sourceId": {
-            "type": "string"
+            "type": "string",
+            "description": "Stable current source reference, including latest:<spotify|deezer|inprocess>:<64hex> provider snapshot originals. Removing/changing the connected account or successfully refreshing away a hidden/removed item makes its old reference unavailable; changed originals have a different revision."
           },
           "revision": {
             "type": "string"
@@ -965,6 +1008,18 @@
               "boolean",
               "null"
             ]
+          },
+          "activityDate": {
+            "type": "string",
+            "description": "Optional provider activity date. Preserves YYYY, YYYY-MM or full date/time precision. Never substitutes for source publication time."
+          },
+          "activityDateKind": {
+            "type": "string",
+            "enum": [
+              "release",
+              "moment"
+            ],
+            "description": "Meaning of activityDate. Exact catalog release-date claims require original catalog text, not publishedAt."
           }
         }
       },

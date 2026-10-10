@@ -1,0 +1,202 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Shared artist Latest",
+    "version": "0.1.0",
+    "description": "Durable public Latest cards and provider coverage shared by profiles and research."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/artist/{id}/latest": {
+      "get": {
+        "summary": "Read stored artist Latest",
+        "description": "Public read-only projection: up to 9 own Instagram posts, 6 published artist responses, 3 deduplicated releases and 12 InProcess moments. Excludes future items, reposts, unpublished/private interviews and current disconnected-provider snapshots. No provider fetch, model call, scraping or write occurs on this GET. Spotify, Deezer and InProcess are refreshed in bounded latest_refresh jobs from known connected identifiers. Catalog dates retain precision; incomplete periods are withheld until the period has ended. Successful refreshes atomically replace provider snapshots, including empty results and hidden/removed moments; failures retain the last successful snapshot and report failed coverage. Stale saved items remain readable and must not be described as exhaustive current coverage. Catalog coverage becomes stale after 24 hours; InProcess after 10 minutes. Missing snapshots require an explicit/onboarding refresh or bounded deployment backfill before moving Web to this shared reader. No live-provider fallback in Web. Published response dates mean saved/updated time, not an event date.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored public cards and coverage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "items",
+                    "unavailable",
+                    "coverage"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "items": {
+                      "type": "array",
+                      "maxItems": 30,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "kind",
+                          "title",
+                          "text",
+                          "date",
+                          "imageUrl",
+                          "imageCaption",
+                          "sourceUrl",
+                          "sourceLabel"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "text": {
+                            "type": "string"
+                          },
+                          "date": {
+                            "type": "string"
+                          },
+                          "imageCaption": {
+                            "type": "string"
+                          },
+                          "sourceLabel": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "release",
+                              "instagram",
+                              "interview",
+                              "moment"
+                            ]
+                          },
+                          "imageUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "sourceUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "imageDimensions": {
+                            "type": "object",
+                            "properties": {
+                              "width": {
+                                "type": "number"
+                              },
+                              "height": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "momentKind": {
+                            "type": "string"
+                          },
+                          "listeningLinks": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "siteName": {
+                                  "type": "string"
+                                },
+                                "label": {
+                                  "type": "string"
+                                },
+                                "href": {
+                                  "type": "string"
+                                },
+                                "iconSrc": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "unavailable": {
+                      "type": "boolean",
+                      "description": "At least one configured source could not be read or has no healthy saved snapshot."
+                    },
+                    "coverage": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string",
+                            "enum": [
+                              "spotify",
+                              "deezer",
+                              "inprocess"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "checked",
+                              "failed",
+                              "missing",
+                              "disconnected"
+                            ]
+                          },
+                          "checkedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "lastAttemptAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "stale": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid artist UUID"
+          },
+          "404": {
+            "description": "Artist not found"
+          },
+          "503": {
+            "description": "Stored Latest unavailable"
+          }
+        }
+      }
+    }
+  }
+}

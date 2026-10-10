@@ -1,8 +1,9 @@
 {
-  "navigationPages": 35,
+  "navigationPages": 36,
   "guidePages": 4,
-  "apiPages": 31,
+  "apiPages": 32,
   "specifications": [
+    "artist-latest.json",
     "health.json",
     "interview-memory.json",
     "interview-responses.json",
