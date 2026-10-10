@@ -1,0 +1,863 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: legacy lookups",
+    "version": "1.0.0",
+    "description": "Artist lookups copied from MusicNerdWeb for Sleeve Note. Once these are in production, `api.musicnerd.xyz` will point at this API (xdjs/MusicNerdWeb#1480)."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/findArtistBySpotifyID": {
+      "post": {
+        "summary": "Find an artist by Spotify ID",
+        "description": "Finds the artist whose `spotify` column equals `spotifyID` exactly (case-sensitive) and returns the whole artist row. If several rows match, the first is returned. No credentials.\n\nKept for Sleeve Note: same path, body and response shape as the legacy `api.musicnerd.xyz` route, so it does not follow this API's `{ status }` convention. Two deliberate differences from the legacy route: a database failure returns 500 (it returned 404), and a body that is not JSON returns 400 (it returned an unhandled 500).",
+        "operationId": "findArtistBySpotifyID",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "spotifyID"
+                ],
+                "properties": {
+                  "spotifyID": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "spotifyID": "4Z8W4fKeB5YxbusRsdQVPb"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The matching artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "result"
+                  ],
+                  "properties": {
+                    "result": {
+                      "$ref": "#/components/schemas/LegacyArtist"
+                    }
+                  }
+                },
+                "example": {
+                  "result": {
+                    "id": "6cb3d81a-0000-4000-8000-000000000000",
+                    "legacyId": null,
+                    "bandcamp": null,
+                    "facebook": null,
+                    "x": "exampleartist",
+                    "soundcloud": null,
+                    "notes": null,
+                    "patreon": null,
+                    "name": "Example Artist",
+                    "instagram": "exampleartist",
+                    "youtube": null,
+                    "youtubechannel": null,
+                    "lcname": "example artist",
+                    "soundcloudId": null,
+                    "spotify": "4Z8W4fKeB5YxbusRsdQVPb",
+                    "twitch": null,
+                    "imdb": null,
+                    "musicbrainz": null,
+                    "wikidata": null,
+                    "mixcloud": null,
+                    "facebookId": null,
+                    "discogs": null,
+                    "tiktok": null,
+                    "tiktokId": null,
+                    "jaxsta": null,
+                    "famousbirthdays": null,
+                    "songexploder": null,
+                    "colorsxstudios": null,
+                    "bandsintown": null,
+                    "linktree": null,
+                    "onlyfans": null,
+                    "wikipedia": null,
+                    "audius": null,
+                    "zora": null,
+                    "catalog": null,
+                    "opensea": null,
+                    "foundation": null,
+                    "lastfm": null,
+                    "linkedin": null,
+                    "soundxyz": null,
+                    "mirror": null,
+                    "glassnode": null,
+                    "collectsNfTs": null,
+                    "spotifyusername": null,
+                    "bandcampfan": null,
+                    "tellie": null,
+                    "wallets": null,
+                    "ens": null,
+                    "lens": null,
+                    "addedBy": null,
+                    "cameo": null,
+                    "farcaster": null,
+                    "createdAt": "2024-05-01 12:00:00.123+00",
+                    "updatedAt": "2026-10-01 12:00:00.123+00",
+                    "supercollector": null,
+                    "bio": null,
+                    "customImage": null,
+                    "headerImagePosition": null,
+                    "linkOrder": null,
+                    "webmapdata": null,
+                    "nodePfp": null,
+                    "deezer": null,
+                    "subvert": null,
+                    "bluesky": null,
+                    "inprocess": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`spotifyID` is missing or not a string, or the body is not JSON.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Missing or invalid required parameters: spotifyID"
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has that value.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "The artist you're searching for is not found"
+              }
+            }
+          },
+          "500": {
+            "description": "The database could not be read.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Something went wrong on our end"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/findArtistByIG": {
+      "post": {
+        "summary": "Find an artist by Instagram handle",
+        "description": "Finds the artist whose `instagram` column equals `ig` exactly (case-sensitive) and returns the whole artist row. If several rows match, the first is returned. No credentials.\n\nKept for Sleeve Note: same path, body and response shape as the legacy `api.musicnerd.xyz` route, so it does not follow this API's `{ status }` convention. Two deliberate differences from the legacy route: a database failure returns 500 (it returned 404), and a body that is not JSON returns 400 (it returned an unhandled 500).",
+        "operationId": "findArtistByIG",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ig"
+                ],
+                "properties": {
+                  "ig": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "ig": "exampleartist"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The matching artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "result"
+                  ],
+                  "properties": {
+                    "result": {
+                      "$ref": "#/components/schemas/LegacyArtist"
+                    }
+                  }
+                },
+                "example": {
+                  "result": {
+                    "id": "6cb3d81a-0000-4000-8000-000000000000",
+                    "legacyId": null,
+                    "bandcamp": null,
+                    "facebook": null,
+                    "x": "exampleartist",
+                    "soundcloud": null,
+                    "notes": null,
+                    "patreon": null,
+                    "name": "Example Artist",
+                    "instagram": "exampleartist",
+                    "youtube": null,
+                    "youtubechannel": null,
+                    "lcname": "example artist",
+                    "soundcloudId": null,
+                    "spotify": "4Z8W4fKeB5YxbusRsdQVPb",
+                    "twitch": null,
+                    "imdb": null,
+                    "musicbrainz": null,
+                    "wikidata": null,
+                    "mixcloud": null,
+                    "facebookId": null,
+                    "discogs": null,
+                    "tiktok": null,
+                    "tiktokId": null,
+                    "jaxsta": null,
+                    "famousbirthdays": null,
+                    "songexploder": null,
+                    "colorsxstudios": null,
+                    "bandsintown": null,
+                    "linktree": null,
+                    "onlyfans": null,
+                    "wikipedia": null,
+                    "audius": null,
+                    "zora": null,
+                    "catalog": null,
+                    "opensea": null,
+                    "foundation": null,
+                    "lastfm": null,
+                    "linkedin": null,
+                    "soundxyz": null,
+                    "mirror": null,
+                    "glassnode": null,
+                    "collectsNfTs": null,
+                    "spotifyusername": null,
+                    "bandcampfan": null,
+                    "tellie": null,
+                    "wallets": null,
+                    "ens": null,
+                    "lens": null,
+                    "addedBy": null,
+                    "cameo": null,
+                    "farcaster": null,
+                    "createdAt": "2024-05-01 12:00:00.123+00",
+                    "updatedAt": "2026-10-01 12:00:00.123+00",
+                    "supercollector": null,
+                    "bio": null,
+                    "customImage": null,
+                    "headerImagePosition": null,
+                    "linkOrder": null,
+                    "webmapdata": null,
+                    "nodePfp": null,
+                    "deezer": null,
+                    "subvert": null,
+                    "bluesky": null,
+                    "inprocess": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`ig` is missing or not a string, or the body is not JSON.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Missing or invalid required parameters: instagram handle"
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has that value.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "The artist you're searching for is not found"
+              }
+            }
+          },
+          "500": {
+            "description": "The database could not be read.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Something went wrong on our end"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/findTwitterHandle": {
+      "post": {
+        "summary": "Find an artist's X handle",
+        "description": "Returns the X (Twitter) handle of an artist found by wallet, ENS name or artist name. No credentials.\n\n- **`ethAddress`** (wins when both are sent): a `0x` address of 40 hex characters is matched against the artist's wallets first, then against `ens`; any other value is matched against `ens` only. Matches are exact.\n- **`name`**: a fuzzy search over artist names (substring first, then trigram similarity ≥ 0.3); the best-ranked artist is used.\n\n`result` is the artist's `x` column, which may be `null`. When `name` matches no artist, the response is **200 `{}`** (no `result`), not 404, as in the legacy route.\n\nKept for Sleeve Note: same path, body and response shape as the legacy `api.musicnerd.xyz` route, so it does not follow this API's `{ status }` convention. Two deliberate differences from the legacy route: a database failure returns 500 (it returned 404), and a body that is not JSON returns 400 (it returned an unhandled 500).",
+        "operationId": "findTwitterHandle",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "ethAddress": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "ethAddress": "0x0000000000000000000000000000000000000001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The artist's X handle, or `{}` when a name search matches nothing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "found": {
+                    "value": {
+                      "result": "exampleartist"
+                    }
+                  },
+                  "noNameMatch": {
+                    "value": {}
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither `name` nor `ethAddress` is a non-empty string, or the body is not JSON.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Missing or invalid required parameters: name or ethAddress"
+              }
+            }
+          },
+          "404": {
+            "description": "`ethAddress` matches no wallet or ENS name.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "The artist you're searching for is not found"
+              }
+            }
+          },
+          "500": {
+            "description": "The database could not be read.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Something went wrong on our end"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LegacyArtist": {
+        "type": "object",
+        "description": "The whole `artists` row, in the website's column order and camelCase names, exactly as the legacy MusicNerdWeb route returns it. Includes internal fields (`notes`, `addedBy`, `legacyId`, `webmapdata`) for compatibility.",
+        "required": [
+          "id",
+          "legacyId",
+          "bandcamp",
+          "facebook",
+          "x",
+          "soundcloud",
+          "notes",
+          "patreon",
+          "name",
+          "instagram",
+          "youtube",
+          "youtubechannel",
+          "lcname",
+          "soundcloudId",
+          "spotify",
+          "twitch",
+          "imdb",
+          "musicbrainz",
+          "wikidata",
+          "mixcloud",
+          "facebookId",
+          "discogs",
+          "tiktok",
+          "tiktokId",
+          "jaxsta",
+          "famousbirthdays",
+          "songexploder",
+          "colorsxstudios",
+          "bandsintown",
+          "linktree",
+          "onlyfans",
+          "wikipedia",
+          "audius",
+          "zora",
+          "catalog",
+          "opensea",
+          "foundation",
+          "lastfm",
+          "linkedin",
+          "soundxyz",
+          "mirror",
+          "glassnode",
+          "collectsNfTs",
+          "spotifyusername",
+          "bandcampfan",
+          "tellie",
+          "wallets",
+          "ens",
+          "lens",
+          "addedBy",
+          "cameo",
+          "farcaster",
+          "createdAt",
+          "updatedAt",
+          "supercollector",
+          "bio",
+          "customImage",
+          "headerImagePosition",
+          "linkOrder",
+          "webmapdata",
+          "nodePfp",
+          "deezer",
+          "subvert",
+          "bluesky",
+          "inprocess"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "legacyId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bandcamp": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "soundcloud": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patreon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instagram": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "youtube": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "youtubechannel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lcname": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "soundcloudId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "spotify": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "twitch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imdb": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "musicbrainz": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wikidata": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mixcloud": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "facebookId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "discogs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tiktok": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tiktokId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jaxsta": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "famousbirthdays": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "songexploder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "colorsxstudios": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bandsintown": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linktree": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "onlyfans": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wikipedia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "audius": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "zora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "catalog": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opensea": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "foundation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lastfm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linkedin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "soundxyz": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mirror": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "glassnode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "collectsNfTs": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "spotifyusername": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bandcampfan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tellie": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wallets": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "ens": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lens": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addedBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "cameo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "farcaster": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Postgres timestamp text, e.g. `2024-05-01 12:00:00.123+00`."
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "Postgres timestamp text."
+          },
+          "supercollector": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customImage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "headerImagePosition": {},
+          "linkOrder": {},
+          "webmapdata": {},
+          "nodePfp": {},
+          "deezer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subvert": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bluesky": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inprocess": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

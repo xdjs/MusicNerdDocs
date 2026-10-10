@@ -86,6 +86,14 @@
               "api-reference/interview-responses/revise",
               "api-reference/interview-responses/versions"
             ]
+          },
+          {
+            "group": "Legacy lookups",
+            "pages": [
+              "api-reference/legacy/find-artist-by-spotify-id",
+              "api-reference/legacy/find-artist-by-ig",
+              "api-reference/legacy/find-twitter-handle"
+            ]
           }
         ]
       }
