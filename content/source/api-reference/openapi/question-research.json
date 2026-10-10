@@ -834,6 +834,15 @@
               "pattern": "^https?://"
             },
             "description": "Exact public citation URLs already discussed; excluded before evidence selection and included in request identity."
+          },
+          "answerScope": {
+            "type": "string",
+            "enum": [
+              "focused",
+              "overview"
+            ],
+            "default": "focused",
+            "description": "Use overview for a broad account of recent activity, focused for a specific post, release or detail. For overview + latest + reporting, saved evidence considers up to six original windows within a total 12,000-character budget; the existing assessment selects up to three useful originals, grouping related activity and preserving qualifications. One activity is permitted when only one is supported. External collection budgets do not expand. Overview is part of cache identity; omitted or focused retains prior behavior. This is not evidence of comprehensive provider freshness."
           }
         }
       },
