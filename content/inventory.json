@@ -4,12 +4,12 @@
   "apiPages": 35,
   "specifications": [
     "artist-latest.json",
+    "artist-lookups.json",
     "health.json",
     "interview-memory.json",
     "interview-responses.json",
     "interview-sessions.json",
     "knowledge.json",
-    "legacy-lookups.json",
     "onboarding.json",
     "question-research.json",
     "research.json"

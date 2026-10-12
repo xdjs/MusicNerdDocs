@@ -88,11 +88,11 @@
             ]
           },
           {
-            "group": "Legacy lookups",
+            "group": "Artist lookups",
             "pages": [
-              "api-reference/legacy/find-artist-by-spotify-id",
-              "api-reference/legacy/find-artist-by-ig",
-              "api-reference/legacy/find-twitter-handle"
+              "api-reference/lookups/find-artist-by-spotify-id",
+              "api-reference/lookups/find-artist-by-ig",
+              "api-reference/lookups/find-twitter-handle"
             ]
           }
         ]
