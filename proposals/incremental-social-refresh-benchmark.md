@@ -49,3 +49,21 @@ Before ready-to-merge: implement and replay anchor/gap handling against captured
 - x baseline: run `iUF8gq2xW0IV5TT8i`, build `QPJVw9mpWzWbDzazl`.
 - x window: run `zhIYByoo0JWehW5g0`, build `QPJVw9mpWzWbDzazl`.
 - x empty: run `WeEAbV9KJHzTwpVT6`, build `QPJVw9mpWzWbDzazl`.
+
+## Revised-cutoff pilot — same evening
+
+Three more live requests used the cutoffs generated from the newest three non-pinned IDs in each captured fresh baseline, minus48hours. Replay tests assert these exact cutoffs match the production planner. Same limits/caps as before; no artist data writes.
+
+| Platform | Generated cutoff (UTC) | Results | Charge | Seconds |
+|---|---|---:|---:|---:|
+| Instagram | Sep30 19:21:48 |8|$0.0184|15.926|
+| TikTok | Oct7 23:38:45 (sent as Oct7)|9|$0.0370|8.649|
+| X | Sep22 08:32:30 (sent as Sep22)|3|$0.0012|20.246|
+
+All three returned every saved reference and every in-window ID from the corresponding bounded baseline.20 returned items versus109; $0.0566 versus$0.1917 (70.5%lower). These are the revised algorithm's observed savings, not the earlier91.5%hand-picked-window comparison. Additional pilot cost$0.0566; cumulative twelve-run charge$0.3299. X was slower here, so no general speedup claim.
+
+Instagram additionally returned a Sep30 post absent from both earlier nine-item sets. This is older material newly observed, not a newly published post, and shows why the bounded baseline cannot prove exhaustive recall. TikTok/X retained the same three newly published posts seen earlier.
+
+Run IDs: Instagram`3ba0JCd1CgYslHGte`, TikTok`GRaNtpgvQmDA7cpnr`, X`ol7wB7hBlKKIN03WL`. Public-ID/date-only fixtures in API #38 replay the actual planner and continuity assessment. Separate tests remove a saved reference and verify no advancement; PGlite verifies persisted gaps, reconnection and cooldown. The real Instagram Latest collector is exercised with captured ID/date/pinned metadata, including an aged reference beyond30days and old pinned results excluded from Latest storage. Auth, job fencing and provider fetches are mocked in that collector test; it is not a deployed worker test.
+
+Reference logic has now been revised in API #38; the older rejection above describes the pre-revision draft. Staging migration/paired-worker verification, second-artist and busy-account acceptance, and recovery for deleted references remain open before release.
