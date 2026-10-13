@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: artist lookups",
     "version": "1.0.0",
-    "description": "Artist lookups copied from MusicNerdWeb for Sleeve Note. Once these are in production, `api.musicnerd.xyz` will point at this API (xdjs/MusicNerdWeb#1480)."
+    "description": "Find an artist by Spotify ID or Instagram handle, or an artist's X handle. No credentials."
   },
   "servers": [
     {
@@ -19,7 +19,7 @@
     "/api/findArtistBySpotifyID": {
       "post": {
         "summary": "Find an artist by Spotify ID",
-        "description": "Finds the artist whose `spotify` column equals `spotifyID` exactly (case-sensitive) and returns the whole artist row. If several rows match, the first is returned. No credentials.\n\nUsed by Sleeve Note, so it keeps the path, body and response shape of the MusicNerdWeb route at `api.musicnerd.net` and does not follow this API's `{ status }` convention. Two deliberate differences from that route: a database failure returns 500 (it returned 404), and a body that is not JSON returns 400 (it returned an unhandled 500).",
+        "description": "Returns the artist whose `spotify` equals `spotifyID` exactly (case-sensitive). If several match, the first is returned. No credentials.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
         "operationId": "findArtistBySpotifyID",
         "security": [],
         "requestBody": {
@@ -170,7 +170,7 @@
     "/api/findArtistByIG": {
       "post": {
         "summary": "Find an artist by Instagram handle",
-        "description": "Finds the artist whose `instagram` column equals `ig` exactly (case-sensitive) and returns the whole artist row. If several rows match, the first is returned. No credentials.\n\nUsed by Sleeve Note, so it keeps the path, body and response shape of the MusicNerdWeb route at `api.musicnerd.net` and does not follow this API's `{ status }` convention. Two deliberate differences from that route: a database failure returns 500 (it returned 404), and a body that is not JSON returns 400 (it returned an unhandled 500).",
+        "description": "Returns the artist whose `instagram` equals `ig` exactly (case-sensitive). If several match, the first is returned. No credentials.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
         "operationId": "findArtistByIG",
         "security": [],
         "requestBody": {
@@ -321,7 +321,7 @@
     "/api/findTwitterHandle": {
       "post": {
         "summary": "Find an artist's X handle",
-        "description": "Returns the X (Twitter) handle of an artist found by wallet, ENS name or artist name. No credentials.\n\nWhen `ethAddress` is sent, it is used and `name` is ignored. A `0x` address of 40 hex characters is matched against the artist's wallets first, then against `ens`; any other value is matched against `ens` only. These matches are exact.\n\nOtherwise `name` runs a fuzzy search over artist names, substring matches first and then trigram similarity of at least 0.3, and the best-ranked artist is used.\n\n`result` is the artist's `x` column, which may be `null`. When `name` matches no artist, the response is **200 `{}`** (no `result`), not 404, as the MusicNerdWeb route does.\n\nUsed by Sleeve Note, so it keeps the path, body and response shape of the MusicNerdWeb route at `api.musicnerd.net` and does not follow this API's `{ status }` convention. Two deliberate differences from that route: a database failure returns 500 (it returned 404), and a body that is not JSON returns 400 (it returned an unhandled 500).",
+        "description": "Returns the X handle of an artist found by `ethAddress` or `name`. No credentials.\n\n`ethAddress` wins when both are sent. A `0x` address of 40 hex characters is matched exactly against the artist's wallets, then `ens`; any other value against `ens` only.\n\n`name` is a fuzzy search: substring matches first, then trigram similarity of at least 0.3. The best match is used.\n\n`result` is `null` when the artist has no X handle. A `name` that matches no artist returns 200 `{}`.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
         "operationId": "findTwitterHandle",
         "security": [],
         "requestBody": {
@@ -416,7 +416,7 @@
     "schemas": {
       "Artist": {
         "type": "object",
-        "description": "The whole `artists` row, in the website's column order and camelCase names, exactly as the MusicNerdWeb route returns it. Includes internal fields (`notes`, `addedBy`, `legacyId`, `webmapdata`) for compatibility.",
+        "description": "The artist's full record, including internal fields (`notes`, `addedBy`, `legacyId`, `webmapdata`).",
         "required": [
           "id",
           "legacyId",
