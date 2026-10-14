@@ -24,7 +24,7 @@
             "privyBearer": []
           }
         ],
-        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles \u2192 vault \u2192 interview \u2192 publish): a turn for a step that is not current gets an `error` event and the real step. Handlers are idempotent, so a repeated or interrupted turn resumes rather than repeats. A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.",
+        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles → vault → interview → publish): a turn for a step that is not current gets an `error` event and the real step. Confirmed steps are resumed rather than repeated. Claim approval grants editing rights; it never approves sources or publishes an About. A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.",
         "parameters": [
           {
             "name": "artistId",
@@ -55,7 +55,7 @@
                         "const": "open"
                       }
                     },
-                    "description": "Start or resume. On a fresh claim this runs the whole auto-build: find profiles, search for sources, write the Lore and the About, and confirm every step."
+                    "description": "Start or resume. A fresh claim uses completed directory discovery when its versioned checkpoint is at most 24 hours old, belongs to the original directory-add event, and still matches the artist identity and source content. Approving or rejecting sources does not invalidate that discovery. Reuse shows saved profiles and pending sources for explicit review without repeating profile or web discovery. Saved Deezer artist IDs and YouTube channel IDs render as their canonical public profile URLs, and a stored channel counts as an existing YouTube profile; missing, incomplete, stale or changed discovery does not suppress a new search. Discovery completion has its own immutable timestamp; a parent job still pending, running or failed while handing off later work can reuse the completed discovery. Downstream queue retries do not restart discovery or reset an existing child job. Social collection and caption processing have separate completion state. The artist can still request more profiles or refresh research explicitly. Opening never approves sources or publishes an About."
                   },
                   {
                     "type": "object",
@@ -173,7 +173,7 @@
                         }
                       }
                     },
-                    "description": "Approve or reject sources and add new ones; confirms the sources step."
+                    "description": "Explicitly approve or reject the displayed sources and add URLs. All pending sources must be reviewed before moving on. Previously rejected sources stay rejected; claim approval and opening the chat do not approve them. Generated text can reuse a private prepared draft only when every cited original is unchanged and approved and no newer artist material would be omitted."
                   },
                   {
                     "type": "object",
@@ -199,7 +199,7 @@
                       },
                       "question": {
                         "type": "string",
-                        "description": "The question text, for grounded (`social_\u2026`) questions."
+                        "description": "The question text, for grounded (`social_…`) questions."
                       }
                     },
                     "description": "Answer or skip one interview question."
@@ -340,7 +340,7 @@
         "summary": "Onboarding state",
         "operationId": "getOnboardingState",
         "security": [],
-        "description": "Where an artist's onboarding build is: which steps are confirmed and when. The artist's profile page polls this while the build runs, about every 2 seconds, and repaints each section as its step confirms: Links on `profiles`, Lore on `vault`, About on `publish`. It stops once `complete` is true.\n\nPublic: no credentials. It returns only step names and confirmation times. Responses aren't cached.\n\nOn a fresh claim the auto-build (`open` on the onboarding chat) confirms `profiles`, then `vault`, then `interview` and `publish` together when the About is saved: about 5, 9 and 22 seconds in on staging. An artist with no onboarding, or an ID that isn't an artist, returns every step `null` and `currentStep` `profiles`.",
+        "description": "Where onboarding stands: confirmed steps and their confirmation times. The profile can poll this while onboarding is open. Public, uncached, and limited to step names and timestamps; it does not expose pending sources or private prepared text.\n\nAdding an artist discovers public links and Latest material while About and Lore remain private. Approving the claim does not confirm review or publication. A fresh open discovers or reuses saved profiles, then stops for explicit source review. Interview answers are optional and individually answered or skipped. About is public only after an explicit publish turn. There is no fixed completion time. An artist with no onboarding, or an unknown ID, returns every step null and currentStep profiles.",
         "parameters": [
           {
             "name": "artistId",
@@ -534,7 +534,7 @@
                   "null"
                 ],
                 "format": "date-time",
-                "description": "The interview step. The auto-build confirms it together with `publish`."
+                "description": "The interview step, confirmed after the optional questions are answered or skipped."
               },
               "publish": {
                 "type": [
