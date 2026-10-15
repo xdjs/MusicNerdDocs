@@ -14,7 +14,7 @@
     "/api/artist/{id}/research/questions": {
       "post": {
         "summary": "Request question-directed research",
-        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. Explicit URL and date constraints can select stored originals even without matching words in their body. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Stored Spotify/Deezer release catalogs and InProcess moments share durable snapshots with the public Latest endpoint. Provider refreshes run only in queued latest_refresh work; question/status/original reads never refresh these providers. A bounded agent explores the saved public snapshot with paginated browsing, model-chosen searches and exact source-window reads before selecting unchanged evidence; exact supporting quotations and factual claims are checked during answer drafting. If stored evidence is insufficient, the model chooses a next lookup from server-validated web, page or connected social options based on the missing information. There is no fixed social-platform priority. Explicit URL/platform restrictions, account identity and existing provider budgets still constrain execution; the chosen plan is persisted and revalidated before subsequent job slices. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time. When the outside-research daily budget (5 jobs per artist, 100 globally) is exhausted, the server can reserve a saved-only job under a separate budget with the same 5/100 bounds. Saved-only mode is server-selected, not caller-controlled: at most five saved-evidence model steps, no external search, page fetch, scraper or transcription. If saved evidence is insufficient, the job ends unresolved with outsideResearchReason=quota. Exhausting both budgets returns saved_evidence_quota (429); research_busy remains distinct. Completed matching jobs can be reused independently of these admission limits, subject to current eligibility and cache lifetime. Cache identity preserves topic and all source/date/evidence constraints; reuse is not restricted to an arbitrary last-ten-jobs window. Saved research reads all eligible originals within the existing corpus guard, independently of the Latest UI card limits. Published answers retain publication eligibility and private answers remain excluded. Partial saved support is revalidated and combined with newly collected originals before final assessment. Saved selection returns at most 12,000 original characters; combined outside assessment can return at most six windows totaling 24,000 characters. Exploration uses a current public-research model through AI Gateway, with per-step reservation and usage tracking; external provider budgets are unchanged.",
+        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. Explicit URL and date constraints can select stored originals even without matching words in their body. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Stored Spotify/Deezer release catalogs and InProcess moments share durable snapshots with the public Latest endpoint. Provider refreshes run only in queued latest_refresh work; question/status/original reads never refresh these providers. A bounded agent explores the saved public snapshot with paginated browsing, model-chosen searches and exact source-window reads before selecting unchanged evidence; exact supporting quotations and factual claims are checked during answer drafting. If stored evidence is insufficient, the model chooses a next lookup from server-validated web, page or connected social options based on the missing information. There is no fixed social-platform priority. Explicit URL/platform restrictions, account identity and existing provider budgets still constrain execution; the chosen plan is persisted and revalidated before subsequent job slices. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time. When the outside-research daily budget (5 jobs per artist, 100 globally) is exhausted, the server can reserve a saved-only job under a separate budget with the same 5/100 bounds. Saved-only mode is server-selected, not caller-controlled: at most five saved-evidence model steps, no external search, page fetch, scraper or transcription. If saved evidence is insufficient, the job ends unresolved with outsideResearchReason=quota. Exhausting both budgets returns saved_evidence_quota (429); research_busy remains distinct. Completed matching jobs can be reused independently of these admission limits, subject to current eligibility and cache lifetime. Cache identity preserves topic and all source/date/evidence constraints; reuse is not restricted to an arbitrary last-ten-jobs window. Saved research reads all eligible originals within the existing corpus guard, independently of the Latest UI card limits. Published answers retain publication eligibility and private answers remain excluded. Partial saved support is revalidated and combined with newly collected originals before final assessment. Saved selection returns at most 12,000 original characters; combined outside assessment can return at most six windows totaling 24,000 characters. Exploration uses a current public-research model through AI Gateway, with per-step reservation and usage tracking; external provider budgets are unchanged. Service callers may opt into preferDirectEvidence: true to offer bounded saved candidates before model-driven evidence exploration. This option is not part of the persisted neutral request. Selection candidates means evidence is ready for a checked answer attempt, not that it answers the question. At most six exact windows and 12,000 characters are selected. Latest reporting overviews select the six newest distinct canonical posts first, preferring written evidence over a duplicate transcript, then interleave providers only within that cohort. Explicit source, platform, evidence-kind, date and URL exclusions still apply. Semantic project exclusions remain an answer-layer obligation. An empty selection enters ordinary research. Candidate jobs reserve the same quota once and preserve normal claim and expiry checks. Legacy callers never reuse a candidate-only job. A client must register and verify its answer, reread current evidence, and continue the same job if the candidate answer is insufficient or fails verification.",
         "security": [
           {
             "PrivyAuth": []
@@ -739,6 +739,139 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/research/questions/{jobId}/continue": {
+      "post": {
+        "summary": "Continue after a saved-candidate answer attempt",
+        "description": "Service-only, idempotent transition of a candidate job into ordinary bounded research. Send no body or an empty JSON object; client routing, counters, permissions and source overrides are rejected. The same job ID, original neutral request, activity, quota lane, created time and model/provider counters are preserved. A candidate job transitions atomically once under the artist/job lock, subject to current claim, original lifetime and the one-active-question limit. Repeated calls return the current job status. Clients must fence an in-flight candidate answer lease before continuing, retain answer registration, and retry the checked answer against the new current references. This operation does not extend budgets, expiry or reset answer retry limits. It never decides that candidate evidence is sufficient.",
+        "security": [
+          {
+            "ResearchService": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Persisted acknowledgement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid authentication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current claimant/admin required for private operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unavailable artist, job or evidence",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "State or revision changed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Evidence exceeds supported bounds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Research quota or active-work limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage, credential or provider unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Original candidate job lifetime expired; no counters or expiry were reset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -843,6 +976,10 @@
             ],
             "default": "focused",
             "description": "Use overview for a broad account of recent activity, focused for a specific post, release or detail. The agent can browse all eligible saved public sources by page or provider, search with its own terms, and read exact original windows. Broad browsing includes multiple available providers instead of selecting only the newest posts from one busy account. Source, date, URL, speech and exclusion constraints remain authoritative. Exploration is bounded by five model steps, twelve tool calls, 24,000 original-text characters, and the job slice deadline. Saved exploration returns at most six read windows and 12,000 characters; an overview selects up to three distinct useful activities. A limit or invalid selection is an operational failure, not evidence that information is absent. Outside collection keeps its existing budgets and can run only from a validated server plan. Saved exploration does not refresh providers. This is not a comprehensive freshness guarantee."
+          },
+          "preferDirectEvidence": {
+            "type": "boolean",
+            "description": "Service credential only. Offer bounded candidates for a checked answer attempt before normal research. Optional and false by default; not persisted in the neutral request or its identity."
           }
         }
       },
@@ -933,6 +1070,14 @@
               "quota"
             ],
             "description": "Outside research is unavailable; saved-only research may still complete. If unresolved, explain that saved sources were checked and outside research is capped."
+          },
+          "selection": {
+            "type": "string",
+            "enum": [
+              "candidates",
+              "research"
+            ],
+            "description": "Optional for legacy jobs. candidates is an unassessed evidence selection, not an answer or a sufficiency finding. If the checked answer is insufficient, continue this same job. research means the normal bounded research path."
           }
         }
       },

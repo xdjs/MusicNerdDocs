@@ -40,6 +40,7 @@
               "api-reference/artists/research-refresh",
               "api-reference/research/question",
               "api-reference/research/question-status",
+              "api-reference/research/continue",
               "api-reference/research/discoveries",
               "api-reference/research/review-discovery",
               "api-reference/research/research-evidence"
