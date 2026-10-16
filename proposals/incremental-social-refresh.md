@@ -59,3 +59,22 @@ Successful empty results still receive the cooldown but cannot invent a referenc
 Apify success and spending metadata alone do not prove coverage. Reconnection is bounded empirical evidence only: a provider could still omit a post while returning the anchors. Captured replay tests and independent comparison sets remain necessary. Deletion/new pinning needs explicit reference recovery; silently dropping a missing anchor is not safe.
 
 See [live comparison and revised-cutoff acceptance](incremental-social-refresh-benchmark.md). Provider pilot and local SQL/collector tests do not replace staging worker and authenticated preview verification. Schema must precede API release; all PRs remain drafts.
+
+## Bounded recovery (2026-10-16)
+
+Pete approved one bounded recovery attempt, then review. Once a stored scan loses
+continuity, the next eligible account scan may retry the same reference window
+once, with the existing post and spending caps. It never widens the window or
+silently drops a missing/deleted/newly pinned reference. Reserve that attempt
+under the existing artist/job write lock before any paid request, so overlapping
+jobs cannot each spend it. A failed or ambiguous provider start consumes the
+reservation; an existing paid run may still finish using its saved dataset.
+
+If the retry cannot reconnect all references, subsequent automatic account scans
+stop with a private needs-review marker. Valid returned pins can explain why a
+reference disappeared from the eligible set, but are not proof of coverage and
+are not retired automatically. A successful guarded collection reaching all
+references clears the gap and reservation. This introduces no new scheduler,
+backfill or public diagnostic fields; explicit targeted-post research remains
+separate. Migration 0052 must precede the API workers; historical migrations
+must not be replayed.
