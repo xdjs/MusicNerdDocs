@@ -18,7 +18,7 @@ Reuse a recent successful account check; otherwise send provider-supported date 
 | PR | Item | State |
 | --- | --- | --- |
 | [Docs #13](https://github.com/xdjs/MusicNerdDocs/pull/13) | Refresh contract and limitations | Draft |
-| [Web #1497](https://github.com/xdjs/MusicNerdWeb/pull/1497) | Durable private refresh checkpoint schema | Draft; migration not applied |
+| [Web #1497](https://github.com/xdjs/MusicNerdWeb/pull/1497) | Durable private refresh checkpoint schema | Draft; 0052 applied to staging, production pending |
 | [API #38](https://github.com/xdjs/MusicNerdAPI/pull/38) | Reference-based cutoffs, cooldown and retry fences | Draft |
 
 ## Done when
@@ -56,7 +56,7 @@ The worker persists this reference with the immutable run intent. After all inte
 
 Successful empty results still receive the cooldown but cannot invent a reference or erase a gap. Unknown/malformed persisted reference payloads fail closed. Claim revocation removes reference state with the posts. Standalone targeted-post research cannot seed references. The existing thumbnail retention is reused; caption upserts retain new wording. Existing caption-credit extraction is separate and not upgraded to revision-based invalidation by this PR.
 
-Apify success and spending metadata alone do not prove coverage. Reconnection is bounded empirical evidence only: a provider could still omit a post while returning the anchors. Captured replay tests and independent comparison sets remain necessary. Deletion/new pinning needs explicit reference recovery; silently dropping a missing anchor is not safe.
+Apify success and spending metadata alone do not prove coverage. Reconnection is bounded empirical evidence only: a provider could still omit a post while returning the anchors. Captured replay tests and independent comparison sets remain necessary. Deletion/new pinning follows the one-attempt recovery policy below; silently dropping a missing anchor is not safe.
 
 See [live comparison and revised-cutoff acceptance](incremental-social-refresh-benchmark.md). Provider pilot and local SQL/collector tests do not replace staging worker and authenticated preview verification. Schema must precede API release; all PRs remain drafts.
 

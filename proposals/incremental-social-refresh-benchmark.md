@@ -67,3 +67,25 @@ Instagram additionally returned a Sep30 post absent from both earlier nine-item 
 Run IDs: Instagram`3ba0JCd1CgYslHGte`, TikTok`GRaNtpgvQmDA7cpnr`, X`ol7wB7hBlKKIN03WL`. Public-ID/date-only fixtures in API #38 replay the actual planner and continuity assessment. Separate tests remove a saved reference and verify no advancement; PGlite verifies persisted gaps, reconnection and cooldown. The real Instagram Latest collector is exercised with captured ID/date/pinned metadata, including an aged reference beyond30days and old pinned results excluded from Latest storage. Auth, job fencing and provider fetches are mocked in that collector test; it is not a deployed worker test.
 
 Reference logic has now been revised in API #38; the older rejection above describes the pre-revision draft. Staging migration/paired-worker verification, second-artist and busy-account acceptance, and recovery for deleted references remain open before release.
+
+
+## Second artist: Dutchyyy (2026-10-16)
+
+Four bounded live runs used the integrated API #38 provider starters and the actual reference planner: one baseline and one reference-window run each for Instagram `peacepeacegawd` and X `dutchmassive`. No application artist data was written by these provider comparisons. Instagram retained a nine-result / $0.03 cap; X retained 50 results / $0.05. Start intent was saved before each request, with no automatic restart.
+
+| Platform | Baseline items | Reference-window items | Baseline charge | Window charge | Generated cutoff |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Instagram | 9 | 5 | $0.0207 | $0.0115 | 2026-09-30T12:00:06.000Z |
+| X | 50 | 10 | $0.0200 | $0.0040 | 2026-10-14T02:24:54.000Z (provider day precision) |
+
+Combined observed charges were $0.0407 versus $0.0155, about 61.9% lower for this pair. Every saved reference and every non-pinned baseline ID inside the requested window reappeared. The actual continuity assessor accepted both windows; removing one reference from each captured result retained a gap. X reached the 50-item baseline limit, so that baseline does not establish complete history. The independent comparison set is itself bounded and cannot detect omissions shared by both requests.
+
+The three Instagram references were `4007823171111352282`, `4002622022623964293`, `3999033866871915560`; X references were `2110961955259519184`, `2110923768793268637`, `2110919885950005295`. These are public post identifiers, not provider run credentials.
+
+This is a second artist and a capped baseline, not a universal savings claim. TikTok was not rerun for this artist; its charged-filter and empty-result observations remain historical. A genuinely busy interval that pushes every anchor beyond a result cap is covered by controlled truncation tests, not claimed as a new live observation.
+
+### Separate staging evidence
+
+Migration 0052 was applied to staging. The actual checkpoint planner/writer passed real `mnweb` CRUD/RLS checks, browser-role SELECT denial, one recovery reservation, subsequent review, successful reconnection, cooldown and revoked-job denial; those verification rows were rolled back. A separate real concurrent-transaction check granted exactly one recovery reservation and blocked the other for review, with zero provider starts; its disposable records were removed.
+
+Web `783cc068` and API `0570ab3` passed local and hosted checks. The paired preview loads LATASHÁ through product search; authenticated Update Latest acceptance remains pending owner/admin sign-in. These are draft changes; no production migration or release is claimed.
