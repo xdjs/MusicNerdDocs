@@ -2017,6 +2017,648 @@
           }
         }
       }
+    },
+    "/api/artist/{artistId}/interview/session/{sessionId}/prepare": {
+      "get": {
+        "summary": "Read question preparation",
+        "description": "Read-only status for the session\u2019s next question. Does not generate, enqueue or write. Stale means the session, next ordinal or mandatory memory no longer matches the prepared candidate. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "invalid_input"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "unauthenticated"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actual approved claimant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "forbidden"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or session unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "not_found"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Candidate is not ready or session, ordinal, memory or evidence changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "preparation_stale",
+                        "preparation_not_ready"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required memory or persistence unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "memory_unavailable"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Current preparation status. A ready candidate has not been offered yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "status",
+                    "preparation"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "preparation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "jobId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Present when a preparation job exists."
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "idle",
+                            "pending",
+                            "running",
+                            "ready",
+                            "failed",
+                            "stale"
+                          ]
+                        },
+                        "errorCode": {
+                          "type": "string",
+                          "enum": [
+                            "preparation_failed",
+                            "model_output_invalid",
+                            "timeout_or_cancelled",
+                            "external_outcome_unknown"
+                          ],
+                          "description": "Safe failure classification only; never raw provider errors or private job payloads."
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "preparation": {
+                    "status": "idle"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Prepare or offer the next question",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before saving a ready candidate as an offered question; it returns the saved question. At most three sequential questions per sitting. A successful saved answer queues preparation of the next question when another is allowed. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "prepare",
+                      "consume"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "action": "prepare"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "invalid_input"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "unauthenticated"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actual approved claimant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "forbidden"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or session unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "not_found"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Candidate is not ready or session, ordinal, memory or evidence changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "preparation_stale",
+                        "preparation_not_ready"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required memory or persistence unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "memory_unavailable"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Preparation status for prepare, or the saved offer for consume.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status",
+                        "preparation"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "ok"
+                        },
+                        "preparation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "status"
+                          ],
+                          "properties": {
+                            "jobId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "Present when a preparation job exists."
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "idle",
+                                "pending",
+                                "running",
+                                "ready",
+                                "failed",
+                                "stale"
+                              ]
+                            },
+                            "errorCode": {
+                              "type": "string",
+                              "enum": [
+                                "preparation_failed",
+                                "model_output_invalid",
+                                "timeout_or_cancelled",
+                                "external_outcome_unknown"
+                              ],
+                              "description": "Safe failure classification only; never raw provider errors or private job payloads."
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "const": "ok"
+                        },
+                        "question": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "questionKey": {
+                              "type": "string"
+                            },
+                            "question": {
+                              "type": "string"
+                            },
+                            "answer": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "offered",
+                                "answered",
+                                "skipped"
+                              ]
+                            },
+                            "revision": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "sitting": {
+                              "type": "integer"
+                            },
+                            "offeredAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "answerUpdatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "ordinal": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "references": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "start",
+                                  "end",
+                                  "quote"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "original",
+                                      "answer"
+                                    ]
+                                  },
+                                  "sourceId": {
+                                    "type": "string",
+                                    "description": "Required for original evidence: full vault/social source identity."
+                                  },
+                                  "entryId": {
+                                    "type": "string",
+                                    "description": "Required for answer evidence: full answer identity."
+                                  },
+                                  "revision": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "UTF-16 offset."
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "quote": {
+                                    "type": "string",
+                                    "minLength": 8,
+                                    "maxLength": 1600
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

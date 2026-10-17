@@ -60,3 +60,24 @@ Evaluate retrieval, original reading, angle choice, drafting and checking togeth
 Automatic discovery checks the fetched destination before relevance review, source filing, or account adoption. Google anti-bot `/sorry` destinations, Google/YouTube consent and Google account sign-in hosts, Cloudflare challenge paths, and explicit login/sign-in/CAPTCHA/challenge route roots are rejected. An original search title or snippet cannot turn one of these destinations into artist evidence. The same check applies to followed index links and fetched music destinations.
 
 Legitimate article and catalog redirects retain their final destination and original discovery provenance. A normal article mentioning CAPTCHA or login is not rejected on that wording alone. An unreadable article at its original URL is still handled by the existing source-verification policy; this guard does not classify every provider failure as a challenge or detect every possible access wall. Previously saved sources are not automatically deleted.
+
+## Durable interview preparation (draft)
+
+The proposed interview flow prepares the next question through a durable job, so
+leaving the page does not discard model work. This contract is tracked in
+[MusicNerdWeb #1422](https://github.com/xdjs/MusicNerdWeb/issues/1422) and is not released.
+
+The actual approved claimant starts preparation with
+[Prepare or offer the next question](/api-reference/interview/prepare-question),
+using `action: prepare`. Poll
+[Read question preparation](/api-reference/interview/preparation-state) to read
+its status; polling never starts research or writes data. A `ready` candidate has
+not been offered yet. An explicit `action: consume` rechecks current session,
+question position, memory and evidence before saving the offer. A stale candidate
+must be prepared again. Saving an answer queues preparation of the next question
+when the sitting has fewer than three offers.
+
+The worker stores no bearer token. Status responses expose only the job ID,
+preparation status and a safe error code, not generated candidates, private
+research payloads or provider error text. Administrative access alone does not
+authorize preparing or consuming an artist's interview question.
