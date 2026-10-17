@@ -2258,6 +2258,26 @@
                             "external_outcome_unknown"
                           ],
                           "description": "Safe failure classification only; never raw provider errors or private job payloads."
+                        },
+                        "readyCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3,
+                          "description": "Number of independently checked available questions. Zero while initial preparation or eligibility checking is pending."
+                        },
+                        "totalCount": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 3,
+                          "description": "Questions targeted by this preparation bank; a new sitting targets three, an existing sitting only remaining slots."
+                        },
+                        "phase": {
+                          "type": "string",
+                          "enum": [
+                            "preparing",
+                            "checking"
+                          ],
+                          "description": "Preparing generates the initial bank; checking revalidates saved questions after an answer or changed instructions without generating replacements."
                         }
                       }
                     }
@@ -2276,7 +2296,7 @@
       },
       "post": {
         "summary": "Prepare or offer the next question",
-        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before saving a ready candidate as an offered question; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, a successful saved answer queues preparation of the next question when another is allowed; legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before saving the next checked bank candidate as an offered question, without generating on consume; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, a successful saved answer retains remaining prepared questions and queues a short semantic eligibility check when another is allowed; legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
         "security": [
           {
             "PrivyAuth": []
@@ -2541,6 +2561,26 @@
                                 "external_outcome_unknown"
                               ],
                               "description": "Safe failure classification only; never raw provider errors or private job payloads."
+                            },
+                            "readyCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 3,
+                              "description": "Number of independently checked available questions. Zero while initial preparation or eligibility checking is pending."
+                            },
+                            "totalCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3,
+                              "description": "Questions targeted by this preparation bank; a new sitting targets three, an existing sitting only remaining slots."
+                            },
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "preparing",
+                                "checking"
+                              ],
+                              "description": "Preparing generates the initial bank; checking revalidates saved questions after an answer or changed instructions without generating replacements."
                             }
                           }
                         }
