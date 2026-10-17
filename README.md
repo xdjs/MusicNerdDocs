@@ -1,5 +1,10 @@
 # Music Nerd Docs
 
+Public docs: [docs.musicnerd.net](https://docs.musicnerd.net). The existing
+`musicnerd-docs.vercel.app` host remains available for bookmarks and deep links.
+Production canonical metadata and machine-readable links use the new domain;
+local and preview URL selection and API environment routing remain unchanged.
+
 Documentation for the [Music Nerd API](https://github.com/xdjs/MusicNerdAPI): guides, an OpenAPI-driven reference with an in-page **Try it** playground, and AI-readable copies (`/llms.txt`, `/llms-full.txt`, Markdown for every page).
 
 ```bash
