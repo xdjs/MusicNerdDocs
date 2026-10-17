@@ -70,6 +70,8 @@
           "api-reference/interview/retract-boundary",
           "api-reference/interview/session-state",
           "api-reference/interview/start-session",
+          "api-reference/interview/preparation-state",
+          "api-reference/interview/prepare-question",
           "api-reference/interview/offer-question",
           "api-reference/interview/save-answer",
           "api-reference/interview/finish-session"
