@@ -74,8 +74,9 @@ using `action: prepare`. Poll
 its status; polling never starts research or writes data. A `ready` candidate has
 not been offered yet. An explicit `action: consume` rechecks current session,
 question position, memory and evidence before saving the offer. A stale candidate
-must be prepared again. Saving an answer queues preparation of the next question
-when the sitting has fewer than three offers.
+must be prepared again. For a session that has opted into durable preparation, saving an answer queues
+preparation of the next question when the sitting has fewer than three offers.
+Legacy foreground sessions keep their existing behavior.
 
 The worker stores no bearer token. Status responses expose only the job ID,
 preparation status and a safe error code, not generated candidates, private

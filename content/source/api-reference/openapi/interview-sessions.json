@@ -2021,7 +2021,7 @@
     "/api/artist/{artistId}/interview/session/{sessionId}/prepare": {
       "get": {
         "summary": "Read question preparation",
-        "description": "Read-only status for the session\u2019s next question. Does not generate, enqueue or write. Stale means the session, next ordinal or mandatory memory no longer matches the prepared candidate. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
+        "description": "Read-only status for the session\u2019s next question. Does not generate, enqueue or write. Stale means the session, claim, next ordinal or mandatory memory no longer matches the prepared candidate. A consumed preparation returns idle without jobId. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
         "security": [
           {
             "PrivyAuth": []
@@ -2276,7 +2276,7 @@
       },
       "post": {
         "summary": "Prepare or offer the next question",
-        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before saving a ready candidate as an offered question; it returns the saved question. At most three sequential questions per sitting. A successful saved answer queues preparation of the next question when another is allowed. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before saving a ready candidate as an offered question; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, a successful saved answer queues preparation of the next question when another is allowed; legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
         "security": [
           {
             "PrivyAuth": []
