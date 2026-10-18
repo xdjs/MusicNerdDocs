@@ -174,6 +174,10 @@
                               }
                             }
                           }
+                        },
+                        "interviewInvalidated": {
+                          "type": "boolean",
+                          "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
                         }
                       }
                     },
@@ -595,6 +599,10 @@
                               }
                             }
                           }
+                        },
+                        "interviewInvalidated": {
+                          "type": "boolean",
+                          "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
                         }
                       }
                     },
@@ -1254,7 +1262,7 @@
     "/api/artist/{id}/interview/answers/{answerId}": {
       "post": {
         "summary": "Save exact interview answer",
-        "description": "Only offered questions can be answered/skipped; identical retry is idempotent, stale overwrite returns 409. Null explicitly skips, never creates a boundary. Original question, sitting and offeredAt never move. Exact non-whitespace text is retained without trimming. Legacy offered questions can be completed here. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released.",
+        "description": "Only offered questions can be answered/skipped; identical retry is idempotent, stale overwrite returns 409. Null explicitly skips, never creates a boundary. Original question, sitting and offeredAt never move. Exact non-whitespace text is retained without trimming. Legacy offered questions can be completed here. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released. A fixed bank invalidated by changed instructions rejects new answers with 409 interview_invalidated; identical replay of an already-saved answer remains idempotent. Finish is explicit, never automatic.",
         "security": [
           {
             "PrivyAuth": []
@@ -1745,6 +1753,10 @@
                               }
                             }
                           }
+                        },
+                        "interviewInvalidated": {
+                          "type": "boolean",
+                          "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
                         }
                       }
                     },
@@ -2296,7 +2308,7 @@
       },
       "post": {
         "summary": "Prepare or offer the next question",
-        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before saving the next checked bank candidate as an offered question, without generating on consume; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, a successful saved answer retains remaining prepared questions and queues a short semantic eligibility check when another is allowed; legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before offering the entire checked bank atomically at explicit Start, without generating on consume. Returns question (first unanswered) plus questions (all authoritative sitting rows); offeredAt is fixed for every bank question at this transaction; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, all bank questions are offered at Start; subsequent answer saves preserve exact text and do not generate or run an eligibility model. New answers inform future sittings, not adaptive changes to the fixed current bank. Legacy partially consumed banks retain their previous preparation behavior; legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released.",
         "security": [
           {
             "PrivyAuth": []
@@ -2689,6 +2701,109 @@
                               }
                             }
                           }
+                        },
+                        "questions": {
+                          "type": "array",
+                          "maxItems": 3,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "questionKey": {
+                                "type": "string"
+                              },
+                              "question": {
+                                "type": "string"
+                              },
+                              "answer": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "offered",
+                                  "answered",
+                                  "skipped"
+                                ]
+                              },
+                              "revision": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "sitting": {
+                                "type": "integer"
+                              },
+                              "offeredAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "answerUpdatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "ordinal": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "references": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "revision",
+                                    "start",
+                                    "end",
+                                    "quote"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "original",
+                                        "answer"
+                                      ]
+                                    },
+                                    "sourceId": {
+                                      "type": "string",
+                                      "description": "Required for original evidence: full vault/social source identity."
+                                    },
+                                    "entryId": {
+                                      "type": "string",
+                                      "description": "Required for answer evidence: full answer identity."
+                                    },
+                                    "revision": {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{64}$"
+                                    },
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "UTF-16 offset."
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "quote": {
+                                      "type": "string",
+                                      "minLength": 8,
+                                      "maxLength": 1600
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "description": "All authoritative questions offered atomically at explicit Start; use these rows to advance locally while exact answer saves are pending."
                         }
                       }
                     }
