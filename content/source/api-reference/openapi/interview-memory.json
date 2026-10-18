@@ -771,6 +771,10 @@
           },
           "boundary": {
             "$ref": "#/components/schemas/Boundary"
+          },
+          "interviewInvalidated": {
+            "type": "boolean",
+            "description": "True when changed instructions stop an active fixed question bank. Saved answers and offered rows remain. New saves are rejected until the user explicitly finishes; a session-only instruction ends with that sitting, while permanent instructions carry forward."
           }
         }
       },

@@ -14,7 +14,7 @@
     "/api/artist/{id}/interview/session": {
       "get": {
         "summary": "Restore saved interview",
-        "description": "Private read only. Returns the latest session, saved questions, answers and exact evidence references; unlinked legacy offers are separate. No generation, scraping or writes. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released.",
+        "description": "Private read only. Returns the latest session, saved questions, answers and exact evidence references; unlinked legacy offers are separate. No generation, scraping or writes. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released. Before the automatic claim handoff has created its private session, the exact current approved claimant may receive optional top-level preparation metadata for the pending or running job. This read creates no session, offers, or work; clients may poll and show preparation in progress.",
         "security": [
           {
             "PrivyAuth": []
@@ -174,6 +174,14 @@
                               }
                             }
                           }
+                        },
+                        "interviewInvalidated": {
+                          "type": "boolean",
+                          "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+                        },
+                        "needsPreparedBankResume": {
+                          "type": "boolean",
+                          "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
                         }
                       }
                     },
@@ -276,6 +284,30 @@
                               }
                             }
                           }
+                        }
+                      }
+                    },
+                    "preparation": {
+                      "type": "object",
+                      "properties": {
+                        "jobId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "enum": [
+                            "pending",
+                            "running"
+                          ]
+                        },
+                        "phase": {
+                          "const": "preparing"
+                        },
+                        "readyCount": {
+                          "const": 0
+                        },
+                        "totalCount": {
+                          "const": 3
                         }
                       }
                     }
@@ -595,6 +627,14 @@
                               }
                             }
                           }
+                        },
+                        "interviewInvalidated": {
+                          "type": "boolean",
+                          "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+                        },
+                        "needsPreparedBankResume": {
+                          "type": "boolean",
+                          "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
                         }
                       }
                     },
@@ -1254,7 +1294,7 @@
     "/api/artist/{id}/interview/answers/{answerId}": {
       "post": {
         "summary": "Save exact interview answer",
-        "description": "Only offered questions can be answered/skipped; identical retry is idempotent, stale overwrite returns 409. Null explicitly skips, never creates a boundary. Original question, sitting and offeredAt never move. Exact non-whitespace text is retained without trimming. Legacy offered questions can be completed here. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released.",
+        "description": "Only offered questions can be answered/skipped; identical retry is idempotent, stale overwrite returns 409. Null explicitly skips, never creates a boundary. Original question, sitting and offeredAt never move. Exact non-whitespace text is retained without trimming. Legacy offered questions can be completed here. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released. A fixed bank invalidated by changed instructions rejects new answers with 409 interview_invalidated; identical replay of an already-saved answer remains idempotent. Finish is explicit, never automatic.",
         "security": [
           {
             "PrivyAuth": []
@@ -1576,7 +1616,7 @@
     "/api/artist/{id}/interview/session/{sessionId}/finish": {
       "post": {
         "summary": "Finish interview sitting",
-        "description": "Explicitly closes a sitting, skips an unanswered offer and queues an existing durable Lore refresh for its answers in the same transaction. Repeated finish is idempotent. It never runs a detached model call. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released.",
+        "description": "Explicitly closes a sitting, skips an unanswered offer and queues an existing durable Lore refresh for its answers in the same transaction. Repeated finish is idempotent. It never runs a detached model call. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released. When the approved claimant explicitly finishes a sitting containing a saved answer, the same transaction creates at most one private next sitting and queues its existing durable preparation job. The finished session ID is the deduplication key. Repeated Finish, skipped-only sittings, and untouched automatically prepared sittings never recursively queue another. An administrator finishing another artist’s sitting does not opt that artist in. The response still describes the finished sitting; GET then restores the next private sitting. No question is offered until explicit Start. Permanent instructions and newest answers apply to the next sitting; the finished sitting’s temporary instructions expire.",
         "security": [
           {
             "PrivyAuth": []
@@ -1745,6 +1785,14 @@
                               }
                             }
                           }
+                        },
+                        "interviewInvalidated": {
+                          "type": "boolean",
+                          "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+                        },
+                        "needsPreparedBankResume": {
+                          "type": "boolean",
+                          "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
                         }
                       }
                     },
@@ -2012,6 +2060,798 @@
                 "additionalProperties": false,
                 "required": [],
                 "properties": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{artistId}/interview/session/{sessionId}/prepare": {
+      "get": {
+        "summary": "Read question preparation",
+        "description": "Read-only status for the session’s next question. Does not generate, enqueue or write. Stale means the session, claim, next ordinal or mandatory memory no longer matches the prepared candidate. A consumed preparation returns idle without jobId. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released. Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "invalid_input"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "unauthenticated"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actual approved claimant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "forbidden"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or session unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "not_found"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Candidate is not ready or session, ordinal, memory or evidence changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "preparation_stale",
+                        "preparation_not_ready"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required memory or persistence unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "memory_unavailable"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Current preparation status. A ready candidate has not been offered yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "status",
+                    "preparation"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "preparation": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "jobId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Present when a preparation job exists."
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "idle",
+                            "pending",
+                            "running",
+                            "ready",
+                            "failed",
+                            "stale"
+                          ]
+                        },
+                        "errorCode": {
+                          "type": "string",
+                          "enum": [
+                            "preparation_failed",
+                            "model_output_invalid",
+                            "timeout_or_cancelled",
+                            "external_outcome_unknown"
+                          ],
+                          "description": "Safe failure classification only; never raw provider errors or private job payloads."
+                        },
+                        "readyCount": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3,
+                          "description": "Number of independently checked available questions. Zero while initial preparation or eligibility checking is pending."
+                        },
+                        "totalCount": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 3,
+                          "description": "Questions targeted by this preparation bank; a new sitting targets three, an existing sitting only remaining slots."
+                        },
+                        "phase": {
+                          "type": "string",
+                          "enum": [
+                            "preparing",
+                            "checking"
+                          ],
+                          "description": "Preparing generates the initial bank; checking revalidates saved questions after an answer or changed instructions without generating replacements."
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "preparation": {
+                    "status": "idle"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Prepare or offer the next question",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before offering the entire checked bank atomically at explicit Start, without generating on consume. Returns question (first unanswered) plus questions (all authoritative sitting rows); offeredAt is fixed for every bank question at this transaction; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, all bank questions are offered at Start; subsequent answer saves preserve exact text and do not generate or run an eligibility model. New answers inform future sittings, not adaptive changes to the fixed current bank. Legacy partially offered checked banks can be upgraded through explicit Resume/consume when current memory and evidence still match. Existing offered questions and their timestamps are preserved; GET only exposes the needsPreparedBankResume hint. Changed memory prevents expansion. Legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released. Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "prepare",
+                      "consume"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "action": "prepare"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "invalid_input"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "unauthenticated"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Actual approved claimant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "forbidden"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Artist or session unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "not_found"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Candidate is not ready or session, ordinal, memory or evidence changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "preparation_stale",
+                        "preparation_not_ready"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Required memory or persistence unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "code"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "error"
+                    },
+                    "code": {
+                      "enum": [
+                        "memory_unavailable"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Preparation status for prepare, or the saved offer for consume.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "status",
+                        "preparation"
+                      ],
+                      "properties": {
+                        "status": {
+                          "const": "ok"
+                        },
+                        "preparation": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "status"
+                          ],
+                          "properties": {
+                            "jobId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "Present when a preparation job exists."
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "idle",
+                                "pending",
+                                "running",
+                                "ready",
+                                "failed",
+                                "stale"
+                              ]
+                            },
+                            "errorCode": {
+                              "type": "string",
+                              "enum": [
+                                "preparation_failed",
+                                "model_output_invalid",
+                                "timeout_or_cancelled",
+                                "external_outcome_unknown"
+                              ],
+                              "description": "Safe failure classification only; never raw provider errors or private job payloads."
+                            },
+                            "readyCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 3,
+                              "description": "Number of independently checked available questions. Zero while initial preparation or eligibility checking is pending."
+                            },
+                            "totalCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3,
+                              "description": "Questions targeted by this preparation bank; a new sitting targets three, an existing sitting only remaining slots."
+                            },
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "preparing",
+                                "checking"
+                              ],
+                              "description": "Preparing generates the initial bank; checking revalidates saved questions after an answer or changed instructions without generating replacements."
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "const": "ok"
+                        },
+                        "question": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "questionKey": {
+                              "type": "string"
+                            },
+                            "question": {
+                              "type": "string"
+                            },
+                            "answer": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "offered",
+                                "answered",
+                                "skipped"
+                              ]
+                            },
+                            "revision": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "sitting": {
+                              "type": "integer"
+                            },
+                            "offeredAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "answerUpdatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "ordinal": {
+                              "type": [
+                                "integer",
+                                "null"
+                              ]
+                            },
+                            "references": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "revision",
+                                  "start",
+                                  "end",
+                                  "quote"
+                                ],
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "original",
+                                      "answer"
+                                    ]
+                                  },
+                                  "sourceId": {
+                                    "type": "string",
+                                    "description": "Required for original evidence: full vault/social source identity."
+                                  },
+                                  "entryId": {
+                                    "type": "string",
+                                    "description": "Required for answer evidence: full answer identity."
+                                  },
+                                  "revision": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "start": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "UTF-16 offset."
+                                  },
+                                  "end": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "quote": {
+                                    "type": "string",
+                                    "minLength": 8,
+                                    "maxLength": 1600
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "questions": {
+                          "type": "array",
+                          "maxItems": 3,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "questionKey": {
+                                "type": "string"
+                              },
+                              "question": {
+                                "type": "string"
+                              },
+                              "answer": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "offered",
+                                  "answered",
+                                  "skipped"
+                                ]
+                              },
+                              "revision": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "sitting": {
+                                "type": "integer"
+                              },
+                              "offeredAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "answerUpdatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "ordinal": {
+                                "type": [
+                                  "integer",
+                                  "null"
+                                ]
+                              },
+                              "references": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "kind",
+                                    "revision",
+                                    "start",
+                                    "end",
+                                    "quote"
+                                  ],
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "original",
+                                        "answer"
+                                      ]
+                                    },
+                                    "sourceId": {
+                                      "type": "string",
+                                      "description": "Required for original evidence: full vault/social source identity."
+                                    },
+                                    "entryId": {
+                                      "type": "string",
+                                      "description": "Required for answer evidence: full answer identity."
+                                    },
+                                    "revision": {
+                                      "type": "string",
+                                      "pattern": "^[a-f0-9]{64}$"
+                                    },
+                                    "start": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "description": "UTF-16 offset."
+                                    },
+                                    "end": {
+                                      "type": "integer",
+                                      "minimum": 1
+                                    },
+                                    "quote": {
+                                      "type": "string",
+                                      "minLength": 8,
+                                      "maxLength": 1600
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "description": "All authoritative questions offered atomically at explicit Start; use these rows to advance locally while exact answer saves are pending."
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "status": "ok",
+                  "preparation": {
+                    "jobId": "00000000-0000-4000-8000-000000000001",
+                    "status": "pending"
+                  }
+                }
               }
             }
           }
