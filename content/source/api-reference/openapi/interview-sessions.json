@@ -14,7 +14,7 @@
     "/api/artist/{id}/interview/session": {
       "get": {
         "summary": "Restore saved interview",
-        "description": "Private read only. Returns the latest session, saved questions, answers and exact evidence references; unlinked legacy offers are separate. No generation, scraping or writes. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released.",
+        "description": "Private read only. Returns the latest session, saved questions, answers and exact evidence references; unlinked legacy offers are separate. No generation, scraping or writes. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released. Before the automatic claim handoff has created its private session, the exact current approved claimant may receive optional top-level preparation metadata for the pending or running job. This read creates no session, offers, or work; clients may poll and show preparation in progress.",
         "security": [
           {
             "PrivyAuth": []
@@ -284,6 +284,30 @@
                               }
                             }
                           }
+                        }
+                      }
+                    },
+                    "preparation": {
+                      "type": "object",
+                      "properties": {
+                        "jobId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "enum": [
+                            "pending",
+                            "running"
+                          ]
+                        },
+                        "phase": {
+                          "const": "preparing"
+                        },
+                        "readyCount": {
+                          "const": 0
+                        },
+                        "totalCount": {
+                          "const": 3
                         }
                       }
                     }
@@ -1592,7 +1616,7 @@
     "/api/artist/{id}/interview/session/{sessionId}/finish": {
       "post": {
         "summary": "Finish interview sitting",
-        "description": "Explicitly closes a sitting, skips an unanswered offer and queues an existing durable Lore refresh for its answers in the same transaction. Repeated finish is idempotent. It never runs a detached model call. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released.",
+        "description": "Explicitly closes a sitting, skips an unanswered offer and queues an existing durable Lore refresh for its answers in the same transaction. Repeated finish is idempotent. It never runs a detached model call. Current claimant or administrator only. Private/no-store. Requires staging-verified migrations 0041 and 0042 before deployment. Draft; not released. When the approved claimant explicitly finishes a sitting containing a saved answer, the same transaction creates at most one private next sitting and queues its existing durable preparation job. The finished session ID is the deduplication key. Repeated Finish, skipped-only sittings, and untouched automatically prepared sittings never recursively queue another. An administrator finishing another artist’s sitting does not opt that artist in. The response still describes the finished sitting; GET then restores the next private sitting. No question is offered until explicit Start. Permanent instructions and newest answers apply to the next sitting; the finished sitting’s temporary instructions expire.",
         "security": [
           {
             "PrivyAuth": []
@@ -2045,7 +2069,7 @@
     "/api/artist/{artistId}/interview/session/{sessionId}/prepare": {
       "get": {
         "summary": "Read question preparation",
-        "description": "Read-only status for the session\u2019s next question. Does not generate, enqueue or write. Stale means the session, claim, next ordinal or mandatory memory no longer matches the prepared candidate. A consumed preparation returns idle without jobId. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released. Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
+        "description": "Read-only status for the session’s next question. Does not generate, enqueue or write. Stale means the session, claim, next ordinal or mandatory memory no longer matches the prepared candidate. A consumed preparation returns idle without jobId. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released. Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
         "security": [
           {
             "PrivyAuth": []
