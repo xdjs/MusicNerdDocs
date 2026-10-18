@@ -178,6 +178,10 @@
                         "interviewInvalidated": {
                           "type": "boolean",
                           "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+                        },
+                        "needsPreparedBankResume": {
+                          "type": "boolean",
+                          "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
                         }
                       }
                     },
@@ -603,6 +607,10 @@
                         "interviewInvalidated": {
                           "type": "boolean",
                           "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+                        },
+                        "needsPreparedBankResume": {
+                          "type": "boolean",
+                          "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
                         }
                       }
                     },
@@ -1757,6 +1765,10 @@
                         "interviewInvalidated": {
                           "type": "boolean",
                           "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+                        },
+                        "needsPreparedBankResume": {
+                          "type": "boolean",
+                          "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
                         }
                       }
                     },
@@ -2308,7 +2320,7 @@
       },
       "post": {
         "summary": "Prepare or offer the next question",
-        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before offering the entire checked bank atomically at explicit Start, without generating on consume. Returns question (first unanswered) plus questions (all authoritative sitting rows); offeredAt is fixed for every bank question at this transaction; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, all bank questions are offered at Start; subsequent answer saves preserve exact text and do not generate or run an eligibility model. New answers inform future sittings, not adaptive changes to the fixed current bank. Legacy partially consumed banks retain their previous preparation behavior; legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released. Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before offering the entire checked bank atomically at explicit Start, without generating on consume. Returns question (first unanswered) plus questions (all authoritative sitting rows); offeredAt is fixed for every bank question at this transaction; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, all bank questions are offered at Start; subsequent answer saves preserve exact text and do not generate or run an eligibility model. New answers inform future sittings, not adaptive changes to the fixed current bank. Legacy partially offered checked banks can be upgraded through explicit Resume/consume when current memory and evidence still match. Existing offered questions and their timestamps are preserved; GET only exposes the needsPreparedBankResume hint. Changed memory prevents expansion. Legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Draft contract; not released. Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
         "security": [
           {
             "PrivyAuth": []
