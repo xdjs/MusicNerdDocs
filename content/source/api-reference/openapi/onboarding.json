@@ -30,7 +30,7 @@
             "name": "artistId",
             "in": "path",
             "required": true,
-            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "description": "The artist's ID (a UUID).",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -353,7 +353,7 @@
             "name": "artistId",
             "in": "path",
             "required": true,
-            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "description": "The artist's ID (a UUID).",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -474,7 +474,7 @@
             "name": "artistId",
             "in": "path",
             "required": true,
-            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "description": "The artist's ID (a UUID).",
             "schema": {
               "type": "string",
               "format": "uuid"
