@@ -362,32 +362,30 @@
           }
         ],
         "responses": {
-          "202": {
-            "description": "The build started (or restarted at the first unconfirmed step).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClaimBuildStarted"
-                },
-                "example": {
-                  "status": "ok",
-                  "started": true,
-                  "runId": "wrun_01K7XQ3Y4ZB6G0N2F8W5C9D1EJ"
-                }
-              }
-            }
-          },
           "200": {
-            "description": "The page is already built; nothing started.",
+            "description": "Whether a build started. `started: false` means the page is already built.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClaimBuildStarted"
                 },
-                "example": {
-                  "status": "ok",
-                  "started": false,
-                  "runId": null
+                "examples": {
+                  "started": {
+                    "summary": "Started (or restarted at the first unconfirmed step)",
+                    "value": {
+                      "status": "ok",
+                      "started": true,
+                      "runId": "wrun_01K7XQ3Y4ZB6G0N2F8W5C9D1EJ"
+                    }
+                  },
+                  "alreadyBuilt": {
+                    "summary": "Already built; nothing started",
+                    "value": {
+                      "status": "ok",
+                      "started": false,
+                      "runId": null
+                    }
+                  }
                 }
               }
             }
