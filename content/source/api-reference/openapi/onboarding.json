@@ -24,7 +24,7 @@
             "privyBearer": []
           }
         ],
-        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles \u2192 vault \u2192 interview \u2192 publish): a turn for a step that is not current gets an `error` event and the real step. Confirmed steps are resumed rather than repeated. A fresh claim's opening turn builds the whole page without asking anything; the artist corrects it on the page afterwards. A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.\n\nThe initial interview prepares up to three questions once from already saved material, with one 15-second total preparation budget. It does not wait for a social scrape. Drafting and source verification share that deadline; timed-out model work is cancelled and only verified questions may be used. Remaining slots use distinct optional general questions. The private question plan is reused after answers, skips, reloads and server restarts, scoped to the current claim. Choosing a fallback plan does not retry generation on each skip. Prepared questions are not artist testimony; only explicit answers/skips create answer records. Saved history is checked before offering the next question; a history read failure returns a recoverable error rather than restarting or completing the interview. Each answered/skipped key counts once toward the three-question cap. Existing answer revisions and explicit publication are unchanged.",
+        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles \u2192 vault \u2192 interview \u2192 publish): a turn for a step that is not current gets an `error` event and the real step. Confirmed steps are resumed rather than repeated. A fresh claim's opening turn builds the whole page without asking anything; the artist corrects it on the page afterwards. Music Nerd's site no longer sends turns: it starts the build with [Start the claim build](/api-reference/onboarding/build) and only watches [Onboarding state](/api-reference/onboarding/state). This endpoint stays for clients that still send turns. A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.\n\nThe initial interview prepares up to three questions once from already saved material, with one 15-second total preparation budget. It does not wait for a social scrape. Drafting and source verification share that deadline; timed-out model work is cancelled and only verified questions may be used. Remaining slots use distinct optional general questions. The private question plan is reused after answers, skips, reloads and server restarts, scoped to the current claim. Choosing a fallback plan does not retry generation on each skip. Prepared questions are not artist testimony; only explicit answers/skips create answer records. Saved history is checked before offering the next question; a history read failure returns a recoverable error rather than restarting or completing the interview. Each answered/skipped key counts once toward the three-question cap. Existing answer revisions and explicit publication are unchanged.",
         "parameters": [
           {
             "name": "artistId",
@@ -335,12 +335,142 @@
         }
       }
     },
+    "/api/onboarding/{artistId}/build": {
+      "post": {
+        "summary": "Start the claim build",
+        "operationId": "startClaimBuild",
+        "security": [
+          {
+            "privyBearer": []
+          },
+          {
+            "researchService": []
+          }
+        ],
+        "description": "Starts building a claimed artist's page on the server and returns at once. The build is a durable workflow: it finds the artist's profiles and links them, searches for sources and approves the ones it read, writes the Lore and the About, and publishes them, confirming `profiles`, `vault`, then `interview` and `publish` together. Nobody has to keep the page open; each stage retries on failure and has no request time limit.\n\nMusic Nerd's site calls this when an admin approves a claim. Calling it again restarts a build that stopped: it resumes at the first unconfirmed step, so a page that stopped at `publish` only writes the About. Only one build runs per artist at a time; a call while one is running doesn't start a second. Follow progress with [Onboarding state](/api-reference/onboarding/state).\n\nThe build always runs as the artist's approved claimant, under that claim. If the claim is replaced or revoked, the build stops and writes nothing more.",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID). Staging and production IDs differ.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The build started (or restarted at the first unconfirmed step).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimBuildStarted"
+                },
+                "example": {
+                  "status": "ok",
+                  "started": true,
+                  "runId": "wrun_01K7XQ3Y4ZB6G0N2F8W5C9D1EJ"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The page is already built; nothing started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimBuildStarted"
+                },
+                "example": {
+                  "status": "ok",
+                  "started": false,
+                  "runId": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`artistId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No credential, or an invalid token or research key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The artist has no approved claim, so there is nobody to build the page for.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "No approved claim"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The build couldn't be started. Retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Research is temporarily unavailable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/onboarding/{artistId}/state": {
       "get": {
         "summary": "Onboarding state",
         "operationId": "getOnboardingState",
         "security": [],
-        "description": "Where onboarding stands: confirmed steps and their confirmation times. The profile can poll this while onboarding is open. Public, uncached, and limited to step names and timestamps; it does not expose pending sources or private prepared text.\n\nAdding an artist discovers public links and Latest material while About and Lore remain private. A fresh open builds the page, confirming `profiles` (Links), `vault` (Lore) and then `interview` and `publish` together (About). On a resume, interview answers are optional and individually answered or skipped, and About is public after the publish turn. There is no fixed completion time. An artist with no onboarding, or an unknown ID, returns every step null and currentStep profiles.",
+        "description": "Where onboarding stands: confirmed steps and their confirmation times. The profile polls this while the build runs. Public, uncached, and limited to step names and timestamps; it does not expose pending sources or private prepared text.\n\nAdding an artist discovers public links and Latest material while About and Lore remain private. Approving a claim starts the build on the server ([Start the claim build](/api-reference/onboarding/build)), confirming `profiles` (Links), `vault` (Lore) and then `interview` and `publish` together (About). The page only polls this; it doesn't drive the build. On a resume, interview answers are optional and individually answered or skipped, and About is public after the publish turn. There is no fixed completion time. An artist with no onboarding, or an unknown ID, returns every step null and currentStep profiles.",
         "parameters": [
           {
             "name": "artistId",
@@ -448,6 +578,12 @@
         "scheme": "bearer",
         "bearerFormat": "Access token",
         "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. The user must be the artist's approved claimant or a Music Nerd admin."
+      },
+      "researchService": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-MusicNerd-Research-Key",
+        "description": "Server-only MUSICNERD_RESEARCH_API_KEY. Music Nerd's site sends it when an admin approves a claim. Never sent from a browser."
       }
     },
     "schemas": {
@@ -545,6 +681,33 @@
                 "description": "The Lore and About written. The About can show."
               }
             }
+          }
+        }
+      },
+      "ClaimBuildStarted": {
+        "type": "object",
+        "required": [
+          "status",
+          "started",
+          "runId"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "started": {
+            "type": "boolean",
+            "description": "True when a build run was started. False when the page was already built."
+          },
+          "runId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The workflow run's ID, for support and logs. `null` when nothing started."
           }
         }
       }
