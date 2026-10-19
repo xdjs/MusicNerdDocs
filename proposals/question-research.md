@@ -96,6 +96,10 @@ The interviewer reads shared API evidence and mandatory memory before selecting 
 
 The Web writer has a two-attempt total draft/check loop and a separate 45-second timeout. If the first checker result is partial, use the one remaining attempt for source-grounded repair and quote-level/factual recheck. If the final check still finds unsupported content, fail closed rather than return an unchecked subset as verified. This Web writer loop is separate from the API navigator's five-step ceiling above.
 
+Follow-up planning preserves unambiguous named works and the relationship being investigated in the bounded public research task, including both sides of a comparison. Prior conversation resolves what the listener means; it does not prove the musical claims. The planner must not replace named comparison targets with generic stylistic labels, carry unrelated works forward, or guess an ambiguous referent.
+
+The checker evaluates the current draft against the full supplied original passages for each cited source, without importing assertions removed during repair. Its repair reason distinguishes contradiction, unsupported assertions, missing quote coverage, and attribution or qualification repair. A claim supported elsewhere in the supplied passage but missing a supporting quote needs an additional exact span and rechecking, not automatic acceptance or deletion. A literal unidentified credit does not identify the speaker; absence and ownership claims are evaluated separately. These instructions do not change exact-quote, revision, privacy, identity or final-verdict enforcement.
+
 For listener answers, instruct the writer to lead with the most useful supported insight, then add source attribution where it is needed to distinguish an artist's account from a reviewer's or interviewer's interpretation. This changes presentation order only: exact source, revision, quote and factual-support checks remain unchanged.
 
 Identical retained text at the same canonical URL and evidence kind is deduplicated before public selection, preferring its approved copy. Promotion therefore does not make the same original occupy two result slots.
