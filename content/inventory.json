@@ -1,7 +1,7 @@
 {
-  "navigationPages": 43,
+  "navigationPages": 44,
   "guidePages": 4,
-  "apiPages": 39,
+  "apiPages": 40,
   "specifications": [
     "artist-latest.json",
     "artist-lookups.json",

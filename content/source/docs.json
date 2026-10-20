@@ -51,6 +51,7 @@
             "pages": [
               "api-reference/onboarding/build",
               "api-reference/onboarding/state",
+              "api-reference/onboarding/reset",
               "api-reference/onboarding/chat"
             ]
           },

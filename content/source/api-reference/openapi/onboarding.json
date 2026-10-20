@@ -567,6 +567,129 @@
           }
         }
       }
+    },
+    "/api/onboarding/{artistId}/reset": {
+      "post": {
+        "summary": "Reset the claim build",
+        "operationId": "resetClaimBuild",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Removes everything the claim build wrote and returns the removed values as the backup. Afterwards the state endpoint reports `currentStep: \"profiles\"`, and opening the artist page logged in as the claimant or an admin starts a fresh build. The artist's own edits, uploads, interview answers and social posts stay. The server research key cannot reset.\n\nWhat it clears: onboarding steps, discovered link columns (spotify, deezer, instagram, tiktok, x, youtube, soundcloud, bandcamp, twitch, facebook, discogs), research vault sources (`origin = 'research'`), the Lore document and the bio, and pending or running research jobs.",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The removed values, as a backup.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimBuildReset"
+                },
+                "examples": {
+                  "withData": {
+                    "summary": "A built artist (Bio Ritmo on staging)",
+                    "value": {
+                      "status": "ok",
+                      "removed": {
+                        "steps": ["profiles", "vault", "interview", "publish"],
+                        "links": { "spotify": "3pZWMMjXnxbcxurOCYK5sL", "instagram": "bioritmomusic" },
+                        "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                        "doc": true,
+                        "sources": 30,
+                        "jobs": 1
+                      }
+                    }
+                  },
+                  "empty": {
+                    "summary": "An artist with nothing to reset",
+                    "value": {
+                      "status": "ok",
+                      "removed": {
+                        "steps": [],
+                        "links": {},
+                        "bio": null,
+                        "doc": false,
+                        "sources": 0,
+                        "jobs": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`artistId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin. The server research key is also refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -677,6 +800,48 @@
                 ],
                 "format": "date-time",
                 "description": "The Lore and About written. The About can show."
+              }
+            }
+          }
+        }
+      },
+      "ClaimBuildReset": {
+        "type": "object",
+        "required": ["status", "removed"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "removed": {
+            "type": "object",
+            "required": ["steps", "links", "bio", "doc", "sources", "jobs"],
+            "properties": {
+              "steps": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "The step names that were confirmed, now deleted."
+              },
+              "links": {
+                "type": "object",
+                "additionalProperties": { "type": "string" },
+                "description": "The link columns that had values, now null. Keys are column names; values are the old handles or IDs."
+              },
+              "bio": {
+                "type": ["string", "null"],
+                "description": "The bio text that was removed, or null if there was none."
+              },
+              "doc": {
+                "type": "boolean",
+                "description": "Whether a Lore document was deleted."
+              },
+              "sources": {
+                "type": "integer",
+                "description": "How many research vault sources were deleted."
+              },
+              "jobs": {
+                "type": "integer",
+                "description": "How many pending or running research jobs were deleted."
               }
             }
           }
