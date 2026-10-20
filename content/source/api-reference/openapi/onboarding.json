@@ -577,7 +577,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Removes everything the claim build wrote and returns the removed values as the backup. Afterwards the state endpoint reports `currentStep: \"profiles\"`, and opening the artist page logged in as the claimant or an admin starts a fresh build. The artist's own edits, uploads, interview answers and social posts stay. The server research key cannot reset.\n\nWhat it clears: onboarding steps, discovered link columns (spotify, deezer, instagram, tiktok, x, youtube, soundcloud, bandcamp, twitch, facebook, discogs), research vault sources (`origin = 'research'`), the Lore document and the bio, and pending or running research jobs.",
+        "description": "Removes everything the claim build wrote and returns the removed values as the backup. Afterwards the state endpoint reports `currentStep: \"profiles\"`, and visiting the artist page starts a fresh build. The artist's own edits, uploads and interview answers stay.",
         "parameters": [
           {
             "name": "artistId",
