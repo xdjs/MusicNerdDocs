@@ -379,6 +379,219 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/research/source-search": {
+      "post": {
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ownership-scoped search state; safe to retry with the same requestId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "jobId",
+                    "requestId",
+                    "phase",
+                    "count"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "jobId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "phase": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "done",
+                        "failed",
+                        "interrupted"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not the claimant or administrator"
+          },
+          "404": {
+            "description": "Artist or request unavailable"
+          },
+          "409": {
+            "description": "Another source search is active"
+          },
+          "429": {
+            "description": "New-request cooldown; Retry-After reports seconds"
+          },
+          "503": {
+            "description": "Service unavailable; retry the same requestId"
+          }
+        },
+        "operationId": "requestEditorSourceSearch",
+        "summary": "Search for artist sources",
+        "description": "Queue source discovery without scheduling social ingestion or Lore refresh, with a 30-minute per-artist cooldown for new requests. Reuse the same requestId after a lost response: it stays bound to this artist and authenticated requester while the activity history is retained, including after a job reset. Once external execution starts, an interrupted attempt is not automatically repeated; retained sources remain available and status reports interruption.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "requestId"
+                ],
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ownership-scoped search state; safe to retry with the same requestId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "jobId",
+                    "requestId",
+                    "phase",
+                    "count"
+                  ],
+                  "properties": {
+                    "status": {
+                      "const": "ok"
+                    },
+                    "jobId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "requestId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "phase": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "running",
+                        "done",
+                        "failed",
+                        "interrupted"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Not authenticated"
+          },
+          "403": {
+            "description": "Not the claimant or administrator"
+          },
+          "404": {
+            "description": "Artist or request unavailable"
+          },
+          "409": {
+            "description": "Another source search is active"
+          },
+          "429": {
+            "description": "New-request cooldown; Retry-After reports seconds"
+          },
+          "503": {
+            "description": "Service unavailable; retry the same requestId"
+          }
+        },
+        "operationId": "getEditorSourceSearch",
+        "summary": "Read source-search progress",
+        "description": "Read status and the number of retained sources for an authorized request. This never queues work or invokes providers; use the existing advance endpoint scoped to source_search to move queued work."
+      }
     }
   },
   "components": {

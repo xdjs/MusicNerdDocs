@@ -32,6 +32,8 @@
         "pages": [
           "api-reference/artists/latest",
           "api-reference/research/advance",
+          "api-reference/research/source-search",
+          "api-reference/research/source-search-status",
           "api-reference/research/scheduler",
           "api-reference/artists/research-refresh",
           "api-reference/research/question",
