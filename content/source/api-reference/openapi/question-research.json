@@ -1032,7 +1032,7 @@
             }
           },
           "400": {
-            "description": "The body is not JSON, is over 18,000 bytes, or does not match the request schema.",
+            "description": "The body is not JSON, is over 18,000 characters, or does not match the request schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1074,7 +1074,7 @@
             }
           },
           "429": {
-            "description": "A limit was reached. `code` names the budget: `visitor_question_quota` (30 new questions per visitor per hour), `question_planning_quota` (200 new questions across the site per rolling day), `saved_evidence_quota` (the API's saved-question admission), `research_quota` (outside research), `research_busy` (an identical request is already running). Without a code, the saved job has already answered three distinct questions.",
+            "description": "A limit was reached. `code` names the budget: `visitor_question_quota` (30 new questions per visitor per hour), `question_planning_quota` (200 new questions across the site per rolling day), `saved_evidence_quota` (the API's saved-question admission), `research_quota` (outside research), `research_busy` (an identical request is already running). Without a code, the saved job has already answered three distinct questions, or research is at capacity.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1200,7 +1200,7 @@
         },
         "responses": {
           "200": {
-            "description": "A checked answer, a clarification question, or a sourced explanation of why the question stays unresolved.",
+            "description": "A checked answer or a sourced explanation of why the question stays unresolved.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1283,7 +1283,7 @@
             }
           },
           "400": {
-            "description": "`id` or `jobId` is not a UUID, or the body is not `{ question }` (JSON, at most 18,000 bytes).",
+            "description": "`id` or `jobId` is not a UUID, or the body is not `{ question }` (JSON, at most 18,000 characters).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1297,7 +1297,7 @@
             }
           },
           "404": {
-            "description": "No artist with that `artistId`.",
+            "description": "No artist with that `id`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2130,7 +2130,7 @@
             "items": {
               "$ref": "#/components/schemas/ChatTurn"
             },
-            "description": "The visitor's earlier turns on this page, at most 12,000 characters in all, so a follow-up can be resolved. Never interview memory."
+            "description": "The visitor's earlier turns in this conversation, at most 12,000 characters in all, so a follow-up can be resolved. Never interview memory."
           }
         }
       },
