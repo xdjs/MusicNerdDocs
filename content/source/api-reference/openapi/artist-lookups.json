@@ -1252,6 +1252,19 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "An unexpected server error. MusicNerdWeb answered an empty 500 here; this API answers JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
           }
         }
       }
