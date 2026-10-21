@@ -80,7 +80,7 @@
                     "signedUrl": {
                       "type": "string",
                       "format": "uri",
-                      "description": "A Supabase Storage signed upload URL. `PUT` the file to it as `multipart/form-data` with the file in an unnamed field, as Music Nerd's site does. Valid for a short time."
+                      "description": "A Supabase Storage signed upload URL. `PUT` the file to it as `multipart/form-data` with the file in an unnamed field. Valid for a short time."
                     },
                     "contentType": {
                       "type": "string",
