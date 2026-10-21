@@ -31,8 +31,6 @@
         "group": "Research",
         "pages": [
           "api-reference/artists/latest",
-          "api-reference/artists/latest-refresh-state",
-          "api-reference/artists/latest-refresh",
           "api-reference/research/advance",
           "api-reference/research/scheduler",
           "api-reference/artists/research-refresh",
@@ -41,11 +39,7 @@
           "api-reference/research/continue",
           "api-reference/research/discoveries",
           "api-reference/research/review-discovery",
-          "api-reference/research/research-evidence",
-          "api-reference/research/ask-artist",
-          "api-reference/research/question-answer",
-          "api-reference/research/question-progress",
-          "api-reference/research/question-source"
+          "api-reference/research/research-evidence"
         ]
       },
       {
@@ -82,9 +76,7 @@
           "api-reference/interview/prepare-question",
           "api-reference/interview/offer-question",
           "api-reference/interview/save-answer",
-          "api-reference/interview/finish-session",
-          "api-reference/interview/restore-interview",
-          "api-reference/interview/interview-action"
+          "api-reference/interview/finish-session"
         ]
       },
       {
@@ -148,43 +140,18 @@
         ]
       },
       {
-        "group": "Artist bio",
+        "group": "Admin",
         "pages": [
-          "api-reference/artist-bio/read-about",
-          "api-reference/artist-bio/update-about",
-          "api-reference/artist-bio/bio-correction",
-          "api-reference/artist-bio/lore-suggestion",
-          "api-reference/artist-bio/directory-discovery",
-          "api-reference/artist-bio/knowledge-doc-export"
-        ]
-      },
-      {
-        "group": "Fun facts",
-        "pages": [
-          "api-reference/fun-facts/generate"
-        ]
-      },
-      {
-        "group": "Activity and contributions",
-        "pages": [
-          "api-reference/activity/feed",
-          "api-reference/activity/recent-edited",
-          "api-reference/activity/self-edits",
-          "api-reference/activity/ugc-count",
-          "api-reference/activity/approved-ugc-count",
-          "api-reference/activity/user-entries"
-        ]
-      },
-      {
-        "group": "Artist links",
-        "pages": [
-          "api-reference/artist-links/link-order",
-          "api-reference/artist-links/direct-edit-link",
-          "api-reference/artist-links/remove-artist-data",
-          "api-reference/artist-links/validate-link",
-          "api-reference/artist-links/platform-regexes",
-          "api-reference/artist-links/link-suggestions",
-          "api-reference/artist-links/review-link-suggestion"
+          "api-reference/admin/agent-work",
+          "api-reference/admin/artist-data",
+          "api-reference/admin/review-bio-correction",
+          "api-reference/admin/get-correction-about",
+          "api-reference/admin/save-correction-about",
+          "api-reference/admin/list-mcp-keys",
+          "api-reference/admin/create-mcp-key",
+          "api-reference/admin/revoke-mcp-key",
+          "api-reference/admin/whitelist-user",
+          "api-reference/admin/pending-ugc-count"
         ]
       }
     ]

@@ -1,0 +1,1838 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: admin",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/admin/agent-work": {
+      "get": {
+        "summary": "Agent work",
+        "operationId": "getAgentWork",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "The Agent work tab of the admin: ID-mapping coverage per platform, the last write and the last hour's rate, hourly resolve/exclude counts for the past 24 hours, and every worker's heartbeat. With `sections=details` it returns the heavy sections instead: the paginated audit log, the per-agent breakdown, exclusions grouped by platform, and the 50 most recent runs. Moved from MusicNerdWeb's `/api/admin/agent-work` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "parameters": [
+          {
+            "name": "sections",
+            "in": "query",
+            "required": false,
+            "description": "`details` for the audit log, agent breakdown, exclusions and run history. Anything else, or omitted, returns the summary.",
+            "schema": {
+              "type": "string",
+              "enum": ["details"]
+            }
+          },
+          {
+            "name": "auditPage",
+            "in": "query",
+            "required": false,
+            "description": "Audit log page, from 1. Only with `sections=details`. A value that isn't a number is read as 1.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "auditLimit",
+            "in": "query",
+            "required": false,
+            "description": "Audit log entries per page, clamped to 1–200. Only with `sections=details`. A value that isn't a number is read as 50.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The summary, or the details when `sections=details`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AgentWorkSummary"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AgentWorkDetails"
+                    }
+                  ]
+                },
+                "examples": {
+                  "summary": {
+                    "summary": "The summary (no `sections`)",
+                    "value": {
+                      "status": "ok",
+                      "stats": {
+                        "totalArtistsWithSpotify": 38403,
+                        "totalArtistsWithDeezer": 1210,
+                        "platformStats": [
+                          {
+                            "platform": "deezer",
+                            "mappedCount": 1210,
+                            "percentage": 3.15,
+                            "todayCount": 11
+                          },
+                          {
+                            "platform": "apple_music",
+                            "mappedCount": 0,
+                            "percentage": 0,
+                            "todayCount": 0
+                          }
+                        ]
+                      },
+                      "activityPulse": {
+                        "lastWriteAt": "2026-10-21 14:02:11.482+00",
+                        "rateLastHour": 4
+                      },
+                      "hourlyActivity": [
+                        {
+                          "hour": "2026-10-21 13:00:00+00",
+                          "resolveCount": 12,
+                          "excludeCount": 3
+                        }
+                      ],
+                      "workers": [
+                        {
+                          "workerId": "614537",
+                          "apiKeyHash": "5b9720ab1f0e4c7d9a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7081",
+                          "status": "stopping",
+                          "computedStatus": "stopped",
+                          "currentRun": 3,
+                          "batchPlatform": "deezer",
+                          "batchSize": 25,
+                          "message": null,
+                          "startedAt": "2026-10-21 12:40:00.000+00",
+                          "updatedAt": "2026-10-21 14:02:11.482+00",
+                          "config": {
+                            "batchTimeout": 900
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "details": {
+                    "summary": "The details (`sections=details`)",
+                    "value": {
+                      "status": "ok",
+                      "auditLog": {
+                        "entries": [
+                          {
+                            "id": "0d4f6a2e-1b3c-4d5e-8f90-a1b2c3d4e5f6",
+                            "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                            "artistName": "Bio Ritmo",
+                            "field": "deezer",
+                            "action": "resolve",
+                            "oldValue": null,
+                            "newValue": "12345",
+                            "agentLabel": "e2e-test",
+                            "createdAt": "2026-10-21 14:02:11.482+00"
+                          }
+                        ],
+                        "total": 1,
+                        "page": 1,
+                        "limit": 50
+                      },
+                      "agentBreakdown": {
+                        "agents": [
+                          {
+                            "label": "e2e-test",
+                            "apiKeyHash": "a6209a5d1f0e4c7d9a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7081",
+                            "resolvedCount": 1,
+                            "excludedCount": 0,
+                            "lastActiveAt": "2026-10-21 14:02:11.482+00",
+                            "byConfidence": {
+                              "high": 1,
+                              "medium": 0,
+                              "low": 0,
+                              "manual": 0
+                            },
+                            "bySource": {
+                              "wikidata": 0,
+                              "musicbrainz": 0,
+                              "name_search": 1,
+                              "web_search": 0,
+                              "manual": 0
+                            }
+                          }
+                        ]
+                      },
+                      "exclusions": {
+                        "platforms": {
+                          "deezer": {
+                            "exclusions": [
+                              {
+                                "id": "7c1e2d3f-4a5b-4c6d-8e7f-901a2b3c4d5e",
+                                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                                "artistName": "Bio Ritmo",
+                                "spotify": "3pZWMMjXnxbcxurOCYK5sL",
+                                "platform": "deezer",
+                                "reason": "too_ambiguous",
+                                "details": "Three Deezer artists share the name.",
+                                "createdAt": "2026-10-20 09:15:00.000+00"
+                              }
+                            ],
+                            "total": 1
+                          }
+                        }
+                      },
+                      "runHistory": {
+                        "runs": [
+                          {
+                            "workerId": "614537",
+                            "runNumber": 3,
+                            "platform": "deezer",
+                            "status": "completed",
+                            "startedAt": "2026-10-21 13:30:00.000+00",
+                            "endedAt": "2026-10-21 13:42:10.000+00",
+                            "wallTimeSecs": 730,
+                            "claudeTimeSecs": 610,
+                            "apiTimeSecs": 90,
+                            "turns": 41,
+                            "batchSize": 25,
+                            "resolved": 20,
+                            "excluded": 3,
+                            "skipped": 2,
+                            "errors": 0,
+                            "highConfidence": 15,
+                            "mediumConfidence": 5,
+                            "conflicts": 1,
+                            "nameMismatches": 1,
+                            "tooAmbiguous": 1,
+                            "exitCode": 0,
+                            "failCategory": null,
+                            "failReason": null
+                          }
+                        ],
+                        "total": 3
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/artist-data": {
+      "get": {
+        "summary": "Artist data",
+        "operationId": "getArtistData",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "The Artist data tab of the admin: how many artists exist and have a Spotify ID, platform-ID coverage from `artist_id_mappings` with today's count, link coverage per tracked column (today's count comes from MCP writes only), the distribution of how many tracked fields each artist has, and enrichment readiness. The result is cached for 30 seconds on the server, so a repeat call may return the same numbers. Moved from MusicNerdWeb's `/api/admin/artist-data` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "responses": {
+          "200": {
+            "description": "The catalog summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtistDataSummary"
+                },
+                "example": {
+                  "status": "ok",
+                  "totalArtists": 41971,
+                  "totalWithSpotify": 38403,
+                  "platformIdCoverage": [
+                    {
+                      "platform": "deezer",
+                      "count": 1210,
+                      "percentage": 3.15,
+                      "todayCount": 11
+                    }
+                  ],
+                  "artistLinkCoverage": [
+                    {
+                      "column": "instagram",
+                      "category": "social",
+                      "count": 29010,
+                      "percentage": 69.12,
+                      "todayCount": 0
+                    },
+                    {
+                      "column": "bio",
+                      "category": "content",
+                      "count": 4120,
+                      "percentage": 9.82,
+                      "todayCount": 0
+                    }
+                  ],
+                  "completenessDistribution": [
+                    {
+                      "bucket": "0-1",
+                      "count": 3783,
+                      "percentage": 9.01
+                    },
+                    {
+                      "bucket": "2-3",
+                      "count": 12050,
+                      "percentage": 28.71
+                    }
+                  ],
+                  "medianFields": 5,
+                  "averageFields": 5.2,
+                  "enrichmentReadiness": {
+                    "hasWikidata": 41,
+                    "hasSpotifyNoWikidata": 38362,
+                    "noSpotify": 3568
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/bio-corrections/{id}": {
+      "patch": {
+        "summary": "Review an About correction report",
+        "operationId": "reviewBioCorrection",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Marks a pending About correction report `resolved` or `dismissed`, recording who reviewed it and when. A report that was already reviewed is not changed. To fix the About itself, use [Save the About for a report](/api-reference/admin/save-correction-about), which resolves the report as part of the save. Moved from MusicNerdWeb's `/api/admin/bio-corrections/{id}` (xdjs/MusicNerdWeb#1454).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/reportId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["resolved", "dismissed"],
+                    "description": "The review outcome."
+                  }
+                }
+              },
+              "example": {
+                "status": "dismissed"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The report is reviewed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or `status` isn't `resolved` or `dismissed`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "id": {
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid report ID"
+                    }
+                  },
+                  "status": {
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid review status"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "409": {
+            "description": "The report was already reviewed, or there is no report with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Report was already reviewed or does not exist"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/bio-corrections/{id}/about": {
+      "get": {
+        "summary": "Read the About for a report",
+        "operationId": "getCorrectionAbout",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "The About currently published for the artist a pending correction report is about, with a `revision` hash to send back on save. For a claimed artist that is `artists.bio`; for an unclaimed one it is the public directory About. The response is never cached (`Cache-Control: private, no-store`). Moved from MusicNerdWeb's `/api/admin/bio-corrections/{id}/about` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/reportId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The published About and its revision.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "private, no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionAbout"
+                },
+                "example": {
+                  "status": "ok",
+                  "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                  "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidReportId"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "409": {
+            "description": "The report was already reviewed or no longer exists, the About is pinned (unpin it on the artist profile first), or the published About is no longer available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "reviewed": {
+                    "value": {
+                      "status": "error",
+                      "error": "This report has already been reviewed or no longer exists."
+                    }
+                  },
+                  "pinned": {
+                    "value": {
+                      "status": "error",
+                      "error": "This About is pinned. Unpin it on the artist profile before editing."
+                    }
+                  },
+                  "unavailable": {
+                    "value": {
+                      "status": "error",
+                      "error": "The published About is no longer available. Review the artist profile before resolving this report."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The About could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load the current About. Try again."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save the About for a report",
+        "operationId": "saveCorrectionAbout",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Replaces the artist's published About and resolves the report, in one transaction: the old and new texts are kept in the artist's bio history, an `about_edited` activity is recorded, and the report becomes `resolved`. `revision` must match what [Read the About for a report](/api-reference/admin/get-correction-about) returned; if the About or the artist's ownership changed since, nothing is saved and the response is 409. Moved from MusicNerdWeb's `/api/admin/bio-corrections/{id}/about` (xdjs/MusicNerdWeb#1454).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/reportId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bio", "revision"],
+                "properties": {
+                  "bio": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 10000,
+                    "description": "The new About. Trimmed; up to 10,000 characters."
+                  },
+                  "revision": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$",
+                    "description": "The `revision` from the read."
+                  }
+                }
+              },
+              "example": {
+                "bio": "Bio Ritmo is a 10-piece salsa orchestra from Richmond, Virginia, formed in 1991.",
+                "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The About is saved and the report resolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or the body isn't a non-empty `bio` of up to 10,000 characters with a 64-hex-character `revision`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "id": {
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid report ID"
+                    }
+                  },
+                  "body": {
+                    "value": {
+                      "status": "error",
+                      "error": "Enter a valid About and reload the editor if needed."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "409": {
+            "description": "The save was refused: the revision no longer matches, the report was reviewed meanwhile, the About is pinned, or the published About is no longer available. The draft is not saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "The About or artist ownership changed. Your draft is kept; cancel and reopen the editor to review the latest version."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The save could not be confirmed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not confirm the save. Your draft is kept; refresh the queue before retrying."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/mcp-keys": {
+      "get": {
+        "summary": "List MCP keys",
+        "operationId": "listMcpKeys",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Every MCP API key, newest first, including revoked ones. Only the first 8 characters of each key's hash are returned; the key itself is shown once, on creation. Moved from MusicNerdWeb's `/api/admin/mcp-keys` (xdjs/MusicNerdWeb#1454). The response is a bare array, as MusicNerdWeb returned it, not this API's `{ status }` envelope.",
+        "responses": {
+          "200": {
+            "description": "The keys, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/McpKey"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "79297a8a-eb13-468e-9196-8b99aeb632d6",
+                    "label": "e2e-test",
+                    "keyHashPrefix": "a6209a5d",
+                    "createdAt": "2026-03-11 18:50:12.118+00",
+                    "revokedAt": "2026-03-11 18:58:56.206531+00"
+                  },
+                  {
+                    "id": "f03cf36d-ca06-43db-9fd1-a4b73c636bd7",
+                    "label": "mapping-worker",
+                    "keyHashPrefix": "5b9720ab",
+                    "createdAt": "2026-03-10 09:00:00.000+00",
+                    "revokedAt": null
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an MCP key",
+        "operationId": "createMcpKey",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Creates an MCP API key with a label and returns the key. This is the only time the key is available: only its SHA-256 hash is stored, which is what the MCP server checks a `Bearer` key against. Moved from MusicNerdWeb's `/api/admin/mcp-keys` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["label"],
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "What the key is for. Trimmed."
+                  }
+                }
+              },
+              "example": {
+                "label": "mapping-worker"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new key. Copy it now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "rawKey", "label"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "rawKey": {
+                      "type": "string",
+                      "description": "64 hex characters (32 random bytes). Not stored; cannot be shown again."
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "rawKey": "3f1c9b0e7a6d5c4b2a1908f7e6d5c4b3a2918f7e6d5c4b3a2918f7e6d5c4b3a2",
+                  "label": "mapping-worker"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No `label`, or it is blank.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Label is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/mcp-keys/{id}/revoke": {
+      "post": {
+        "summary": "Revoke an MCP key",
+        "operationId": "revokeMcpKey",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Revokes an MCP API key: it stops authenticating immediately and stays listed with its `revokedAt`. A key that is already revoked, or doesn't exist, is 404. Moved from MusicNerdWeb's `/api/admin/mcp-keys/{id}/revoke` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"`, and an `id` that isn't a UUID is now 400 rather than a server error.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The key's ID (a UUID), from the list.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "f03cf36d-ca06-43db-9fd1-a4b73c636bd7"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The key is revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "message"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "message": "Key revoked"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid key ID"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "404": {
+            "description": "No active key with that ID: it doesn't exist or was already revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Key not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/whitelist-user/{id}": {
+      "put": {
+        "summary": "Update a user",
+        "operationId": "updateWhitelistedUser",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Updates a user's wallet, email, user name or role flags. Only the fields sent are changed; `null` clears `wallet` or `email`. Making someone an admin also whitelists them, and `isWhiteListed` is ignored in that same request. A user name must be 1–50 characters, not an email or wallet address, and not taken (case-insensitive); a refused name fails the whole update. Moved from MusicNerdWeb's `/api/admin/whitelist-user/{id}` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"`, and an `id` that isn't a UUID or a field of the wrong type is now a specific 400.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The user's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "9ac03b48-115a-489b-95db-d9ac15ada1b2"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wallet": {
+                    "type": ["string", "null"],
+                    "description": "The wallet address, or `null` to clear it."
+                  },
+                  "email": {
+                    "type": ["string", "null"],
+                    "description": "The email, or `null` to clear it."
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "The user name. Saved as confirmed."
+                  },
+                  "isAdmin": {
+                    "type": "boolean",
+                    "description": "`true` also sets `isWhiteListed`."
+                  },
+                  "isWhiteListed": {
+                    "type": "boolean"
+                  },
+                  "isHidden": {
+                    "type": "boolean",
+                    "description": "Hidden from leaderboards."
+                  }
+                }
+              },
+              "example": {
+                "username": "Vinyl Otter",
+                "isWhiteListed": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user is updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "message"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "message": "User updated successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, a field has the wrong type, no field was sent, or the update was refused (for example a taken user name).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "id": {
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid user ID"
+                    }
+                  },
+                  "body": {
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid whitelist user body"
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "status": "error",
+                      "error": "No fields to update"
+                    }
+                  },
+                  "refused": {
+                    "value": {
+                      "status": "error",
+                      "error": "Error updating user"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/pendingUGCCount": {
+      "get": {
+        "summary": "Pending UGC count",
+        "operationId": "getPendingUgcCount",
+        "security": [
+          {
+            "adminBearer": []
+          },
+          {}
+        ],
+        "description": "How many user-submitted links are waiting for admin review: `ugcresearch` rows not accepted and not yet processed. Music Nerd's site calls it for every signed-in user to decide whether to show the admin badge, so a caller who is not signed in, or not an admin, gets `count: 0` rather than an error; so does a database failure. Moved from MusicNerdWeb's `/api/pendingUGCCount` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "responses": {
+          "200": {
+            "description": "The count; 0 for anyone who isn't an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "count"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "examples": {
+                  "admin": {
+                    "summary": "An admin with three links to review",
+                    "value": {
+                      "status": "ok",
+                      "count": 3
+                    }
+                  },
+                  "other": {
+                    "summary": "Not signed in, or not an admin",
+                    "value": {
+                      "status": "ok",
+                      "count": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "adminBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "A Music Nerd admin's access token. Copy it at https://musicnerd.net/access after signing in. A signed-in user who is not an admin gets 403."
+      }
+    },
+    "parameters": {
+      "reportId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The correction report's ID (a UUID).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "e7a5f235-4e66-40ba-9ff6-7276339fe34f"
+      }
+    },
+    "responses": {
+      "NotSignedIn": {
+        "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Not signed in"
+            }
+          }
+        }
+      },
+      "NotAdmin": {
+        "description": "The user is not an admin.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Forbidden"
+            }
+          }
+        }
+      },
+      "InvalidReportId": {
+        "description": "`id` isn't a UUID.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Invalid report ID"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "The database could not be read or written.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Internal server error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "required": ["status", "success"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          }
+        }
+      },
+      "Timestamp": {
+        "type": "string",
+        "description": "Postgres timestamp text, e.g. `2026-10-21 14:02:11.482+00`."
+      },
+      "PlatformStat": {
+        "type": "object",
+        "required": ["platform", "mappedCount", "percentage", "todayCount"],
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "One of the mapping platforms: `deezer`, `apple_music`, `musicbrainz`, `wikidata`, `tidal`, `amazon_music`, `youtube_music`, `genius`, `allmusic`, `billboard`, `rolling_stone`. Every platform is listed, mapped or not."
+          },
+          "mappedCount": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Of artists with a Spotify ID, to two decimals."
+          },
+          "todayCount": {
+            "type": "integer",
+            "description": "Mappings created since midnight, database time."
+          }
+        }
+      },
+      "WorkerHeartbeat": {
+        "type": "object",
+        "required": [
+          "workerId",
+          "apiKeyHash",
+          "status",
+          "computedStatus",
+          "currentRun",
+          "batchPlatform",
+          "batchSize",
+          "message",
+          "startedAt",
+          "updatedAt",
+          "config"
+        ],
+        "properties": {
+          "workerId": {
+            "type": "string"
+          },
+          "apiKeyHash": {
+            "type": "string",
+            "description": "The full SHA-256 hash of the worker's MCP key."
+          },
+          "status": {
+            "type": "string",
+            "description": "What the worker last reported."
+          },
+          "computedStatus": {
+            "type": "string",
+            "enum": ["running", "idle", "stopped", "error", "dead"],
+            "description": "`dead` when the heartbeat is older than the worker's `batchTimeout` (900 s by default) plus 120 s."
+          },
+          "currentRun": {
+            "type": ["integer", "null"]
+          },
+          "batchPlatform": {
+            "type": ["string", "null"]
+          },
+          "batchSize": {
+            "type": ["integer", "null"]
+          },
+          "message": {
+            "type": ["string", "null"]
+          },
+          "startedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "config": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          }
+        }
+      },
+      "AgentWorkSummary": {
+        "type": "object",
+        "required": ["status", "stats", "activityPulse", "hourlyActivity", "workers"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "stats": {
+            "type": "object",
+            "required": ["totalArtistsWithSpotify", "totalArtistsWithDeezer", "platformStats"],
+            "properties": {
+              "totalArtistsWithSpotify": {
+                "type": "integer"
+              },
+              "totalArtistsWithDeezer": {
+                "type": "integer"
+              },
+              "platformStats": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PlatformStat"
+                }
+              }
+            }
+          },
+          "activityPulse": {
+            "type": "object",
+            "required": ["lastWriteAt", "rateLastHour"],
+            "properties": {
+              "lastWriteAt": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The newest MCP audit log entry, or `null` when there is none."
+              },
+              "rateLastHour": {
+                "type": "integer",
+                "description": "Distinct artists written to by MCP in the last hour."
+              }
+            }
+          },
+          "hourlyActivity": {
+            "type": "array",
+            "description": "The last 24 hours, oldest first; hours with no writes are absent.",
+            "items": {
+              "type": "object",
+              "required": ["hour", "resolveCount", "excludeCount"],
+              "properties": {
+                "hour": {
+                  "$ref": "#/components/schemas/Timestamp"
+                },
+                "resolveCount": {
+                  "type": "integer"
+                },
+                "excludeCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "workers": {
+            "type": "array",
+            "description": "Every worker heartbeat, most recently updated first.",
+            "items": {
+              "$ref": "#/components/schemas/WorkerHeartbeat"
+            }
+          }
+        }
+      },
+      "AuditLogEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "artistId",
+          "artistName",
+          "field",
+          "action",
+          "oldValue",
+          "newValue",
+          "agentLabel",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": ["string", "null"]
+          },
+          "field": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "description": "`set`, `resolve`, `exclude`, …"
+          },
+          "oldValue": {
+            "type": ["string", "null"]
+          },
+          "newValue": {
+            "type": ["string", "null"]
+          },
+          "agentLabel": {
+            "type": ["string", "null"],
+            "description": "The MCP key's label, or `null` when the key no longer exists."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "AgentBreakdownRow": {
+        "type": "object",
+        "required": [
+          "label",
+          "apiKeyHash",
+          "resolvedCount",
+          "excludedCount",
+          "lastActiveAt",
+          "byConfidence",
+          "bySource"
+        ],
+        "properties": {
+          "label": {
+            "type": ["string", "null"]
+          },
+          "apiKeyHash": {
+            "type": "string"
+          },
+          "resolvedCount": {
+            "type": "integer"
+          },
+          "excludedCount": {
+            "type": "integer"
+          },
+          "lastActiveAt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "byConfidence": {
+            "type": "object",
+            "required": ["high", "medium", "low", "manual"],
+            "properties": {
+              "high": {
+                "type": "integer"
+              },
+              "medium": {
+                "type": "integer"
+              },
+              "low": {
+                "type": "integer"
+              },
+              "manual": {
+                "type": "integer"
+              }
+            }
+          },
+          "bySource": {
+            "type": "object",
+            "required": ["wikidata", "musicbrainz", "name_search", "web_search", "manual"],
+            "properties": {
+              "wikidata": {
+                "type": "integer"
+              },
+              "musicbrainz": {
+                "type": "integer"
+              },
+              "name_search": {
+                "type": "integer"
+              },
+              "web_search": {
+                "type": "integer"
+              },
+              "manual": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "MappingExclusion": {
+        "type": "object",
+        "required": [
+          "id",
+          "artistId",
+          "artistName",
+          "spotify",
+          "platform",
+          "reason",
+          "details",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": ["string", "null"]
+          },
+          "spotify": {
+            "type": ["string", "null"]
+          },
+          "platform": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["conflict", "name_mismatch", "too_ambiguous"]
+          },
+          "details": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        }
+      },
+      "AgentRun": {
+        "type": "object",
+        "required": [
+          "workerId",
+          "runNumber",
+          "platform",
+          "status",
+          "startedAt",
+          "endedAt",
+          "wallTimeSecs",
+          "claudeTimeSecs",
+          "apiTimeSecs",
+          "turns",
+          "batchSize",
+          "resolved",
+          "excluded",
+          "skipped",
+          "errors",
+          "highConfidence",
+          "mediumConfidence",
+          "conflicts",
+          "nameMismatches",
+          "tooAmbiguous",
+          "exitCode",
+          "failCategory",
+          "failReason"
+        ],
+        "properties": {
+          "workerId": {
+            "type": "string"
+          },
+          "runNumber": {
+            "type": "integer"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "startedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "endedAt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wallTimeSecs": {
+            "type": ["integer", "null"]
+          },
+          "claudeTimeSecs": {
+            "type": ["integer", "null"]
+          },
+          "apiTimeSecs": {
+            "type": ["integer", "null"]
+          },
+          "turns": {
+            "type": ["integer", "null"]
+          },
+          "batchSize": {
+            "type": ["integer", "null"]
+          },
+          "resolved": {
+            "type": "integer"
+          },
+          "excluded": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "errors": {
+            "type": "integer"
+          },
+          "highConfidence": {
+            "type": "integer"
+          },
+          "mediumConfidence": {
+            "type": "integer"
+          },
+          "conflicts": {
+            "type": "integer"
+          },
+          "nameMismatches": {
+            "type": "integer"
+          },
+          "tooAmbiguous": {
+            "type": "integer"
+          },
+          "exitCode": {
+            "type": ["integer", "null"]
+          },
+          "failCategory": {
+            "type": ["string", "null"]
+          },
+          "failReason": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "AgentWorkDetails": {
+        "type": "object",
+        "required": ["status", "auditLog", "agentBreakdown", "exclusions", "runHistory"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "auditLog": {
+            "type": "object",
+            "required": ["entries", "total", "page", "limit"],
+            "properties": {
+              "entries": {
+                "type": "array",
+                "description": "Newest first.",
+                "items": {
+                  "$ref": "#/components/schemas/AuditLogEntry"
+                }
+              },
+              "total": {
+                "type": "integer"
+              },
+              "page": {
+                "type": "integer"
+              },
+              "limit": {
+                "type": "integer"
+              }
+            }
+          },
+          "agentBreakdown": {
+            "type": "object",
+            "required": ["agents"],
+            "properties": {
+              "agents": {
+                "type": "array",
+                "description": "One row per MCP key that resolved or excluded a mapping, most resolved first.",
+                "items": {
+                  "$ref": "#/components/schemas/AgentBreakdownRow"
+                }
+              }
+            }
+          },
+          "exclusions": {
+            "type": "object",
+            "required": ["platforms"],
+            "properties": {
+              "platforms": {
+                "type": "object",
+                "description": "Keyed by platform; only platforms with exclusions appear. Up to 500 exclusions each, newest first.",
+                "additionalProperties": {
+                  "type": "object",
+                  "required": ["exclusions", "total"],
+                  "properties": {
+                    "exclusions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/MappingExclusion"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "runHistory": {
+            "type": "object",
+            "required": ["runs", "total"],
+            "properties": {
+              "runs": {
+                "type": "array",
+                "description": "The 50 most recent runs, newest first.",
+                "items": {
+                  "$ref": "#/components/schemas/AgentRun"
+                }
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "ArtistDataSummary": {
+        "type": "object",
+        "required": [
+          "status",
+          "totalArtists",
+          "totalWithSpotify",
+          "platformIdCoverage",
+          "artistLinkCoverage",
+          "completenessDistribution",
+          "medianFields",
+          "averageFields",
+          "enrichmentReadiness"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "totalArtists": {
+            "type": "integer"
+          },
+          "totalWithSpotify": {
+            "type": "integer",
+            "description": "Artists with a non-empty `spotify`."
+          },
+          "platformIdCoverage": {
+            "type": "array",
+            "description": "From `artist_id_mappings`, most mapped first. Only platforms with at least one mapping appear.",
+            "items": {
+              "type": "object",
+              "required": ["platform", "count", "percentage", "todayCount"],
+              "properties": {
+                "platform": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "percentage": {
+                  "type": "number",
+                  "description": "Of `totalWithSpotify`, to two decimals."
+                },
+                "todayCount": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "artistLinkCoverage": {
+            "type": "array",
+            "description": "One row per tracked column, in a fixed order: instagram, bluesky, x, facebook, tiktok, youtube, youtubechannel, soundcloud, bandcamp, subvert, discogs, lastfm, musicbrainz, wikidata, imdb, wikipedia, bio, linkedin, farcaster, twitch, patreon. Spotify is left out because it is the denominator elsewhere.",
+            "items": {
+              "type": "object",
+              "required": ["column", "category", "count", "percentage", "todayCount"],
+              "properties": {
+                "column": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": ["social", "listen", "reference", "content"]
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "percentage": {
+                  "type": "number",
+                  "description": "Of `totalArtists`, to two decimals."
+                },
+                "todayCount": {
+                  "type": "integer",
+                  "description": "Distinct artists whose column MCP `set` since midnight. Manual edits and UGC approvals are not counted."
+                }
+              }
+            }
+          },
+          "completenessDistribution": {
+            "type": "array",
+            "description": "How many of the tracked columns each artist has filled, bucketed `0-1`, `2-3`, `4-6`, `7-10`, `11+`; empty buckets are absent.",
+            "items": {
+              "type": "object",
+              "required": ["bucket", "count", "percentage"],
+              "properties": {
+                "bucket": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "percentage": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "medianFields": {
+            "type": "number"
+          },
+          "averageFields": {
+            "type": "number"
+          },
+          "enrichmentReadiness": {
+            "type": "object",
+            "required": ["hasWikidata", "hasSpotifyNoWikidata", "noSpotify"],
+            "properties": {
+              "hasWikidata": {
+                "type": "integer"
+              },
+              "hasSpotifyNoWikidata": {
+                "type": "integer"
+              },
+              "noSpotify": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "CorrectionAbout": {
+        "type": "object",
+        "required": ["status", "bio", "revision"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "bio": {
+            "type": "string",
+            "description": "The published About."
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "A SHA-256 over the artist, its claim and the About. Send it back on save."
+          }
+        }
+      },
+      "McpKey": {
+        "type": "object",
+        "required": ["id", "label", "keyHashPrefix", "createdAt", "revokedAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "keyHashPrefix": {
+            "type": "string",
+            "description": "The first 8 characters of the key's SHA-256 hash, for telling keys apart."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "revokedAt": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` while the key is active."
+          }
+        }
+      }
+    }
+  }
+}
