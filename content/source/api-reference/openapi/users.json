@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: users and profile",
     "version": "1.0.0",
-    "description": "The signed-in user's own account and profile page: their user name, profile photo, approved claim, contributed artists, contribution summary and the updates feed. Moved from MusicNerdWeb's `/api/user/*` and `/api/profile/*` routes (xdjs/MusicNerdWeb#1454). Every route answers about the caller only; the account comes from the token, never from the request."
+    "description": "The signed-in user's own account and profile: their user name, profile photo, approved claim, contributed artists, contribution summary and the updates feed. Every route answers about the caller only; the account comes from the token, never from the request."
   },
   "servers": [
     {
@@ -25,7 +25,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The caller's own user row, with the same camelCase fields Music Nerd's site reads (`usernameNeedsConfirmation` and `usernamePromptedAt` drive the user-name prompt). `id` must be the caller's own id: anyone else, admins included, gets 403, exactly as the Web route did.",
+        "description": "The caller's own user record; `usernameNeedsConfirmation` and `usernamePromptedAt` drive the user-name prompt. `id` must be the caller's own id: anyone else, admins included, gets 403.",
         "parameters": [
           {
             "name": "id",
@@ -113,7 +113,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Saves a chosen user name for the caller's own account and clears the confirmation flag. Names are reserved case-insensitively (trimmed) under an advisory lock, so two people cannot take the same name; a taken name is 409. An email address or a wallet address is refused. Web returned `status: \"success\"` with a `message`; the API returns `status: \"ok\"` with the same `message`, and errors carry `error` instead of `message`.",
+        "description": "Saves a chosen user name for the caller's own account and clears the confirmation flag. Names are unique case-insensitively, so a taken name is 409, and an email or wallet address is refused.",
         "parameters": [
           {
             "name": "id",
@@ -354,7 +354,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Whether the caller has an approved artist claim, and which artist. Always 200: without a valid token, or when the database cannot be read, it answers `hasClaim: false` rather than an error, exactly as the Web route did, so the navigation never breaks on it.",
+        "description": "Whether the caller has an approved artist claim, and which artist. Always 200: without a valid token, or when the database cannot be read, it answers `hasClaim: false` rather than an error.",
         "responses": {
           "200": {
             "description": "The caller's approved claim, if any.",
@@ -420,7 +420,7 @@
             "privyBearer": []
           }
         ],
-        "description": "A one-hour signed URL for the caller's profile photo in Supabase Storage, or `url: null` when none has been uploaded. The optional `X-Profile-Account` header lets the page detect that the signed-in account changed underneath it.",
+        "description": "A one-hour signed URL for the caller's profile photo, or `url: null` when none has been uploaded. The optional `X-Profile-Account` header lets a caller detect that the signed-in account changed.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ProfileAccountOptional"
@@ -543,7 +543,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Replaces the caller's profile photo. Accepts a JPG, PNG or WebP up to 2 MB, re-encodes it as a 512×512 WebP with orientation applied and metadata stripped, and stores it under the caller's own folder. The Web route also required the browser's `Origin` to match the site; the API authenticates with a bearer token rather than a cookie, so that check is not needed here and is not ported.",
+        "description": "Replaces the caller's profile photo with a JPG, PNG or WebP up to 2 MB, saved as a 512×512 WebP with metadata stripped.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ProfileAccountOptional"
@@ -696,7 +696,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The About text for up to six artists, for the bookmarks strip on the profile page. An artist's `bio` is returned only when the artist has an approved claim and the About is real (not the claim nudge); otherwise it is null. Web returned a bare array; the API wraps it as `summaries` so the response can carry `status`.",
+        "description": "The About text for up to six artists. An artist's `bio` is returned only when the artist has an approved claim and a real About (not the claim nudge); otherwise it is null.",
         "parameters": [
           {
             "name": "id",
@@ -941,7 +941,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The counts on the profile page (link submissions, approved and pending, artists added, claimant edits) and the caller's three most recent link submissions.",
+        "description": "The caller's contribution counts (link submissions, approved and pending, artists added, claimant edits) and their three most recent link submissions.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ProfileAccountRequired"
@@ -1059,7 +1059,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The latest cards from the caller's artists, six artists per page in the same order as [Your artists](/api-reference/users/profile-artists), up to two cards per artist, newest first. Built from the stored [artist Latest](/api-reference/artists/latest): releases, Instagram posts, In Process moments and published interview answers. `checked` is how many artists have been read so far; `next` is the `offset` for the next six. Web also fetched Spotify, Deezer and In Process live when a snapshot was missing and attached source links to interview cards; the API serves its stored snapshots as they are, so a missing snapshot is reported in `unavailableProviders` and interview cards carry no source link.",
+        "description": "The latest cards from the caller's artists, six artists per page in the same order as [Your artists](/api-reference/users/profile-artists), up to two per artist, newest first. Built from the stored [artist Latest](/api-reference/artists/latest): releases, Instagram posts, In Process moments and published interview answers, with a missing snapshot reported in `unavailableProviders`. `checked` is how many artists have been read so far; `next` is the `offset` for the next six.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ProfileAccountRequired"
