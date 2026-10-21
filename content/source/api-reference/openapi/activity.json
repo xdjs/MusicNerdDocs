@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: activity and contributions",
     "version": "1.0.0",
-    "description": "The public activity feed and a signed-in user's own contributions: their recent edits, profile edits, submission counts and submissions. Moved from the website's `/api/*` routes (xdjs/MusicNerdWeb#1454)."
+    "description": "The public activity feed and a signed-in user's own contributions: their recent edits, profile edits, submission counts and submissions."
   },
   "servers": [
     {
@@ -21,7 +21,7 @@
         "summary": "Activity feed",
         "operationId": "getActivity",
         "security": [],
-        "description": "The 15 most recent public events across the site, newest first: agent link mappings, approved submissions, artists' own profile edits and new artists. Pass `since` to get only events after a timestamp, as the homepage feed does when it polls. Unmoderated submissions never appear.",
+        "description": "The 15 most recent public events, newest first: agent link mappings, approved submissions, artists' own profile edits and new artists. Pass `since` to get only events after a timestamp. Unmoderated submissions never appear.",
         "parameters": [
           {
             "name": "since",
@@ -115,7 +115,7 @@
         "summary": "Recently edited artists",
         "operationId": "getRecentEdited",
         "security": [],
-        "description": "The last three distinct artists a user's approved submissions touched, each with an image: the artist's own upload, else their Spotify or Deezer picture. Pass `userId` for any user (the leaderboard does); without it the signed-in user's own are returned, read from a Privy token in `Authorization: Bearer`. With neither, and when the read fails, the list is empty (as on the website).",
+        "description": "The last three distinct artists a user's approved submissions touched, each with an image. Pass `userId` for any user; without it the signed-in user's own are returned. With neither, or when the read fails, the list is empty.",
         "parameters": [
           {
             "name": "userId",
@@ -179,7 +179,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The signed-in user's edits to their own artist profile, ten per page, newest first, with the artist's name and the old and new value of each link. A page past the end returns the last page. Never cached.",
+        "description": "The signed-in user's edits to their own artist profile, ten per page, newest first, with the artist's name and the old and new value of each link. A page past the end returns the last page.",
         "parameters": [
           {
             "name": "page",
@@ -276,7 +276,7 @@
             "privyBearer": []
           }
         ],
-        "description": "How many links the signed-in user has submitted, approved or not. The site's nav uses it for the new-activity dot. Without a valid token, and when the count can't be read, the count is 0 rather than an error (as on the website).",
+        "description": "How many links the signed-in user has submitted, approved or not. Without a valid token, or when the count can't be read, the count is 0 rather than an error.",
         "responses": {
           "200": {
             "description": "The user's submission count.",
@@ -316,7 +316,7 @@
             "privyBearer": []
           }
         ],
-        "description": "How many of the signed-in user's submitted links an admin has approved. Without a valid token, and when the count can't be read, the count is 0 rather than an error (as on the website).",
+        "description": "How many of the signed-in user's submitted links an admin has approved. Without a valid token, or when the count can't be read, the count is 0 rather than an error.",
         "responses": {
           "200": {
             "description": "The user's approved submission count.",
@@ -356,7 +356,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The signed-in user's submitted links with the artist each one belongs to, ten per page, newest first, filterable by platform, approval status and artist name. `all=true` returns every entry in one page. Without a valid token the list is empty with `total` 0 (as on the website). Never cached.",
+        "description": "The signed-in user's submitted links with the artist each one belongs to, ten per page, newest first, filterable by platform, approval status and artist name. `all=true` returns every entry in one page. Without a valid token the list is empty with `total` 0.",
         "parameters": [
           {
             "name": "page",
@@ -539,7 +539,7 @@
           "events": {
             "type": "array",
             "maxItems": 15,
-            "description": "Newest first. On the website this was the bare array; it is now under `events`.",
+            "description": "Newest first.",
             "items": {
               "$ref": "#/components/schemas/ActivityEvent"
             }
@@ -606,7 +606,7 @@
           "entries": {
             "type": "array",
             "maxItems": 3,
-            "description": "Most recently edited first. On the website this was the bare array; it is now under `entries`.",
+            "description": "Most recently edited first.",
             "items": {
               "$ref": "#/components/schemas/RecentEditedArtist"
             }
