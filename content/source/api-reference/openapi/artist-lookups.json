@@ -565,7 +565,7 @@
     "/api/getSpotifyData": {
       "get": {
         "summary": "Get Spotify artist data",
-        "description": "Returns Spotify's artist object for one `spotifyId`, or for up to 50 comma-separated `spotifyIds` (an unknown id in a batch comes back as `null`). When both are sent, `spotifyIds` wins. Spotify is called on every request; MusicNerdWeb's 24-hour copy is not kept here.",
+        "description": "Returns Spotify's artist object for one `spotifyId`, or for up to 50 comma-separated `spotifyIds` (an unknown id in a batch comes back as `null`). When both are sent, `spotifyIds` wins. A successful single-artist answer is kept for 24 hours; a batch always asks Spotify.",
         "operationId": "getSpotifyData",
         "security": [],
         "parameters": [
@@ -1444,7 +1444,7 @@
             "description": "No such artist, or no usable image."
           },
           "503": {
-            "description": "The database or a provider could not be read."
+            "description": "The database could not be read."
           }
         }
       }
