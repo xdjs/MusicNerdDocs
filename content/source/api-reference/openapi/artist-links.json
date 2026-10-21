@@ -171,7 +171,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Writes one platform link straight onto the artist, for the approved claimant or an admin. `set` reads the platform and id out of `url`: a song or album URL is refused; an Apple Music or Beatport artist page is saved as an approved Lore source instead of a column (`siteName` is then `applemusic` or `beatport`); anything else goes through the urlmap patterns and lands in that platform's column. A changed value posts to Discord, is recorded as the claimant's self-edit, and counts a `profile_edit` analytics event; saving the same value again does none of that. `clear` empties the column. Returns the platform written.",
+        "description": "Writes one platform link straight onto the artist, for the approved claimant or an admin. `set` reads the platform and id out of `url`: a song or album URL is refused; an Apple Music or Beatport artist page is saved as an approved Lore source instead of a column (`siteName` is then `applemusic` or `beatport`); anything else goes through the urlmap patterns and lands in that platform's column. A changed value posts to Discord and is recorded as the claimant's self-edit; saving the same value again does neither. `clear` empties the column. Returns the platform written.",
         "requestBody": {
           "required": true,
           "content": {
@@ -348,7 +348,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Empties one platform column on an artist, for any whitelisted user or admin (not only the claimant: this is the contributor-side remove). The contributor's original UGC row is kept so their credit stands. `wallets` is handled by the array path, which removes the artist's own id from the array as the website does. Counts a `profile_edit` analytics event. Returns `{ status: \"ok\", success: true, message }`.",
+        "description": "Empties one platform column on an artist, for any whitelisted user or admin (not only the claimant: this is the contributor-side remove). The contributor's original UGC row is kept so their credit stands. `wallets` is handled by the array path, which removes the artist's own id from the array as the website does. Returns `{ status: \"ok\", success: true, message }`.",
         "requestBody": {
           "required": true,
           "content": {
