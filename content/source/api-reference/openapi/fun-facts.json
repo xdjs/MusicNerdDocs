@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: fun facts",
     "version": "1.0.0",
-    "description": "Generates one short fun fact about an artist for the artist page's Fun Facts card. No credentials."
+    "description": "Generates one short fun fact about an artist. No credentials."
   },
   "servers": [
     {
@@ -19,7 +19,7 @@
     "/api/funFacts/{type}": {
       "get": {
         "summary": "Generate a fun fact",
-        "description": "Writes one fun fact of the given kind about the artist with the model and returns its text; nothing is stored. The prompt for each kind is the active row of the `funfacts` table with the artist's name and Spotify ID filled in. When the artist has an approved claim, their approved vault sources and their Lore document are appended as context; an unclaimed artist's fact uses the prompt alone. No credentials.\n\nThe model call is given 15 seconds and the whole request 20 seconds; either running out returns 408. Ported from MusicNerdWeb's `/api/funFacts/[type]` with the same query parameter and `text` field; the response adds `status` and errors use this API's `{ status, error }` envelope.",
+        "description": "Writes one fun fact of the given kind about the artist and returns its text; nothing is stored. When the artist has an approved claim, their approved vault sources and Lore are used as context. No credentials.",
         "operationId": "generateFunFact",
         "security": [],
         "parameters": [
