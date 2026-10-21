@@ -20,7 +20,7 @@
         "summary": "Read the About",
         "operationId": "getArtistBio",
         "security": [],
-        "description": "The artist's About as the profile shows it: the saved bio for a claimed artist, otherwise the directory's prepared About when it is still current, otherwise the claim prompt. With `regenerate=true` the caller must be the artist's claimant or an admin (send the Privy access token); the About is rewritten from the stored Lore document and saved, with the previous text kept in the bio history. Moved from Music Nerd's website, which answered the same way; a non-UUID `id` now gets a 400 instead of a 500.",
+        "description": "The artist's About as the profile shows it: the saved bio for a claimed artist, otherwise the directory's prepared About when it is still current, otherwise the claim prompt. With `regenerate=true` the caller must be the artist's claimant or an admin; the About is rewritten from the artist's Lore and saved, with the previous text kept in the bio history.",
         "parameters": [
           {
             "name": "id",
@@ -235,7 +235,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Saves the About the artist wrote, or with `regenerate: true` rewrites it from the stored Lore document. Only the artist's approved claimant or an admin may call it. Every change keeps both the old and the new text in the bio history and records an `about_edited` or `about_generated` activity; a pinned bio is never replaced. Moved from Music Nerd's website; errors arrive as `error` instead of `message`.",
+        "description": "Saves the About the artist wrote, or with `regenerate: true` rewrites it from the artist's Lore, for the approved claimant or an admin. Both the old and the new text are kept in the bio history, and a pinned bio is never replaced.",
         "parameters": [
           {
             "name": "id",
@@ -419,7 +419,7 @@
             }
           },
           "500": {
-            "description": "The write failed. As on the website, an edit that differs from a pinned bio is refused with this status and its message.",
+            "description": "The write failed, or an edit that differs from a pinned bio was refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -456,7 +456,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Files a correction report on the artist's About for an admin to review. Any signed-in user may send one; the caller sends the About text they read (`expectedBio`) so a report never lands on an About that has since changed. The same report sent again is acknowledged as a duplicate, and an account may file at most 10 reports in a rolling 24 hours. Moved from Music Nerd's website.",
+        "description": "Files a correction report on the artist's About for an admin to review; any signed-in user may send one. `expectedBio` is the About text the caller read, so a report never lands on an About that has since changed. The same report sent again is acknowledged as a duplicate, and an account may file at most 10 reports in a rolling 24 hours.",
         "parameters": [
           {
             "name": "id",
@@ -670,7 +670,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Adds a public web page to the artist's vault as a suggested Lore source. Any signed-in user may suggest one: an admin's or whitelisted contributor's source is approved at once and a Lore refresh is queued; anyone else's waits for review as `pending`. A URL already in the vault, with or without its fragment, is refused. Moved from Music Nerd's website; the source's review state is returned as `sourceStatus` (the website returned it as `status`).",
+        "description": "Adds a public web page to the artist's vault as a suggested Lore source, for any signed-in user. An admin's or whitelisted contributor's source is approved at once and a Lore refresh is queued; anyone else's waits for review, with `sourceStatus` `pending`. A URL already in the vault, with or without its fragment, is refused.",
         "parameters": [
           {
             "name": "id",
@@ -823,7 +823,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Whether the research started when an artist was added to the directory is still running, and a fingerprint of the profile's public links so the page can tell when they changed. Only the account that added the artist, or an admin, may read it, and only within 24 hours of the artist being added. Moved from Music Nerd's website.",
+        "description": "Whether the research started when an artist was added to the directory is still running, and a fingerprint of the profile's public links that changes when they do. Only the account that added the artist, or an admin, may read it, and only within 24 hours of the artist being added.",
         "parameters": [
           {
             "name": "id",
@@ -929,7 +929,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Downloads the artist's Lore document as one self-contained Markdown file: a dated header, the document with its `[n]` citation markers, and the numbered sources it cites. `format=csv` returns the sources as a CSV table instead. Only the artist's approved claimant or an admin may export it. Moved from Music Nerd's website; the file is unchanged, errors use the API's `{ status, error }` shape.",
+        "description": "Downloads the artist's Lore document as one self-contained Markdown file: a dated header, the document with its `[n]` citation markers, and the numbered sources it cites. `format=csv` returns the sources as a CSV table instead. Only the artist's approved claimant or an admin may export it.",
         "parameters": [
           {
             "name": "id",
@@ -1248,7 +1248,7 @@
           },
           "revision": {
             "type": "string",
-            "description": "A SHA-256 fingerprint of the profile's public link destinations. The same value the website computes when it renders the page; a change means the links changed."
+            "description": "A fingerprint of the profile's public link destinations; a change means the links changed."
           }
         }
       }
