@@ -128,7 +128,7 @@
             }
           },
           "401": {
-            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it. The message is `Not signed in`, as on the API's other signed-in routes; Music Nerd's site answered `Not authenticated`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -156,7 +156,7 @@
             }
           },
           "500": {
-            "description": "Storage could not issue a signed URL.",
+            "description": "Storage could not issue a signed URL, or the token could not be checked.",
             "content": {
               "application/json": {
                 "schema": {
@@ -329,7 +329,7 @@
             }
           },
           "401": {
-            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it. The message is `Not signed in`, as on the API's other signed-in routes; Music Nerd's site answered `Not authenticated`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -369,7 +369,7 @@
             }
           },
           "500": {
-            "description": "The upload could not be finished (storage, extraction or the save failed before anything was committed). Send the same ticket again.",
+            "description": "The upload could not be finished (the token check, storage, extraction or the save failed before anything was committed). Send the same ticket again.",
             "content": {
               "application/json": {
                 "schema": {
@@ -545,7 +545,7 @@
             }
           },
           "401": {
-            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it. The message is `Not signed in`, as on the API's other signed-in routes; Music Nerd's site answered `Not authenticated`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -585,7 +585,7 @@
             }
           },
           "500": {
-            "description": "Storage refused the file, or the save failed.",
+            "description": "Storage refused the file, the save failed, or the token could not be checked.",
             "content": {
               "application/json": {
                 "schema": {
