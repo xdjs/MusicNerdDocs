@@ -24,7 +24,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Links a wallet the signed-in user owns in Privy to their Music Nerd account. If a legacy (pre-Privy) account already has that wallet, the two are merged in one transaction: the legacy account survives, takes over the Privy identity, the accepted-contribution count, the artists added, the self-edits, the activity ledger and the bio corrections, and the sign-in placeholder account is deleted. A name the user confirmed in the welcome flow wins over the legacy name; an unconfirmed generated name does not. Otherwise the wallet is written to the current account.\n\nMoved from MusicNerdWeb's `POST /api/auth/link-wallet`: same body and status codes; the success body gains `status: \"ok\"` and errors use `{ status: \"error\", error }`.",
+        "description": "Links a wallet the signed-in user owns in Privy to their Music Nerd account. If a legacy (pre-Privy) account already has that wallet, the two are merged into the legacy account, which takes over the Privy identity and the signed-in account's contributions and comes back as `userId`. A name the user confirmed in the welcome flow wins over the legacy name.",
         "requestBody": {
           "required": true,
           "content": {
