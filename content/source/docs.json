@@ -35,6 +35,8 @@
             "group": "Research",
             "pages": [
               "api-reference/artists/latest",
+              "api-reference/artists/latest-refresh-state",
+              "api-reference/artists/latest-refresh",
               "api-reference/research/advance",
               "api-reference/research/scheduler",
               "api-reference/artists/research-refresh",
@@ -80,7 +82,9 @@
               "api-reference/interview/prepare-question",
               "api-reference/interview/offer-question",
               "api-reference/interview/save-answer",
-              "api-reference/interview/finish-session"
+              "api-reference/interview/finish-session",
+              "api-reference/interview/restore-interview",
+              "api-reference/interview/interview-action"
             ]
           },
           {

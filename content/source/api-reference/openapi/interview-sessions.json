@@ -2069,7 +2069,7 @@
     "/api/artist/{artistId}/interview/session/{sessionId}/prepare": {
       "get": {
         "summary": "Read question preparation",
-        "description": "Read-only status for the session’s next question. Does not generate, enqueue or write. Stale means the session, claim, next ordinal or mandatory memory no longer matches the prepared candidate. A consumed preparation returns idle without jobId. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Released to production 2026-10-18 with [MusicNerdAPI#56](https://github.com/xdjs/MusicNerdAPI/pull/56) and the paired [MusicNerdWeb#1567](https://github.com/xdjs/MusicNerdWeb/pull/1567); the editor recovery follow-up is [MusicNerdWeb#1572](https://github.com/xdjs/MusicNerdWeb/pull/1572). Broader shared-knowledge acceptance remains tracked in [MusicNerdWeb#1424](https://github.com/xdjs/MusicNerdWeb/issues/1424). Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
+        "description": "Read-only status for the session’s next question. Does not generate, enqueue or write. Stale means the session, claim, next ordinal or mandatory memory no longer matches the prepared candidate. A consumed preparation returns idle without jobId. A ready candidate is not a saved offer. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
         "security": [
           {
             "PrivyAuth": []
@@ -2344,7 +2344,7 @@
       },
       "post": {
         "summary": "Prepare or offer the next question",
-        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before offering the entire checked bank atomically at explicit Start, without generating on consume. Returns question (first unanswered) plus questions (all authoritative sitting rows); offeredAt is fixed for every bank question at this transaction; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, all bank questions are offered at Start; subsequent answer saves preserve exact text and do not generate or run an eligibility model. New answers inform future sittings, not adaptive changes to the fixed current bank. Legacy partially offered checked banks can be upgraded through explicit Resume/consume when current memory and evidence still match. Existing offered questions and their timestamps are preserved; GET only exposes the needsPreparedBankResume hint. Changed memory prevents expansion. Legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Released to production 2026-10-18 with [MusicNerdAPI#56](https://github.com/xdjs/MusicNerdAPI/pull/56) and the paired [MusicNerdWeb#1567](https://github.com/xdjs/MusicNerdWeb/pull/1567); the editor recovery follow-up is [MusicNerdWeb#1572](https://github.com/xdjs/MusicNerdWeb/pull/1572). Broader shared-knowledge acceptance remains tracked in [MusicNerdWeb#1424](https://github.com/xdjs/MusicNerdWeb/issues/1424). Decision 2026-10-17: approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
+        "description": "action=prepare queues durable work in the existing research-job system and returns preparation status without waiting for model generation. action=consume atomically rechecks the current session, ordinal, mandatory memory and evidence before offering the entire checked bank atomically at explicit Start, without generating on consume. Returns question (first unanswered) plus questions (all authoritative sitting rows); offeredAt is fixed for every bank question at this transaction; it returns the saved question. At most three sequential questions per sitting. For a session that has explicitly opted into durable preparation, all bank questions are offered at Start; subsequent answer saves preserve exact text and do not generate or run an eligibility model. New answers inform future sittings, not adaptive changes to the fixed current bank. Legacy partially offered checked banks can be upgraded through explicit Resume/consume when current memory and evidence still match. Existing offered questions and their timestamps are preserved; GET only exposes the needsPreparedBankResume hint. Changed memory prevents expansion. Legacy foreground sessions are unchanged. Preparation itself does not set offeredAt or expose a question to the artist. Actual current approved claimant only; administrator status alone is insufficient. Bearer authentication is verified on every request; bearer tokens are never stored in the job. Private/no-store. Approved claims may automatically queue private question preparation after source research. The artist still explicitly chooses Start before any question is offered. Existing jobs wait for readable approved originals or artist-owned social text; pending Lore alone is not usable evidence. Existing readable artist context can proceed without waiting for unrelated Latest or ongoing research jobs. Waiting runs no model or scrape. Automatic waiting stops after 24 hours, and the same job becomes eligible again when usable evidence appears. Exact claimant ownership is rechecked before preparing. Reading pages or GET status never queues this work.",
         "security": [
           {
             "PrivyAuth": []
@@ -2857,6 +2857,543 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/interview": {
+      "get": {
+        "summary": "Restore the interview",
+        "operationId": "restoreInterview",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "description": "The saved interview state, and for an active sitting with nothing offered and no legacy offers, its current preparation. Nothing is generated, queued or written.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved interview. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`Invalid artist.` when `id` isn't a UUID; `Unexpected interview query.` when the URL has a query string.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No `Authorization: Bearer` header, or the token is invalid or has no Music Nerd user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Sign in to continue the interview."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin; preparation also needs the claimant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This account cannot edit this artist."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The artist, session, offered question, source or boundary is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "I could not complete that interview step. Your saved interview is still available; reload and try again."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved interview, answer revision, boundary revision or source revision changed, or the sitting already has three questions (`This session is complete. Finish when you’re ready.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "The interview changed. Reload the saved interview."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "A supported limit was exceeded (interview offers, boundaries, source size).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "I could not complete that interview step. Your saved interview is still available; reload and try again."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The interview preview is not enabled (`MUSICNERD_API_INTERVIEWER_ENABLED` is not `true`), persistence is unavailable, or the saved context exceeds its budget (a distinct message asks the artist to review topic instructions).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "I could not complete that interview step. Your saved interview is still available; reload and try again."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Run an interview action",
+        "operationId": "runInterviewAction",
+        "security": [
+          {
+            "PrivyAuth": []
+          }
+        ],
+        "description": "Performs one interview action. `start` opens a sitting and queues preparation; `prepare` queues it for an open sitting; `continue` consumes a ready question (or returns the one already offered); `answer` saves exact words and returns the state with `savedQuestion`; `finish` closes the sitting; `boundary` and `retract` save or retract a topic instruction and return `{ status: \"ok\" }`; `memory` returns the sitting's assembled mandatory memory; `boundaries` lists active instructions; `source` reads an original source window pinned to its revision. The sitting for `memory` and `boundaries` is the active one, else the next.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "requestId"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "start"
+                      },
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Idempotency key for the sitting."
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "sessionId"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "continue"
+                      },
+                      "sessionId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "sessionId"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "prepare"
+                      },
+                      "sessionId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "answerId",
+                      "expectedRevision",
+                      "answer"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "answer"
+                      },
+                      "answerId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "expectedRevision": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "answer": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "minLength": 1,
+                        "maxLength": 8000,
+                        "description": "The artist's exact words; null skips the question."
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "sessionId"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "finish"
+                      },
+                      "sessionId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "requestId",
+                      "questionKey",
+                      "wording",
+                      "scope"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "boundary"
+                      },
+                      "requestId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "questionKey": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      "wording": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000
+                      },
+                      "scope": {
+                        "type": "string",
+                        "enum": [
+                          "sitting",
+                          "until_retracted"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "boundaryId",
+                      "revision"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "retract"
+                      },
+                      "boundaryId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "memory"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "boundaries"
+                      },
+                      "cursor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "action",
+                      "sourceId",
+                      "revision",
+                      "start"
+                    ],
+                    "properties": {
+                      "action": {
+                        "const": "source"
+                      },
+                      "sourceId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 100
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "The window starts 1000 characters before this and reads 8000."
+                      }
+                    }
+                  }
+                ]
+              },
+              "examples": {
+                "start": {
+                  "summary": "Start a sitting",
+                  "value": {
+                    "action": "start",
+                    "requestId": "0f5b6a7c-8d9e-4f01-a234-56789abcdef0"
+                  }
+                },
+                "answer": {
+                  "summary": "Save an answer",
+                  "value": {
+                    "action": "answer",
+                    "answerId": "3c2b1a09-8f7e-4d6c-b5a4-39281706f5e4",
+                    "expectedRevision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                    "answer": "We recorded it live in one take."
+                  }
+                },
+                "boundaries": {
+                  "summary": "List topic instructions",
+                  "value": {
+                    "action": "boundaries"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "By action: the interview state (`start`, `prepare`, `continue`, `answer`, `finish`), `{ status: \"ok\" }` (`boundary`, `retract`), assembled memory (`memory`), a boundary page (`boundaries`) or a source window (`source`). `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/InterviewState"
+                    },
+                    {
+                      "$ref": "#/components/schemas/InterviewOk"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AssembledMemory"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BoundaryPage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SourceRead"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`Invalid artist.` when `id` isn't a UUID; `Unexpected interview query.` when the URL has a query string; `Invalid interview request.` for a body that is not one of the actions, is over 64 KB or is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid interview request."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No `Authorization: Bearer` header, or the token is invalid or has no Music Nerd user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Sign in to continue the interview."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin; preparation also needs the claimant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This account cannot edit this artist."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The artist, session, offered question, source or boundary is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "I could not complete that interview step. Your saved interview is still available; reload and try again."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved interview, answer revision, boundary revision or source revision changed, or `start`/`continue`/`prepare` found no active session for `sessionId` (`Reload the saved interview before continuing.`), or the sitting already has three questions (`This session is complete. Finish when you’re ready.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "The interview changed. Reload the saved interview."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "A supported limit was exceeded (interview offers, mandatory memory, boundaries, source size).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "I could not complete that interview step. Your saved interview is still available; reload and try again."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The interview preview is not enabled (`MUSICNERD_API_INTERVIEWER_ENABLED` is not `true`), persistence is unavailable, or the saved context exceeds its budget (a distinct message asks the artist to review topic instructions).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "I could not complete that interview step. Your saved interview is still available; reload and try again."
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2864,6 +3401,1015 @@
       "PrivyAuth": {
         "type": "http",
         "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "InterviewState": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "session": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "sitting": {
+                "type": "integer"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "finished"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "closedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "questions": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "questionKey": {
+                      "type": "string"
+                    },
+                    "question": {
+                      "type": "string"
+                    },
+                    "answer": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "offered",
+                        "answered",
+                        "skipped"
+                      ]
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "sitting": {
+                      "type": "integer"
+                    },
+                    "offeredAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "answerUpdatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ordinal": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "references": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "revision",
+                          "start",
+                          "end",
+                          "quote"
+                        ],
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "original",
+                              "answer"
+                            ]
+                          },
+                          "sourceId": {
+                            "type": "string",
+                            "description": "Required for original evidence: full vault/social source identity."
+                          },
+                          "entryId": {
+                            "type": "string",
+                            "description": "Required for answer evidence: full answer identity."
+                          },
+                          "revision": {
+                            "type": "string",
+                            "pattern": "^[a-f0-9]{64}$"
+                          },
+                          "start": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "UTF-16 offset."
+                          },
+                          "end": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "quote": {
+                            "type": "string",
+                            "minLength": 8,
+                            "maxLength": 1600
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "interviewInvalidated": {
+                "type": "boolean",
+                "description": "True after changed instructions invalidate the fixed offered bank. Saved answers remain intact; finish explicitly before starting a new sitting."
+              },
+              "needsPreparedBankResume": {
+                "type": "boolean",
+                "description": "Read-only hint that an active legacy sitting has an offered question and remaining checked bank items. On explicit Resume, call consume to revalidate current ownership, mandatory memory, and evidence and atomically offer eligible remaining questions. GET never offers questions. False for fully offered banks."
+              }
+            }
+          },
+          "legacyOffers": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "questionKey": {
+                  "type": "string"
+                },
+                "question": {
+                  "type": "string"
+                },
+                "answer": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "offered",
+                    "answered",
+                    "skipped"
+                  ]
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "sitting": {
+                  "type": "integer"
+                },
+                "offeredAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "answerUpdatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "ordinal": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "references": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "revision",
+                      "start",
+                      "end",
+                      "quote"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "original",
+                          "answer"
+                        ]
+                      },
+                      "sourceId": {
+                        "type": "string",
+                        "description": "Required for original evidence: full vault/social source identity."
+                      },
+                      "entryId": {
+                        "type": "string",
+                        "description": "Required for answer evidence: full answer identity."
+                      },
+                      "revision": {
+                        "type": "string",
+                        "pattern": "^[a-f0-9]{64}$"
+                      },
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "UTF-16 offset."
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "quote": {
+                        "type": "string",
+                        "minLength": 8,
+                        "maxLength": 1600
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "preparation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "jobId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Present when a preparation job exists."
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "idle",
+                  "pending",
+                  "running",
+                  "ready",
+                  "failed",
+                  "stale"
+                ]
+              },
+              "errorCode": {
+                "type": "string",
+                "enum": [
+                  "preparation_failed",
+                  "model_output_invalid",
+                  "timeout_or_cancelled",
+                  "external_outcome_unknown"
+                ],
+                "description": "Safe failure classification only; never raw provider errors or private job payloads."
+              },
+              "readyCount": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3,
+                "description": "Number of independently checked available questions. Zero while initial preparation or eligibility checking is pending."
+              },
+              "totalCount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3,
+                "description": "Questions targeted by this preparation bank; a new sitting targets three, an existing sitting only remaining slots."
+              },
+              "phase": {
+                "type": "string",
+                "enum": [
+                  "preparing",
+                  "checking"
+                ],
+                "description": "Preparing generates the initial bank; checking revalidates saved questions after an answer or changed instructions without generating replacements."
+              }
+            },
+            "description": "Present after `start` and `prepare` (the queued preparation), and on a restore of an active sitting with no offered question (its current preparation)."
+          },
+          "savedQuestion": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "questionKey": {
+                "type": "string"
+              },
+              "question": {
+                "type": "string"
+              },
+              "answer": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "offered",
+                  "answered",
+                  "skipped"
+                ]
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "sitting": {
+                "type": "integer"
+              },
+              "offeredAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "answerUpdatedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "ordinal": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "references": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "kind",
+                    "revision",
+                    "start",
+                    "end",
+                    "quote"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "original",
+                        "answer"
+                      ]
+                    },
+                    "sourceId": {
+                      "type": "string",
+                      "description": "Required for original evidence: full vault/social source identity."
+                    },
+                    "entryId": {
+                      "type": "string",
+                      "description": "Required for answer evidence: full answer identity."
+                    },
+                    "revision": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "start": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "UTF-16 offset."
+                    },
+                    "end": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 8,
+                      "maxLength": 1600
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Present after `answer`: the question as saved."
+          }
+        },
+        "required": [
+          "status",
+          "session",
+          "legacyOffers"
+        ]
+      },
+      "InterviewError": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "description": "A message to show the artist as is."
+          }
+        }
+      },
+      "InterviewOk": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        }
+      },
+      "BoundaryPage": {
+        "type": "object",
+        "required": [
+          "status",
+          "sitting",
+          "boundaries",
+          "nextCursor"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "sitting": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "boundaries": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/Boundary"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Continuation for the same active boundary list; null after the final page."
+          }
+        }
+      },
+      "Boundary": {
+        "type": "object",
+        "required": [
+          "id",
+          "revision",
+          "wording",
+          "scope",
+          "sitting",
+          "questionKey",
+          "question",
+          "createdAt",
+          "retractedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "wording": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "scope": {
+            "enum": [
+              "sitting",
+              "until_retracted"
+            ]
+          },
+          "sitting": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "questionKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "retractedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "question": {
+            "type": "string",
+            "description": "Exact offered question captured when this instruction was saved."
+          }
+        }
+      },
+      "SourceRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "passage": {
+            "$ref": "#/components/schemas/Passage"
+          },
+          "totalChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextStart": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "returnedChars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20000
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "currentRevision",
+              "capturedAt"
+            ],
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "current",
+                  "historical"
+                ]
+              },
+              "currentRevision": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "capturedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "Retention time, not publication/event time; null for a current read."
+              }
+            },
+            "description": "Required when includeVersion=true; omitted for legacy current-only reads."
+          }
+        },
+        "required": [
+          "status",
+          "passage",
+          "totalChars",
+          "nextStart",
+          "returnedChars",
+          "truncated"
+        ],
+        "description": "Requested window from the pinned revision. nextStart continues the same revision; null means exhausted. Legacy empty/unreadable extraction is a successful empty window with unknown/failed extraction state where known, not proof of complete extraction."
+      },
+      "Passage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string"
+          },
+          "page": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "startSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "endSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "source",
+          "revision",
+          "start",
+          "end",
+          "text",
+          "page",
+          "startSeconds",
+          "endSeconds"
+        ],
+        "description": "Exact original-text window. Offsets are half-open UTF-16 code units into the requested evidence revision; surrogate pairs are not split. Page/audio locations are null without a verified extraction map. end-start equals text.length in JavaScript."
+      },
+      "Source": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "pattern": "^(vault:[0-9a-f-]{36}|social:[0-9a-f-]{36}:(caption|transcript))$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "vault",
+              "social_caption",
+              "reel_transcript"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "titleTruncated": {
+            "type": "boolean"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Includes empty stored evidence, so unreadable/unknown sources remain identifiable without claiming readable content."
+          },
+          "publishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Preserve available precision; do not invent a time for a date-only publication."
+          },
+          "ingestedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "extraction": {
+            "$ref": "#/components/schemas/Extraction"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 600,
+            "description": "Publisher metadata; not original body text and never sufficient support for a premise."
+          },
+          "descriptionTruncated": {
+            "type": "boolean"
+          },
+          "uploadedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "eventDate": {
+            "type": "null",
+            "description": "Unknown in the current schema; never inferred from upload/publication time."
+          },
+          "originalSourceUrl": {
+            "type": "null",
+            "description": "No verified original/repost relationship is available in legacy storage."
+          }
+        },
+        "required": [
+          "sourceId",
+          "kind",
+          "title",
+          "titleTruncated",
+          "url",
+          "revision",
+          "publishedAt",
+          "ingestedAt",
+          "provenance",
+          "extraction",
+          "description",
+          "descriptionTruncated",
+          "uploadedAt",
+          "eventDate",
+          "originalSourceUrl"
+        ]
+      },
+      "Extraction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "readiness": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "queued",
+              "running",
+              "failed",
+              "unknown"
+            ]
+          },
+          "storedChars": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "truncated": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "readiness",
+          "storedChars",
+          "truncated",
+          "limitations"
+        ]
+      },
+      "Provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "type": "string",
+            "enum": [
+              "vault_link",
+              "vault_upload",
+              "social_caption",
+              "provider_transcript"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "method": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "speaker": {
+            "type": "string",
+            "enum": [
+              "not_applicable",
+              "unverified",
+              "verified"
+            ]
+          },
+          "publisher": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stored social account username, not a verified speaker identity; null for unestablished publisher."
+          },
+          "speakerName": {
+            "type": "null"
+          },
+          "relationship": {
+            "type": "string",
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "origin",
+          "provider",
+          "method",
+          "speaker",
+          "publisher",
+          "speakerName",
+          "relationship"
+        ]
+      },
+      "AssembledMemory": {
+        "type": "object",
+        "required": [
+          "status",
+          "snapshotId",
+          "sitting",
+          "latestAnswer",
+          "entries",
+          "constraintsComplete",
+          "returnedChars"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "snapshotId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "sitting": {
+            "type": "integer"
+          },
+          "latestAnswer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "entryId",
+                  "revision"
+                ],
+                "properties": {
+                  "entryId": {
+                    "type": "string"
+                  },
+                  "revision": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              }
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "entryId",
+                "revision",
+                "kind",
+                "fields",
+                "metadata"
+              ],
+              "properties": {
+                "entryId": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "kind": {
+                  "enum": [
+                    "latest_answer",
+                    "correction",
+                    "boundary"
+                  ]
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "text",
+                      "start",
+                      "end",
+                      "totalChars",
+                      "complete"
+                    ],
+                    "properties": {
+                      "name": {
+                        "enum": [
+                          "question",
+                          "answer",
+                          "claim",
+                          "correction",
+                          "wording"
+                        ]
+                      },
+                      "text": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "start": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "totalChars": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "complete": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "metadata": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "maxItems": 5000,
+            "description": "Every mandatory entry, each field complete; pages are assembled before returning."
+          },
+          "constraintsComplete": {
+            "const": true
+          },
+          "returnedChars": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 32000
+          }
+        }
       }
     }
   }

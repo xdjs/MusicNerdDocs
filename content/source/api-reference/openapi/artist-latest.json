@@ -14,7 +14,7 @@
     "/api/artist/{id}/latest": {
       "get": {
         "summary": "Read stored artist Latest",
-        "description": "Public read-only projection: up to 9 own Instagram posts, 6 published artist responses, 3 deduplicated releases and 12 InProcess moments. Excludes future items, reposts, unpublished/private interviews and current disconnected-provider snapshots. No provider fetch, model call, scraping or write occurs on this GET. Spotify, Deezer and InProcess are refreshed in bounded latest_refresh jobs from known connected identifiers. Catalog dates retain precision; incomplete periods are withheld until the period has ended. Successful refreshes atomically replace provider snapshots, including empty results and hidden/removed moments; failures retain the last successful snapshot and report failed coverage. Stale saved items remain readable and must not be described as exhaustive current coverage. Catalog coverage becomes stale after 24 hours; InProcess after 10 minutes. Missing snapshots require an explicit/onboarding refresh or bounded deployment backfill before moving Web to this shared reader. No live-provider fallback in Web. Published response dates mean saved/updated time, not an event date.\n\n### Instagram initial import and empty refreshes\nAn explicit Update Latest request uses the durable account checkpoint. When there\nis no Instagram Latest checkpoint, it imports at most nine own-account posts\nwithout a date cutoff; older posts retain their original publication dates.\nLater checks preserve the existing overlap and continuity anchors. Page reads\nnever start this work.\n\nA provider `no_items` response is ambiguous, not proof that an account is private\nor that it has no new posts. A date-filtered check can make one unfiltered,\nnine-result verification run (each run capped at $0.03). The verification intent\nis saved before starting, so a lost response cannot cause duplicate paid runs.\nA second ambiguous response stops with a diagnostic. Existing posts are retained.\nSuccessful collection saves the checkpoint and its normal 15-minute cooldown.\nJob diagnostics retain the original date boundary and run identifiers, the\nverification outcome, and whether older posts were recovered. A bounded sample\nis not represented as complete historical coverage.",
+        "description": "Public read-only projection: up to 9 own Instagram posts, 6 published artist responses, 3 deduplicated releases and 12 InProcess moments. Excludes future items, reposts, unpublished/private interviews and current disconnected-provider snapshots. No provider fetch, model call, scraping or write occurs on this GET. Spotify, Deezer and InProcess are refreshed in bounded latest_refresh jobs from known connected identifiers. Catalog dates retain precision; incomplete periods are withheld until the period has ended. Successful refreshes atomically replace provider snapshots, including empty results and hidden/removed moments; failures retain the last successful snapshot and report failed coverage. Stale saved items remain readable and must not be described as exhaustive current coverage. Catalog coverage becomes stale after 24 hours; InProcess after 10 minutes. Missing snapshots appear only after an explicit or onboarding refresh. Published response dates mean saved/updated time, not an event date.\n\n### Instagram initial import and empty refreshes\nAn explicit Update Latest request uses the durable account checkpoint. When there\nis no Instagram Latest checkpoint, it imports at most nine own-account posts\nwithout a date cutoff; older posts retain their original publication dates.\nLater checks preserve the existing overlap and continuity anchors. Page reads\nnever start this work.\n\nA provider `no_items` response is ambiguous, not proof that an account is private\nor that it has no new posts. A date-filtered check can make one unfiltered,\nnine-result verification run (each run capped at $0.03). The verification intent\nis saved before starting, so a lost response cannot cause duplicate paid runs.\nA second ambiguous response stops with a diagnostic. Existing posts are retained.\nSuccessful collection saves the checkpoint and its normal 15-minute cooldown.\nJob diagnostics retain the original date boundary and run identifiers, the\nverification outcome, and whether older posts were recovered. A bounded sample\nis not represented as complete historical coverage.",
         "security": [],
         "parameters": [
           {
@@ -194,6 +194,557 @@
           },
           "503": {
             "description": "Stored Latest unavailable"
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/latest-refresh": {
+      "get": {
+        "summary": "Read the Update Latest request",
+        "operationId": "getLatestRefresh",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Returns the artist's newest `latest_refresh` job that is still in scope: requested under the current approved claim by a user who still holds it, for the identities the artist has connected now. Saved identities, requester, errors and provider run IDs are never returned.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist's current Update Latest request, or `refresh: null` when there is none in scope. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "refresh"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "refresh": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/LatestRefreshView"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "pending": {
+                    "summary": "A request the worker is still checking",
+                    "value": {
+                      "status": "ok",
+                      "refresh": {
+                        "id": "6f1d2c3a-9b8e-4c7d-a6f5-1e2d3c4b5a69",
+                        "status": "pending",
+                        "requestedAt": "2026-10-21T14:02:11.000Z",
+                        "sources": {
+                          "instagram": {
+                            "status": "pending"
+                          },
+                          "inprocess": {
+                            "status": "disconnected"
+                          },
+                          "spotify": {
+                            "status": "checked",
+                            "checkedAt": "2026-10-21T14:02:15.000Z"
+                          },
+                          "deezer": {
+                            "status": "disconnected"
+                          },
+                          "interviews": {
+                            "status": "checked",
+                            "checkedAt": "2026-10-21T14:02:15.000Z"
+                          }
+                        },
+                        "retryAt": "2026-10-21T14:32:11.000Z"
+                      }
+                    }
+                  },
+                  "none": {
+                    "summary": "No request in scope",
+                    "value": {
+                      "status": "ok",
+                      "refresh": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Sign in to update Latest."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Only this artist or an admin can update Latest."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The request could not be read or saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Latest could not be checked. Please try again."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Request an Update Latest check",
+        "operationId": "requestLatestRefresh",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Queues one `latest_refresh` job for the artist's current connections: Instagram, In Process, Spotify and Deezer when connected, and published answers always. A live request, or one still cooling down (30 minutes), is returned instead of a second one. No provider is contacted in this request; the response is the same view as GET.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist's current Update Latest request, or `refresh: null` when there is none in scope. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "refresh"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "refresh": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/LatestRefreshView"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "pending": {
+                    "summary": "A request the worker is still checking",
+                    "value": {
+                      "status": "ok",
+                      "refresh": {
+                        "id": "6f1d2c3a-9b8e-4c7d-a6f5-1e2d3c4b5a69",
+                        "status": "pending",
+                        "requestedAt": "2026-10-21T14:02:11.000Z",
+                        "sources": {
+                          "instagram": {
+                            "status": "pending"
+                          },
+                          "inprocess": {
+                            "status": "disconnected"
+                          },
+                          "spotify": {
+                            "status": "checked",
+                            "checkedAt": "2026-10-21T14:02:15.000Z"
+                          },
+                          "deezer": {
+                            "status": "disconnected"
+                          },
+                          "interviews": {
+                            "status": "checked",
+                            "checkedAt": "2026-10-21T14:02:15.000Z"
+                          }
+                        },
+                        "retryAt": "2026-10-21T14:32:11.000Z"
+                      }
+                    }
+                  },
+                  "none": {
+                    "summary": "No request in scope",
+                    "value": {
+                      "status": "ok",
+                      "refresh": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Sign in to update Latest."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the claim changed while the request was being saved (`Your access changed. Reload the profile.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Only this artist or an admin can update Latest."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The request could not be read or saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Latest could not be checked. Please try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. The user must be the artist's approved claimant or a Music Nerd admin."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "LatestRefreshView": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "requestedAt",
+          "sources",
+          "retryAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The `latest_refresh` job."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "failed"
+            ],
+            "description": "The job's status."
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "object",
+            "required": [
+              "instagram",
+              "inprocess",
+              "spotify",
+              "deezer",
+              "interviews"
+            ],
+            "properties": {
+              "instagram": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "checked",
+                      "failed",
+                      "disconnected"
+                    ],
+                    "description": "A pending source becomes failed once the request is done or failed."
+                  },
+                  "detail": {
+                    "type": "string",
+                    "enum": [
+                      "posts_imported",
+                      "older_posts_found",
+                      "no_new_posts",
+                      "instagram_unavailable",
+                      "verifying_empty_window"
+                    ],
+                    "description": "Instagram only; any other saved detail is withheld."
+                  },
+                  "checkedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "inprocess": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "checked",
+                      "failed",
+                      "disconnected"
+                    ],
+                    "description": "A pending source becomes failed once the request is done or failed."
+                  },
+                  "detail": {
+                    "type": "string",
+                    "enum": [
+                      "posts_imported",
+                      "older_posts_found",
+                      "no_new_posts",
+                      "instagram_unavailable",
+                      "verifying_empty_window"
+                    ],
+                    "description": "Instagram only; any other saved detail is withheld."
+                  },
+                  "checkedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "spotify": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "checked",
+                      "failed",
+                      "disconnected"
+                    ],
+                    "description": "A pending source becomes failed once the request is done or failed."
+                  },
+                  "detail": {
+                    "type": "string",
+                    "enum": [
+                      "posts_imported",
+                      "older_posts_found",
+                      "no_new_posts",
+                      "instagram_unavailable",
+                      "verifying_empty_window"
+                    ],
+                    "description": "Instagram only; any other saved detail is withheld."
+                  },
+                  "checkedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "deezer": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "checked",
+                      "failed",
+                      "disconnected"
+                    ],
+                    "description": "A pending source becomes failed once the request is done or failed."
+                  },
+                  "detail": {
+                    "type": "string",
+                    "enum": [
+                      "posts_imported",
+                      "older_posts_found",
+                      "no_new_posts",
+                      "instagram_unavailable",
+                      "verifying_empty_window"
+                    ],
+                    "description": "Instagram only; any other saved detail is withheld."
+                  },
+                  "checkedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              "interviews": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "pending",
+                      "checked",
+                      "failed",
+                      "disconnected"
+                    ],
+                    "description": "A pending source becomes failed once the request is done or failed."
+                  },
+                  "detail": {
+                    "type": "string",
+                    "enum": [
+                      "posts_imported",
+                      "older_posts_found",
+                      "no_new_posts",
+                      "instagram_unavailable",
+                      "verifying_empty_window"
+                    ],
+                    "description": "Instagram only; any other saved detail is withheld."
+                  },
+                  "checkedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          },
+          "retryAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "`requestedAt` plus 30 minutes; a POST before this returns the same request."
           }
         }
       }
