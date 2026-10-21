@@ -140,11 +140,7 @@
           {
             "group": "Account",
             "pages": [
-              "api-reference/accounts/link-wallet",
-              "api-reference/accounts/bookmarks",
-              "api-reference/accounts/add-bookmarks",
-              "api-reference/accounts/edit-bookmarks",
-              "api-reference/accounts/remove-bookmark"
+              "api-reference/accounts/link-wallet"
             ]
           }
         ]
