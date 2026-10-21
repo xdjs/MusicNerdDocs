@@ -414,7 +414,7 @@
     "/api/findArtistByDeezerID": {
       "post": {
         "summary": "Find an artist by Deezer ID",
-        "description": "Returns the artist whose `deezer` equals `deezerID` exactly. If several match, the first is returned. `bio` is the artist's own About when they hold an approved claim; otherwise it is the public directory About, or `null` when there is none, so an unclaimed artist's private draft never leaves the server.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope. A database failure answers 500, as the Spotify and Instagram lookups do (MusicNerdWeb answered 404).",
+        "description": "Returns the artist whose `deezer` equals `deezerID`. `bio` is the artist's own About when they hold an approved claim, otherwise the public directory About, or `null`.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
         "operationId": "findArtistByDeezerID",
         "security": [],
         "requestBody": {
@@ -565,7 +565,7 @@
     "/api/getSpotifyData": {
       "get": {
         "summary": "Get Spotify artist data",
-        "description": "Returns Spotify's artist object for one `spotifyId`, or for up to 50 comma-separated `spotifyIds` (an unknown id in a batch comes back as `null`). When both are sent, `spotifyIds` wins. A successful single-artist answer is kept for 24 hours; a batch always asks Spotify.",
+        "description": "Returns Spotify's artist object for one `spotifyId`, or for up to 50 comma-separated `spotifyIds`; an unknown id in a batch comes back as `null`. If both are sent, `spotifyIds` is used.",
         "operationId": "getSpotifyData",
         "security": [],
         "parameters": [
@@ -738,7 +738,7 @@
       },
       "post": {
         "summary": "Get Spotify artist data in batch",
-        "description": "Returns Spotify's artist objects for up to 50 `spotifyIds`, trimmed and de-duplicated, in request order; an unknown id comes back as `null`. Gives up after 12 seconds.",
+        "description": "Returns Spotify's artist objects for up to 50 `spotifyIds`, in request order. An unknown id comes back as `null`.",
         "operationId": "getSpotifyDataBatch",
         "security": [],
         "requestBody": {
@@ -873,7 +873,7 @@
     "/api/searchArtists": {
       "post": {
         "summary": "Search artists",
-        "description": "Searches Music Nerd's artists by name (substring matches on the normalised name first, then trigram similarity, at most 10) and Deezer's catalogue (at most 10), and returns both lists merged and ranked: exact name, then prefix, then substring, then similarity; bookmarked artists, then more links, then name. Deezer artists already in Music Nerd are dropped; the rest are `isExternalOnly: true` so the add-artist flow can offer them. Results are kept for 5 minutes per query and bookmark list, and the search gives up after 12 seconds.",
+        "description": "Searches Music Nerd's artists and Deezer's catalogue by name and returns one ranked list, best matches first. Deezer artists not yet in Music Nerd come back with `isExternalOnly: true`, so they can be added.",
         "operationId": "searchArtists",
         "security": [],
         "requestBody": {
@@ -1016,7 +1016,7 @@
     "/api/searchArtists/batch": {
       "post": {
         "summary": "Search artists in batch",
-        "description": "Returns the best Music Nerd match for each name in `query.artists` (or the one `query.artist`), in request order, `null` where nothing matches. Names are trimmed and de-duplicated; Deezer is not searched. Results are kept for 5 minutes per list, and the search gives up after 12 seconds.",
+        "description": "Returns the best Music Nerd match for each name in `query.artists` (or the single `query.artist`), in request order, with `null` where nothing matches. Deezer is not searched.",
         "operationId": "searchArtistsBatch",
         "security": [],
         "requestBody": {
@@ -1155,7 +1155,7 @@
     "/api/trackLinks": {
       "get": {
         "summary": "Find a track on other services",
-        "description": "Looks a song or album up on Apple Music and Deezer by `title` and `artist` and returns the links whose title matches exactly and whose credits name the artist (or whose title carries them in a bracketed remix or mix credit). Each provider gets 4 seconds; a completed search is kept for an hour, and answered from memory with `cached: true`.",
+        "description": "Finds a song or album on Apple Music and Deezer by `title` and `artist` and returns the matching links.",
         "operationId": "trackLinks",
         "security": [],
         "parameters": [
@@ -1272,7 +1272,7 @@
     "/api/leaderboard": {
       "get": {
         "summary": "Read the contributor leaderboard",
-        "description": "Returns every account that has added an artist or submitted research, ranked by artists added plus research submissions (hidden accounts last), all-time or within `from`..`to`. `username` is the account's chosen name or `Anonymous`; `email` and `wallet` are always `null`. With `page` or `perPage` the list is paginated, otherwise it is the whole list.",
+        "description": "Returns contributors ranked by artists added plus research submissions, all-time or between `from` and `to`. `email` and `wallet` are always `null`. Send `page` or `perPage` for a paginated list.",
         "operationId": "leaderboard",
         "security": [],
         "parameters": [
@@ -1423,7 +1423,7 @@
     "/api/artist/{id}/image": {
       "get": {
         "summary": "Redirect to an artist's image",
-        "description": "Redirects (307) to the artist's image: their own upload when it is an `https` URL (a relative path is resolved against this API), otherwise their Spotify portrait, then their Deezer portrait. Placeholder uploads are skipped. The redirect may be cached for an hour; every other answer has an empty body and `Cache-Control: no-store`.",
+        "description": "Redirects (307) to the artist's image: their own upload, otherwise their Spotify portrait, then their Deezer portrait. Any other answer has an empty body.",
         "operationId": "artistImage",
         "security": [],
         "parameters": [
