@@ -31,8 +31,6 @@
         "group": "Research",
         "pages": [
           "api-reference/artists/latest",
-          "api-reference/artists/latest-refresh-state",
-          "api-reference/artists/latest-refresh",
           "api-reference/research/advance",
           "api-reference/research/scheduler",
           "api-reference/artists/research-refresh",
@@ -41,11 +39,7 @@
           "api-reference/research/continue",
           "api-reference/research/discoveries",
           "api-reference/research/review-discovery",
-          "api-reference/research/research-evidence",
-          "api-reference/research/ask-artist",
-          "api-reference/research/question-answer",
-          "api-reference/research/question-progress",
-          "api-reference/research/question-source"
+          "api-reference/research/research-evidence"
         ]
       },
       {
@@ -82,9 +76,7 @@
           "api-reference/interview/prepare-question",
           "api-reference/interview/offer-question",
           "api-reference/interview/save-answer",
-          "api-reference/interview/finish-session",
-          "api-reference/interview/restore-interview",
-          "api-reference/interview/interview-action"
+          "api-reference/interview/finish-session"
         ]
       },
       {
@@ -159,9 +151,14 @@
         ]
       },
       {
-        "group": "Fun facts",
+        "group": "Activity and contributions",
         "pages": [
-          "api-reference/fun-facts/generate"
+          "api-reference/activity/feed",
+          "api-reference/activity/recent-edited",
+          "api-reference/activity/self-edits",
+          "api-reference/activity/ugc-count",
+          "api-reference/activity/approved-ugc-count",
+          "api-reference/activity/user-entries"
         ]
       }
     ]
