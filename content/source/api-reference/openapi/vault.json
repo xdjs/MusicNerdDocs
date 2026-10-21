@@ -289,7 +289,7 @@
             }
           },
           "400": {
-            "description": "The ticket is missing, forged, for another user, or expired; or the staged file's size or content doesn't match the ticket. The staged file is removed; start a new upload.",
+            "description": "The ticket is missing, forged, for another user, or expired; or the staged file's size or content doesn't match the ticket. When the ticket is authentic, the staged file is removed; start a new upload.",
             "content": {
               "application/json": {
                 "schema": {
@@ -435,7 +435,7 @@
                   "file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "The file, at most 10 MB."
+                    "description": "The file, at most 10 MB. Bodies over about 4.5 MB are refused by the platform before reaching the API; use Sign an upload for larger files."
                   },
                   "artistId": {
                     "type": "string",
@@ -463,7 +463,7 @@
                     "success": {
                       "type": "boolean",
                       "enum": [true],
-                      "description": "Always true on 200; kept from the earlier response shape."
+                      "description": "Always true on 200."
                     },
                     "source": {
                       "$ref": "#/components/schemas/VaultSource"
@@ -585,7 +585,7 @@
             }
           },
           "500": {
-            "description": "Storage refused the file, the save failed, or the token could not be checked.",
+            "description": "Storage refused the file, the save failed, the token could not be checked, or `artistId` isn't a UUID.",
             "content": {
               "application/json": {
                 "schema": {

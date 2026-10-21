@@ -165,50 +165,11 @@
         ]
       },
       {
-        "group": "Activity and contributions",
+        "group": "Vault uploads",
         "pages": [
-          "api-reference/activity/feed",
-          "api-reference/activity/recent-edited",
-          "api-reference/activity/self-edits",
-          "api-reference/activity/ugc-count",
-          "api-reference/activity/approved-ugc-count",
-          "api-reference/activity/user-entries"
-        ]
-      },
-      {
-        "group": "Artist links",
-        "pages": [
-          "api-reference/artist-links/link-order",
-          "api-reference/artist-links/direct-edit-link",
-          "api-reference/artist-links/remove-artist-data",
-          "api-reference/artist-links/validate-link",
-          "api-reference/artist-links/platform-regexes",
-          "api-reference/artist-links/link-suggestions",
-          "api-reference/artist-links/review-link-suggestion"
-        ]
-      },
-      {
-        "group": "Admin",
-        "pages": [
-          "api-reference/admin/agent-work",
-          "api-reference/admin/artist-data",
-          "api-reference/admin/review-bio-correction",
-          "api-reference/admin/get-correction-about",
-          "api-reference/admin/save-correction-about",
-          "api-reference/admin/list-mcp-keys",
-          "api-reference/admin/create-mcp-key",
-          "api-reference/admin/revoke-mcp-key",
-          "api-reference/admin/whitelist-user",
-          "api-reference/admin/pending-ugc-count"
-        ]
-      },
-      {
-        "group": "Artist images",
-        "pages": [
-          "api-reference/artist-images/photo-choice",
-          "api-reference/artist-images/choose-photo",
-          "api-reference/artist-images/upload-profile-image",
-          "api-reference/artist-images/header-position"
+          "api-reference/vault/sign-upload",
+          "api-reference/vault/complete-upload",
+          "api-reference/vault/upload"
         ]
       }
     ]
