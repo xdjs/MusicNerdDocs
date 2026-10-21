@@ -3,7 +3,7 @@
   "info": {
     "title": "Question-directed artist research",
     "version": "0.1.0",
-    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation. The ask endpoint reserves a bounded planning slot before its model call: at most 30 new question plans per visitor per hour and 200 across the site over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries. The ask, answer, progress and source endpoints have no per-IP request limit (MusicNerdWeb's in-memory five-per-IP limit is not carried over); the planning allowance and the research ledgers are the bound."
+    "description": "Preview contract. The ask endpoint reserves a bounded planning slot before its model call: at most 30 new question plans per visitor per hour and 200 across the site over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries. The ask, answer, progress and source endpoints have no per-IP request limit; the planning allowance and the research ledgers are the bound."
   },
   "servers": [
     {
@@ -932,7 +932,7 @@
         "summary": "Ask about an artist",
         "operationId": "askArtist",
         "security": [],
-        "description": "Answers a listener's question about an artist from checked public evidence, the flow behind the website's Ask About chat. Reuses a verified answer to the same request when one exists, otherwise plans the question, reserves a planning slot, starts or reuses bounded research and returns `202` with the job to poll; once the job is terminal, the answer endpoint drafts and checks the answer. No credentials: a Privy `Authorization: Bearer` token is optional and only makes the hourly visitor allowance follow the account instead of the caller's IP. Every response is `Cache-Control: private, no-store`.\n\nPorted from MusicNerdWeb's `POST /api/askArtist` (xdjs/MusicNerdWeb#1454) with its fields and status codes; this API adds `status` to every body.",
+        "description": "Answers a listener's question about an artist from checked public evidence. Reuses a verified answer to the same request when one exists; otherwise starts or reuses research and returns `202` with the job to poll, then [Collect a question answer](/api-reference/research/question-answer) drafts it. No credentials: an optional Privy `Authorization: Bearer` token makes the hourly visitor allowance follow the account instead of the caller's IP.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1160,7 +1160,7 @@
         "summary": "Collect a question's answer",
         "operationId": "collectQuestionAnswer",
         "security": [],
-        "description": "Drafts and checks the answer to a question already registered on a research job, once the job's stage is terminal. Never plans, reserves a planning slot or starts new research for the question: an unregistered question is `409`. `202` means the job is still running, the answer is still being checked, or a candidate miss moved the same job on to full research. No credentials. Every response is `Cache-Control: private, no-store`.\n\nPorted from MusicNerdWeb's `POST /api/artist/[id]/questionResearch/[jobId]/answer` (xdjs/MusicNerdWeb#1454); this API adds `status` to every body.",
+        "description": "Drafts and checks the answer to a question already registered on a research job, once the job's stage is terminal; it never starts new research, so an unregistered question is `409`. `202` means the job is still running, the answer is still being checked, or a candidate miss moved the same job on to full research. No credentials.",
         "parameters": [
           {
             "name": "id",
@@ -1397,7 +1397,7 @@
         "summary": "Check a question's research progress",
         "operationId": "getQuestionProgress",
         "security": [],
-        "description": "Returns the progress of a public question's research job, the job the ask endpoint returned with `202`. While the job is not terminal it first runs one bounded slice of question research for the artist, then reads the job again. No credentials; only the job's stage, provider and message are returned, never its references or scratch.\n\nPorted from MusicNerdWeb's `GET /api/artist/[id]/questionResearch/[jobId]` (xdjs/MusicNerdWeb#1454); this API adds `status` to every body. Any failure, an unknown job included, is `503`, as on Web.",
+        "description": "Returns the stage, provider and message of a public question's research job, the job [Ask about an artist](/api-reference/research/ask-artist) returned with `202`. While the job is not terminal, each call also advances its research by one bounded step. No credentials.",
         "parameters": [
           {
             "name": "id",
@@ -1501,7 +1501,7 @@
         "summary": "Read a cited source",
         "operationId": "getQuestionSource",
         "security": [],
-        "description": "Returns a window of up to 12,000 characters of an original cited by an answer, under the same eligibility checks as research. No credentials. Pass `nextStart` back as `start` to read further.\n\nPorted from MusicNerdWeb's `GET /api/artist/[id]/questionResearch/source` (xdjs/MusicNerdWeb#1454) with its body and status codes.",
+        "description": "Returns a window of up to 12,000 characters of an original cited by an answer, under the same eligibility checks as research. Pass `nextStart` back as `start` to read further. No credentials.",
         "parameters": [
           {
             "name": "id",
