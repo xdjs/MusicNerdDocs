@@ -153,6 +153,12 @@
               "api-reference/artist-bio/directory-discovery",
               "api-reference/artist-bio/knowledge-doc-export"
             ]
+          },
+          {
+            "group": "Fun facts",
+            "pages": [
+              "api-reference/fun-facts/generate"
+            ]
           }
         ]
       }

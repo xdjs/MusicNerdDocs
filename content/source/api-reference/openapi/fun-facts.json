@@ -1,0 +1,196 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: fun facts",
+    "version": "1.0.0",
+    "description": "Generates one short fun fact about an artist. No credentials."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/funFacts/{type}": {
+      "get": {
+        "summary": "Generate a fun fact",
+        "description": "Writes one fun fact of the given kind about the artist and returns its text; nothing is stored. When the artist has an approved claim, their approved vault sources and Lore are used as context. No credentials.",
+        "operationId": "generateFunFact",
+        "security": [],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "description": "The kind of fact: `surprise`, `lore`, `bts` or `activity`.",
+            "schema": {
+              "type": "string",
+              "enum": ["surprise", "lore", "bts", "activity"]
+            },
+            "example": "lore"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The generated fact.",
+            "headers": {
+              "Cache-Control": {
+                "description": "`no-store`, sent on every response, errors included: every call generates a new fact.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "text"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "The fact, as the model wrote it. Empty when the model returned no text."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "text": "Before the band had a name, its first rehearsals happened in a borrowed garage in Richmond in 2019, where the drummer's kit shared the floor with a lawnmower."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` is missing, or `type` is not one of the four kinds or has no prompt. The type is checked after the artist is found, so an unknown type for an unknown artist returns 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingId": {
+                    "value": {
+                      "status": "error",
+                      "error": "Missing artist id"
+                    }
+                  },
+                  "invalidType": {
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid fun fact type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "The model did not answer within 15 seconds, or the whole request did not finish within 20 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "modelTimeout": {
+                    "value": {
+                      "status": "error",
+                      "error": "Fun fact generation timed out"
+                    }
+                  },
+                  "requestTimeout": {
+                    "value": {
+                      "status": "error",
+                      "error": "Fun fact generation timed out. Please try again later."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The prompts could not be read (no active `funfacts` row, or the database failed), the model call failed, or the artist lookup failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "prompts": {
+                    "value": {
+                      "status": "error",
+                      "error": "Failed to fetch prompts"
+                    }
+                  },
+                  "model": {
+                    "value": {
+                      "status": "error",
+                      "error": "Failed to generate fun fact"
+                    }
+                  },
+                  "unexpected": {
+                    "value": {
+                      "status": "error",
+                      "error": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
