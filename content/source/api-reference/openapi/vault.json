@@ -24,7 +24,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Step one of a file upload to an artist's vault: checks the file's name, type and size, then returns a signed storage URL the browser `PUT`s the file to, and a ticket for [Complete an upload](/api-reference/vault/complete-upload). The ticket is bound to the signed-in user and expires after 15 minutes. Files up to 10 MB: PDF, TXT, MD, CSV, JSON, DOC, DOCX, PNG, JPEG, WebP, MP3 and WAV. A file whose browser-reported `type` is empty or nonstandard is resolved from its extension, and `contentType` says which type was settled on.",
+        "description": "Step one of a file upload to an artist's vault: checks the file's name, type and size, then returns a signed storage URL to `PUT` the file to and a ticket for [Complete an upload](/api-reference/vault/complete-upload) that expires after 15 minutes. Files up to 10 MB: PDF, TXT, MD, CSV, JSON, DOC, DOCX, PNG, JPEG, WebP, MP3 and WAV. A file whose `type` is empty or nonstandard is resolved from its extension, and `contentType` says which type was settled on.",
         "requestBody": {
           "required": true,
           "content": {
@@ -128,7 +128,7 @@
             }
           },
           "401": {
-            "description": "No token, an invalid or expired token, or no Music Nerd user for it. The message is `Not signed in`, as on the API's other signed-in routes; Music Nerd's site answered `Not authenticated`.",
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it (`Not signed in`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -181,7 +181,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Step two of a file upload: checks the staged file against its ticket (size and the file's leading bytes against the declared type), extracts text from text files and PDFs, publishes the file to the vault, saves the source as approved, and queues a Lore refresh. Idempotent: completing the same ticket again returns the saved source. A `retryCompletion: true` error means the upload is in an uncertain state and the same ticket should be sent again, not a new upload started.",
+        "description": "Step two of a file upload: checks the staged file against its ticket, publishes it to the artist's vault as an approved source, queues a Lore refresh and returns the saved source. Completing the same ticket again returns the saved source. A `retryCompletion: true` error means the same ticket should be sent again, not a new upload started.",
         "requestBody": {
           "required": true,
           "content": {
@@ -204,7 +204,7 @@
         },
         "responses": {
           "200": {
-            "description": "The saved source. `warning` is set when the Lore refresh could not be queued (the file is saved; use Look again) or when a PDF had no readable text.",
+            "description": "The saved source. `warning` is set when the Lore refresh could not be queued (the file is saved) or when a PDF had no readable text.",
             "content": {
               "application/json": {
                 "schema": {
@@ -329,7 +329,7 @@
             }
           },
           "401": {
-            "description": "No token, an invalid or expired token, or no Music Nerd user for it. The message is `Not signed in`, as on the API's other signed-in routes; Music Nerd's site answered `Not authenticated`.",
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it (`Not signed in`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -423,7 +423,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Uploads a file to an artist's vault in one request, the file travelling through the API. Music Nerd's site uses the two-step [Sign an upload](/api-reference/vault/sign-upload) and [Complete an upload](/api-reference/vault/complete-upload) instead; this is the earlier single-request form, kept as it was. Same limits and types as signing. The file's leading bytes are checked against its type, text is extracted from text files and PDFs, the source is saved as approved, and a Lore refresh is queued. Not runnable from this page: the body is `multipart/form-data`.",
+        "description": "Uploads a file to an artist's vault in one request, saves it as an approved source and queues a Lore refresh. Same limits and types as [Sign an upload](/api-reference/vault/sign-upload), which with [Complete an upload](/api-reference/vault/complete-upload) sends the file straight to storage instead of through the API. Not runnable from this page: the body is `multipart/form-data`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -545,7 +545,7 @@
             }
           },
           "401": {
-            "description": "No token, an invalid or expired token, or no Music Nerd user for it. The message is `Not signed in`, as on the API's other signed-in routes; Music Nerd's site answered `Not authenticated`.",
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it (`Not signed in`).",
             "content": {
               "application/json": {
                 "schema": {
