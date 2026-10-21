@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: artist lookups",
     "version": "1.0.0",
-    "description": "The public lookups MusicNerdWeb served and Sleeve Note and other clients call: an artist by Spotify ID, Instagram handle or Deezer ID, an artist's X handle, Spotify artist data, artist search, track links, the contributor leaderboard and an artist's image. No credentials. Responses keep MusicNerdWeb's exact shapes, plain-text errors included, not this API's `{ status }` envelope."
+    "description": "Public lookups: an artist by Spotify ID, Instagram handle or Deezer ID, an artist's X handle, Spotify artist data, artist search, track links, the contributor leaderboard and an artist's image. No credentials. Each endpoint answers in its own shape, with plain-text errors, not this API's `{ status }` envelope."
   },
   "servers": [
     {
@@ -321,7 +321,7 @@
     "/api/findTwitterHandle": {
       "post": {
         "summary": "Find an artist's X handle",
-        "description": "Returns the X handle of an artist found by `ethAddress` or `name`. No credentials.\n\n`ethAddress` wins when both are sent. A `0x` address of 40 hex characters is matched exactly against the artist's wallets, then `ens`; any other value against `ens` only.\n\n`name` is a fuzzy search: substring matches first, then trigram similarity of at least 0.3. The best match is used.\n\n`result` is `null` when the artist has no X handle. A `name` that matches no artist returns 200 `{}`.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
+        "description": "Returns the X handle of an artist found by `ethAddress` (a wallet address or ENS name) or by `name` (a fuzzy search that uses the best match). If both are sent, `ethAddress` is used. `result` is `null` when the artist has no X handle, and a `name` that matches no artist returns `{}`.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
         "operationId": "findTwitterHandle",
         "security": [],
         "requestBody": {
@@ -1254,7 +1254,7 @@
             }
           },
           "500": {
-            "description": "An unexpected server error. MusicNerdWeb answered an empty 500 here; this API answers JSON.",
+            "description": "An unexpected server error.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1321,7 +1321,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The ranked entries: an array, or `{ entries, total, pageCount }` when paginated. Counts are strings in the all-time list and integers in a period, as MusicNerdWeb returned them.",
+            "description": "The ranked entries: an array, or `{ entries, total, pageCount }` when paginated. Counts are strings in the all-time list and integers in a period.",
             "content": {
               "application/json": {
                 "schema": {
