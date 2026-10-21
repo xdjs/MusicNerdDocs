@@ -419,7 +419,7 @@
             }
           },
           "500": {
-            "description": "The write failed, or an edit that differs from a pinned bio was refused.",
+            "description": "The write failed, the claim changed during the save, or an edit that differs from a pinned bio was refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -959,6 +959,12 @@
             "headers": {
               "Content-Disposition": {
                 "description": "`attachment; filename=\"bio-ritmo-2026-10-21.md\"`, or `...-sources-...csv`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Access-Control-Expose-Headers": {
+                "description": "`Content-Disposition`, so a cross-origin download can read the file name.",
                 "schema": {
                   "type": "string"
                 }
