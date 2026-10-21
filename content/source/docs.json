@@ -132,7 +132,6 @@
               "api-reference/users/has-claim",
               "api-reference/users/profile-image",
               "api-reference/users/upload-profile-image",
-              "api-reference/users/artist-summaries",
               "api-reference/users/profile-artists",
               "api-reference/users/profile-summary",
               "api-reference/users/profile-updates"
