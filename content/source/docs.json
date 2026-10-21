@@ -8,11 +8,17 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": ["index", "quickstart", "authentication"]
+            "pages": [
+              "index",
+              "quickstart",
+              "authentication"
+            ]
           },
           {
             "group": "Agent knowledge",
-            "pages": ["artist-knowledge"]
+            "pages": [
+              "artist-knowledge"
+            ]
           }
         ]
       },
@@ -21,7 +27,9 @@
         "groups": [
           {
             "group": "Health",
-            "pages": ["api-reference/health/get"]
+            "pages": [
+              "api-reference/health/get"
+            ]
           },
           {
             "group": "Research",
@@ -139,7 +147,9 @@
           },
           {
             "group": "Account",
-            "pages": ["api-reference/accounts/link-wallet"]
+            "pages": [
+              "api-reference/accounts/link-wallet"
+            ]
           },
           {
             "group": "Artist bio",
@@ -154,7 +164,9 @@
           },
           {
             "group": "Fun facts",
-            "pages": ["api-reference/fun-facts/generate"]
+            "pages": [
+              "api-reference/fun-facts/generate"
+            ]
           },
           {
             "group": "Activity and contributions",
