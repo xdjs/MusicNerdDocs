@@ -19,7 +19,7 @@
     "/api/agent/heartbeat": {
       "post": {
         "summary": "Report a worker heartbeat",
-        "description": "Upserts the worker's row in `agent_heartbeats` by `workerId`: status, current run, batch and config replace the previous values and `updated_at` is set to now. The admin's agent dashboard reads these rows.\n\nResponses keep the shapes the agent client already sends and expects (`{ success: true }`, `{ error }`), not this API's `{ status }` envelope. Optional fields of the wrong type are ignored rather than rejected.",
+        "description": "Records a worker's latest status, current run, batch and config, replacing what it reported before. Responses are `{ success: true }` or `{ error }`, not this API's `{ status }` envelope, and optional fields of the wrong type are ignored rather than rejected.",
         "operationId": "reportAgentHeartbeat",
         "security": [
           {
@@ -106,7 +106,7 @@
     "/api/agent/run-report": {
       "post": {
         "summary": "Report an agent run",
-        "description": "Upserts one run in `agent_runs` by `workerId` and `runNumber`. On a repeat report `status` and the counts (`resolved` through `tooAmbiguous`) replace the stored values; the timings, `batchSize`, `exitCode`, `failCategory` and `failReason` only replace them when sent, so a run can be reported as `running` first and finished later. `platform` defaults to `deezer` on insert.\n\nResponses keep the shapes the agent client already sends and expects (`{ success: true }`, `{ error }`), not this API's `{ status }` envelope. Optional fields of the wrong type are ignored rather than rejected.",
+        "description": "Records one run, keyed by `workerId` and `runNumber`. A repeat report replaces `status` and the counts, but the timings, `batchSize`, `exitCode`, `failCategory` and `failReason` only when sent, so a run can be reported as `running` first and finished later. Responses are `{ success: true }` or `{ error }`, not this API's `{ status }` envelope, and optional fields of the wrong type are ignored rather than rejected.",
         "operationId": "reportAgentRun",
         "security": [
           {
@@ -263,12 +263,12 @@
           },
           "message": {
             "type": "string",
-            "description": "A short human-readable note for the dashboard."
+            "description": "A short human-readable note."
           },
           "config": {
             "type": "object",
             "additionalProperties": true,
-            "description": "The worker's configuration. `batchTimeout` (seconds) is how the dashboard decides a silent worker is dead."
+            "description": "The worker's configuration. `batchTimeout` (seconds) is how long the worker may stay silent before it counts as dead."
           }
         }
       },
