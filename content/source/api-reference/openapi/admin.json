@@ -605,7 +605,7 @@
             "$ref": "#/components/responses/NotAdmin"
           },
           "409": {
-            "description": "The save was refused: the revision no longer matches, the report was reviewed meanwhile, the About is pinned, or the published About is no longer available. The draft is not saved.",
+            "description": "The save was refused: the revision no longer matches, the report was reviewed meanwhile, the About is pinned, or the published About is no longer available, or the new text isn't a real About. The draft is not saved.",
             "content": {
               "application/json": {
                 "schema": {
@@ -948,7 +948,7 @@
             }
           },
           "400": {
-            "description": "`id` isn't a UUID, a field has the wrong type, no field was sent, or the update was refused (for example a taken user name).",
+            "description": "`id` isn't a UUID, a field has the wrong type, no field was sent, the update was refused (for example a taken user name), or the body isn't JSON.",
             "content": {
               "application/json": {
                 "schema": {
