@@ -27,7 +27,7 @@
             "name": "type",
             "in": "path",
             "required": true,
-            "description": "The kind of fact: `surprise` (Surprise Me), `lore` (Lore Drop), `bts` (Behind the Scenes) or `activity` (recent activity).",
+            "description": "The kind of fact: `surprise`, `lore`, `bts` or `activity`.",
             "schema": {
               "type": "string",
               "enum": ["surprise", "lore", "bts", "activity"]
@@ -51,7 +51,7 @@
             "description": "The generated fact.",
             "headers": {
               "Cache-Control": {
-                "description": "`no-store`: every call generates a new fact.",
+                "description": "`no-store`, sent on every response, errors included: every call generates a new fact.",
                 "schema": {
                   "type": "string"
                 }
@@ -81,7 +81,7 @@
             }
           },
           "400": {
-            "description": "`id` is missing, or `type` is not one of the four kinds. The type is checked after the artist is found, so an unknown type for an unknown artist returns 404.",
+            "description": "`id` is missing, or `type` is not one of the four kinds or has no prompt. The type is checked after the artist is found, so an unknown type for an unknown artist returns 404.",
             "content": {
               "application/json": {
                 "schema": {

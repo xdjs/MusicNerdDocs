@@ -1,8 +1,11 @@
 {
-  "navigationPages": 45,
+  "navigationPages": 74,
   "guidePages": 4,
-  "apiPages": 41,
+  "apiPages": 70,
   "specifications": [
+    "accounts.json",
+    "agents.json",
+    "artist-bio.json",
     "artist-latest.json",
     "artist-lookups.json",
     "fun-facts.json",
@@ -11,9 +14,11 @@
     "interview-responses.json",
     "interview-sessions.json",
     "knowledge.json",
+    "mcp.json",
     "onboarding.json",
     "question-research.json",
-    "research.json"
+    "research.json",
+    "users.json"
   ],
   "additionalOperations": [],
   "gaps": []
