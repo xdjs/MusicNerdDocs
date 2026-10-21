@@ -56,8 +56,8 @@
                   "usernamePromptedAt": null,
                   "wallet": null,
                   "privyUserId": "did:privy:example",
-                  "createdAt": "2026-10-01T12:00:00+00:00",
-                  "updatedAt": "2026-10-01T12:00:00+00:00",
+                  "createdAt": "2026-10-01 12:00:00.123456+00",
+                  "updatedAt": "2026-10-01 12:00:00.123456+00",
                   "legacyId": null,
                   "isAdmin": false,
                   "isWhiteListed": false,
@@ -520,7 +520,7 @@
             }
           },
           "503": {
-            "description": "Storage could not be read.",
+            "description": "Storage or the account lookup could not be read.",
             "content": {
               "application/json": {
                 "schema": {
@@ -721,7 +721,7 @@
         ],
         "responses": {
           "200": {
-            "description": "One row per requested artist. `Cache-Control: private, no-store`.",
+            "description": "One row per requested artist that exists; unknown ids are skipped. `Cache-Control: private, no-store`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1059,7 +1059,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The latest cards from the caller's artists, six artists per page in the same order as [Your artists](/api-reference/users/profile-artists), up to two per artist, newest first. Built from the stored [artist Latest](/api-reference/artists/latest): releases, Instagram posts, In Process moments and published interview answers, with a missing snapshot reported in `unavailableProviders`. `checked` is how many artists have been read so far; `next` is the `offset` for the next six.",
+        "description": "The latest cards from the caller's artists, six artists per page in the same order as [Your artists](/api-reference/users/profile-artists), up to two per artist, newest first. Built from the stored [artist Latest](/api-reference/artists/latest): releases, Instagram posts, In Process moments and published interview answers, with a missing or failed snapshot reported in `unavailableProviders`. `checked` is how many artists have been read so far; `next` is the `offset` for the next six.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ProfileAccountRequired"
@@ -1388,8 +1388,7 @@
               "string",
               "null"
             ],
-            "format": "date-time",
-            "description": "When the one-time user-name prompt was shown, or null."
+            "description": "When the one-time user-name prompt was shown, as Postgres timestamp text (`2026-10-01 12:00:00.123456+00`), or null."
           },
           "wallet": {
             "type": [
