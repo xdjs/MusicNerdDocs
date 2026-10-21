@@ -1,0 +1,395 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: agent reports",
+    "version": "1.0.0",
+    "description": "Where the ID-mapping agent workers report their heartbeat and each run. MCP API key."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/agent/heartbeat": {
+      "post": {
+        "summary": "Report a worker heartbeat",
+        "description": "Records a worker's latest status, current run, batch and config, replacing what it reported before. Responses are `{ success: true }` or `{ error }`, not this API's `{ status }` envelope, and optional fields of the wrong type are ignored rather than rejected.",
+        "operationId": "reportAgentHeartbeat",
+        "security": [
+          {
+            "mcpApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Heartbeat"
+              },
+              "example": {
+                "workerId": "deezer-mapper-01",
+                "status": "running",
+                "currentRun": 5,
+                "batchPlatform": "deezer",
+                "batchSize": 50,
+                "message": "Run 5 starting",
+                "config": {
+                  "batchTimeout": 1200
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The heartbeat was stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`workerId` is missing or not a string, or `status` is not one of the allowed values.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "status must be one of: starting, running, idle, error, stopping"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No `Authorization: Bearer` header, or the key is unknown or revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or missing API key"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The body is not JSON, or the database write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/run-report": {
+      "post": {
+        "summary": "Report an agent run",
+        "description": "Records one run, keyed by `workerId` and `runNumber`. A repeat report replaces `status` and the counts, but the timings, `batchSize`, `exitCode`, `failCategory` and `failReason` only when sent, so a run can be reported as `running` first and finished later. Responses are `{ success: true }` or `{ error }`, not this API's `{ status }` envelope, and optional fields of the wrong type are ignored rather than rejected.",
+        "operationId": "reportAgentRun",
+        "security": [
+          {
+            "mcpApiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunReport"
+              },
+              "examples": {
+                "finished": {
+                  "summary": "A finished run",
+                  "value": {
+                    "workerId": "deezer-mapper-01",
+                    "runNumber": 5,
+                    "status": "success",
+                    "platform": "deezer",
+                    "startedAt": "2026-10-21T12:00:00Z",
+                    "endedAt": "2026-10-21T12:05:00Z",
+                    "wallTimeSecs": 300,
+                    "claudeTimeSecs": 280,
+                    "apiTimeSecs": 290,
+                    "turns": 25,
+                    "batchSize": 50,
+                    "resolved": 10,
+                    "excluded": 2,
+                    "skipped": 3,
+                    "errors": 0,
+                    "highConfidence": 8,
+                    "mediumConfidence": 2,
+                    "conflicts": 0,
+                    "nameMismatches": 1,
+                    "tooAmbiguous": 1,
+                    "exitCode": 0
+                  }
+                },
+                "started": {
+                  "summary": "A run that just started",
+                  "value": {
+                    "workerId": "deezer-mapper-01",
+                    "runNumber": 6,
+                    "status": "running",
+                    "startedAt": "2026-10-21T12:06:00Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The run was stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`workerId` is missing or not a string, `runNumber` is not a positive integer, `status` is not one of the allowed values, or `startedAt` is missing or not a string.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "runNumber must be a positive integer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No `Authorization: Bearer` header, or the key is unknown or revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Invalid or missing API key"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The body is not JSON, or the database write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "mcpApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "MCP API key",
+        "description": "An MCP API key issued by a Music Nerd admin (the admin's MCP keys page). The server stores only its SHA-256 hash; a revoked key is refused."
+      }
+    },
+    "schemas": {
+      "Heartbeat": {
+        "type": "object",
+        "required": [
+          "workerId",
+          "status"
+        ],
+        "properties": {
+          "workerId": {
+            "type": "string",
+            "description": "The worker's stable name; one row per worker."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "starting",
+              "running",
+              "idle",
+              "error",
+              "stopping"
+            ],
+            "description": "What the worker is doing."
+          },
+          "currentRun": {
+            "type": "integer",
+            "description": "The run number in progress."
+          },
+          "batchPlatform": {
+            "type": "string",
+            "description": "The platform the current batch maps to (for example `deezer`)."
+          },
+          "batchSize": {
+            "type": "integer",
+            "description": "Artists in the current batch."
+          },
+          "message": {
+            "type": "string",
+            "description": "A short human-readable note."
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "The worker's configuration. `batchTimeout` (seconds) is how long the worker may stay silent before it counts as dead."
+          }
+        }
+      },
+      "RunReport": {
+        "type": "object",
+        "required": [
+          "workerId",
+          "runNumber",
+          "status",
+          "startedAt"
+        ],
+        "properties": {
+          "workerId": {
+            "type": "string",
+            "description": "The worker's stable name."
+          },
+          "runNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The run's number for this worker; with `workerId` it identifies the row."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "success",
+              "failed"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "description": "The platform mapped in this run. Defaults to `deezer` when the row is created."
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the run started (ISO 8601)."
+          },
+          "endedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "wallTimeSecs": {
+            "type": "integer"
+          },
+          "claudeTimeSecs": {
+            "type": "integer"
+          },
+          "apiTimeSecs": {
+            "type": "integer"
+          },
+          "turns": {
+            "type": "integer"
+          },
+          "batchSize": {
+            "type": "integer"
+          },
+          "resolved": {
+            "type": "integer",
+            "description": "Mappings stored. Counts default to 0 when the row is created."
+          },
+          "excluded": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "errors": {
+            "type": "integer"
+          },
+          "highConfidence": {
+            "type": "integer"
+          },
+          "mediumConfidence": {
+            "type": "integer"
+          },
+          "conflicts": {
+            "type": "integer"
+          },
+          "nameMismatches": {
+            "type": "integer"
+          },
+          "tooAmbiguous": {
+            "type": "integer"
+          },
+          "exitCode": {
+            "type": "integer"
+          },
+          "failCategory": {
+            "type": "string"
+          },
+          "failReason": {
+            "type": "string"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

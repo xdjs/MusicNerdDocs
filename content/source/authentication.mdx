@@ -44,3 +44,7 @@ Each site issues tokens for its own API. A token from musicnerd.net works with t
 ## Scheduler secret
 
 `GET /api/research/advance` is the research scheduler that Vercel Cron calls. When the deployment sets `CRON_SECRET`, it requires `Authorization: Bearer <CRON_SECRET>`.
+
+## MCP API key
+
+The [MCP server](/api-reference/mcp/message) and the [agent reports](/api-reference/agents/heartbeat) take an MCP API key, issued by a Music Nerd admin on the admin's MCP keys page, as `Authorization: Bearer <key>`. The server stores only the key's SHA-256 hash and refuses a revoked key. On the MCP server the key is optional: without it the read-only tools work and the write tools answer `AUTH_REQUIRED`.

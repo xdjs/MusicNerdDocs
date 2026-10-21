@@ -103,6 +103,21 @@
           "api-reference/lookups/leaderboard",
           "api-reference/lookups/artist-image"
         ]
+      },
+      {
+        "group": "Agent reports",
+        "pages": [
+          "api-reference/agents/heartbeat",
+          "api-reference/agents/run-report"
+        ]
+      },
+      {
+        "group": "MCP server",
+        "pages": [
+          "api-reference/mcp/health",
+          "api-reference/mcp/message",
+          "api-reference/mcp/delete"
+        ]
       }
     ]
   }

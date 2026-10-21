@@ -1,8 +1,9 @@
 {
-  "navigationPages": 52,
+  "navigationPages": 57,
   "guidePages": 4,
-  "apiPages": 48,
+  "apiPages": 53,
   "specifications": [
+    "agents.json",
     "artist-latest.json",
     "artist-lookups.json",
     "health.json",
@@ -10,6 +11,7 @@
     "interview-responses.json",
     "interview-sessions.json",
     "knowledge.json",
+    "mcp.json",
     "onboarding.json",
     "question-research.json",
     "research.json"
