@@ -1,0 +1,1526 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: users and profile",
+    "version": "1.0.0",
+    "description": "The signed-in user's own account and profile: their user name, profile photo, approved claim, contributed artists, contribution summary and the updates feed. Every route answers about the caller only; the account comes from the token, never from the request."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/user/{id}": {
+      "get": {
+        "summary": "Read your account",
+        "operationId": "getUser",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The caller's own user record; `usernameNeedsConfirmation` and `usernamePromptedAt` drive the user-name prompt. `id` must be the caller's own id: anyone else, admins included, gets 403.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The caller's user id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "example": {
+                  "status": "ok",
+                  "id": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                  "email": null,
+                  "username": "Vinyl Otter",
+                  "usernameNeedsConfirmation": true,
+                  "usernamePromptedAt": null,
+                  "wallet": null,
+                  "privyUserId": "did:privy:example",
+                  "createdAt": "2026-10-01 12:00:00.123456+00",
+                  "updatedAt": "2026-10-01 12:00:00.123456+00",
+                  "legacyId": null,
+                  "isAdmin": false,
+                  "isWhiteListed": false,
+                  "isSuperAdmin": false,
+                  "isHidden": false,
+                  "legacyLinkDismissed": false,
+                  "acceptedUgcCount": 3
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "description": "`id` is not the caller's own id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No user row for that id (a stale session after an account merge).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "User not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Set your user name",
+        "operationId": "updateUserName",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Saves a chosen user name for the caller's own account and clears the confirmation flag. Names are unique case-insensitively, so a taken name is 409, and an email or wallet address is refused.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The caller's user id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "description": "The new user name. Trimmed; 1 to 50 characters; no control characters, `@`, or a 0x wallet address."
+                  }
+                }
+              },
+              "example": {
+                "username": "Vinyl Otter"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "message": "User name updated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body isn't JSON, or the name is empty, longer than 50 characters, contains control characters, or is an email or wallet address.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "empty": {
+                    "summary": "Empty",
+                    "value": {
+                      "status": "error",
+                      "error": "User name is required."
+                    }
+                  },
+                  "tooLong": {
+                    "summary": "Too long",
+                    "value": {
+                      "status": "error",
+                      "error": "User name must be 50 characters or less."
+                    }
+                  },
+                  "emailOrWallet": {
+                    "summary": "An email or wallet address",
+                    "value": {
+                      "status": "error",
+                      "error": "Choose a user name instead of an email or wallet address."
+                    }
+                  },
+                  "notJson": {
+                    "summary": "Not JSON",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid request body"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "description": "`id` is not the caller's own id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Forbidden"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another account already has that name (compared trimmed and case-insensitively).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "That user name is already taken. Try another."
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/user/{id}/name-prompt": {
+      "post": {
+        "summary": "Record the user-name prompt",
+        "operationId": "recordUserNamePrompt",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Marks that the caller has been shown the one-time prompt to choose a user name, and says whether to show it now. `showPrompt` is true only the first time, and only while the generated name still needs confirmation; every later call returns false.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The caller's user id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether to show the prompt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "showPrompt"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "showPrompt": {
+                      "type": "boolean",
+                      "description": "True when this call recorded the prompt for the first time."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "showPrompt": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "description": "`id` is not the caller's own id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Forbidden"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database could not be reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load your user name setup."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/has-claim": {
+      "get": {
+        "summary": "Your approved claim",
+        "operationId": "getUserHasClaim",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Whether the caller has an approved artist claim, and which artist. Always 200: without a valid token, or when the database cannot be read, it answers `hasClaim: false` rather than an error.",
+        "responses": {
+          "200": {
+            "description": "The caller's approved claim, if any.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "hasClaim",
+                    "artistId"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "hasClaim": {
+                      "type": "boolean"
+                    },
+                    "artistId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "uuid",
+                      "description": "The claimed artist, or null."
+                    }
+                  }
+                },
+                "examples": {
+                  "claimed": {
+                    "summary": "An approved claimant",
+                    "value": {
+                      "status": "ok",
+                      "hasClaim": true,
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+                    }
+                  },
+                  "none": {
+                    "summary": "No claim, no token, or the database is unavailable",
+                    "value": {
+                      "status": "ok",
+                      "hasClaim": false,
+                      "artistId": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/profile-image": {
+      "get": {
+        "summary": "Your profile photo",
+        "operationId": "getUserProfileImage",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "A one-hour signed URL for the caller's profile photo, or `url: null` when none has been uploaded. The optional `X-Profile-Account` header lets a caller detect that the signed-in account changed.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProfileAccountOptional"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The photo URL, or null. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "userId",
+                    "url"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "url": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "A signed URL valid for an hour, with a cache-busting `v` query, or null."
+                    }
+                  }
+                },
+                "examples": {
+                  "photo": {
+                    "summary": "A photo",
+                    "value": {
+                      "status": "ok",
+                      "userId": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                      "url": "https://example.supabase.co/storage/v1/object/sign/user-profile-images/6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6/avatar.webp?token=example&v=1760000000000"
+                    }
+                  },
+                  "none": {
+                    "summary": "No photo yet",
+                    "value": {
+                      "status": "ok",
+                      "userId": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                      "url": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no user row for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "noToken": {
+                    "summary": "No valid token",
+                    "value": {
+                      "status": "error",
+                      "error": "Not signed in"
+                    }
+                  },
+                  "noRow": {
+                    "summary": "The user row is gone",
+                    "value": {
+                      "status": "error",
+                      "error": "Account not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`X-Profile-Account` was sent and is not the caller's id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Your account changed. Refresh and try again."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or the account lookup could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load your profile photo"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload your profile photo",
+        "operationId": "uploadUserProfileImage",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Replaces the caller's profile photo with a JPG, PNG or WebP up to 2 MB, saved as a 512×512 WebP with metadata stripped.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProfileAccountOptional"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "A JPG, PNG or WebP image, at most 2 MB."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "success"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No `file`, an empty file, the wrong type, over 2 MB, or an image the decoder rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badFile": {
+                    "summary": "Missing, empty, wrong type or too large",
+                    "value": {
+                      "status": "error",
+                      "error": "Choose a JPG, PNG or WebP image smaller than 2 MB"
+                    }
+                  },
+                  "unreadable": {
+                    "summary": "Could not be decoded",
+                    "value": {
+                      "status": "error",
+                      "error": "This image could not be read. Try another JPG, PNG or WebP."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no user row for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`X-Profile-Account` was sent and is not the caller's id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Your account changed. Refresh and try again."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The request body is larger than 2 MB plus form overhead.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Choose an image smaller than 2 MB"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage could not be written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not save your profile photo. Try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/artists": {
+      "get": {
+        "summary": "Your artists",
+        "operationId": "getProfileArtists",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The artists the caller has contributed to (added, had a link accepted on, or edited as the claimant), 24 per page in name order, with an optional name search. `imageUrl` is the stored portrait when it is a local path or a credential-free HTTPS URL, else null.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProfileAccountRequired"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Where the page starts. Up to six digits; defaults to 0.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,6}$",
+              "default": "0"
+            },
+            "example": "0"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "A case-insensitive name search, up to 200 characters.",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "example": "ritmo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of artists. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "userId",
+                    "artists",
+                    "total",
+                    "next"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "artists": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProfileArtist"
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "How many artists match."
+                    },
+                    "next": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "The `offset` for the next page, or null on the last page."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "userId": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                  "artists": [
+                    {
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo",
+                      "imageUrl": null
+                    }
+                  ],
+                  "total": 1,
+                  "next": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`offset` isn't one to six digits, or `q` is longer than 200 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist search"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/AccountChanged"
+          },
+          "503": {
+            "description": "The database could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load your artists"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/summary": {
+      "get": {
+        "summary": "Your contribution summary",
+        "operationId": "getProfileSummary",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The caller's contribution counts (link submissions, approved and pending, artists added, claimant edits) and their three most recent link submissions.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProfileAccountRequired"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The summary. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "userId",
+                    "totalContributions",
+                    "approved",
+                    "pending",
+                    "selfEdits",
+                    "artistsAdded",
+                    "entries"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "totalContributions": {
+                      "type": "integer",
+                      "description": "All link submissions by the caller."
+                    },
+                    "approved": {
+                      "type": "integer"
+                    },
+                    "pending": {
+                      "type": "integer"
+                    },
+                    "selfEdits": {
+                      "type": "integer",
+                      "description": "Edits made as an artist's claimant."
+                    },
+                    "artistsAdded": {
+                      "type": "integer",
+                      "description": "Artists the caller added to Music Nerd."
+                    },
+                    "entries": {
+                      "type": "array",
+                      "maxItems": 3,
+                      "description": "The three most recent link submissions.",
+                      "items": {
+                        "$ref": "#/components/schemas/ProfileEntry"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "userId": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                  "totalContributions": 4,
+                  "approved": 3,
+                  "pending": 1,
+                  "selfEdits": 2,
+                  "artistsAdded": 1,
+                  "entries": [
+                    {
+                      "id": "0c7b9f2e-1d3a-4e5f-9a8b-7c6d5e4f3a2b",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo",
+                      "imageUrl": null,
+                      "siteName": "bandcamp",
+                      "ugcUrl": "https://bioritmo.bandcamp.com",
+                      "accepted": true,
+                      "createdAt": "2026-10-01 12:00:00"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/AccountChanged"
+          },
+          "503": {
+            "description": "The database could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load your contributions. Try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profile/updates": {
+      "get": {
+        "summary": "Updates from your artists",
+        "operationId": "getProfileUpdates",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The latest cards from the caller's artists, six artists per page in the same order as [Your artists](/api-reference/users/profile-artists), up to two per artist, newest first. Built from the stored [artist Latest](/api-reference/artists/latest): releases, Instagram posts, In Process moments and published interview answers, with a missing or failed snapshot reported in `unavailableProviders`. `checked` is how many artists have been read so far; `next` is the `offset` for the next six.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ProfileAccountRequired"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "The artist to start from, in the caller's artist order. Up to six digits; defaults to 0.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,6}$",
+              "default": "0"
+            },
+            "example": "0"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "description": "Which cards to keep. `All`, `Release`, `Socials` (Instagram posts and In Process moments) or `Lore` (interview answers); `Instagram`, `Interview` and `In-Process` are older filter names that still work.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "All",
+                "Release",
+                "Socials",
+                "Lore",
+                "Instagram",
+                "Interview",
+                "In-Process"
+              ],
+              "default": "All"
+            },
+            "example": "All"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of cards. `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "userId",
+                    "items",
+                    "checked",
+                    "next",
+                    "unavailable",
+                    "unavailableProviders"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "userId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProfileUpdate"
+                      }
+                    },
+                    "checked": {
+                      "type": "integer",
+                      "description": "How many of the caller's artists have been read, this page included."
+                    },
+                    "next": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "The `offset` for the next page, or null once every artist has been read."
+                    },
+                    "unavailable": {
+                      "type": "boolean",
+                      "description": "True when at least one artist's Latest could not be fully read."
+                    },
+                    "unavailableProviders": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "description": "Which providers were failed or missing, sorted; null when a read failed for an unknown reason.",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "spotify",
+                          "deezer",
+                          "inprocess"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "userId": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                  "items": [
+                    {
+                      "id": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3:release:spotify:4uLU6hMCjMI75M1A2tKUQC",
+                      "kind": "release",
+                      "title": "Mambo Mania",
+                      "text": "album",
+                      "date": "2026-09-12",
+                      "imageUrl": "https://i.scdn.co/image/example",
+                      "imageCaption": "Mambo Mania artwork",
+                      "sourceUrl": "https://open.spotify.com/album/4uLU6hMCjMI75M1A2tKUQC",
+                      "sourceLabel": "Listen on Spotify",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo"
+                    }
+                  ],
+                  "checked": 1,
+                  "next": null,
+                  "unavailable": false,
+                  "unavailableProviders": []
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`offset` isn't one to six digits, or `kind` isn't a known filter.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "offset": {
+                    "summary": "Bad offset",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid offset"
+                    }
+                  },
+                  "kind": {
+                    "summary": "Unknown filter",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid filter"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "409": {
+            "$ref": "#/components/responses/AccountChanged"
+          },
+          "503": {
+            "description": "The caller's artists could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load artist updates"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Every route here answers about that user only."
+      }
+    },
+    "parameters": {
+      "ProfileAccountRequired": {
+        "name": "X-Profile-Account",
+        "in": "header",
+        "required": true,
+        "description": "The user id the page believes is signed in. Must equal the token's user, or the response is 409 so the page can refresh instead of showing another account's data.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6"
+      },
+      "ProfileAccountOptional": {
+        "name": "X-Profile-Account",
+        "in": "header",
+        "required": false,
+        "description": "The user id the page believes is signed in. When sent, it must equal the token's user, or the response is 409.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6"
+      }
+    },
+    "responses": {
+      "NotSignedIn": {
+        "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Not signed in"
+            }
+          }
+        }
+      },
+      "AccountChanged": {
+        "description": "`X-Profile-Account` is missing or is not the caller's id.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Account changed. Refresh and try again."
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "The database could not be read or written.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Internal server error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "description": "The caller's user row, as stored.",
+        "required": [
+          "status",
+          "id",
+          "email",
+          "username",
+          "usernameNeedsConfirmation",
+          "usernamePromptedAt",
+          "wallet",
+          "privyUserId",
+          "createdAt",
+          "updatedAt",
+          "legacyId",
+          "isAdmin",
+          "isWhiteListed",
+          "isSuperAdmin",
+          "isHidden",
+          "legacyLinkDismissed",
+          "acceptedUgcCount"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "usernameNeedsConfirmation": {
+            "type": "boolean",
+            "description": "True while the name is a generated one the user has not confirmed or replaced."
+          },
+          "usernamePromptedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When the one-time user-name prompt was shown, as Postgres timestamp text (`2026-10-01 12:00:00.123456+00`), or null."
+          },
+          "wallet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "privyUserId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "legacyId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "isWhiteListed": {
+            "type": "boolean"
+          },
+          "isSuperAdmin": {
+            "type": "boolean"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "legacyLinkDismissed": {
+            "type": "boolean"
+          },
+          "acceptedUgcCount": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProfileArtist": {
+        "type": "object",
+        "required": [
+          "artistId",
+          "artistName",
+          "imageUrl"
+        ],
+        "properties": {
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": "string",
+            "description": "The artist's name, or `Unknown artist`."
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A local path or credential-free HTTPS URL, or null."
+          }
+        }
+      },
+      "ProfileEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "artistId",
+          "artistName",
+          "imageUrl",
+          "siteName",
+          "ugcUrl",
+          "accepted",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The artist's stored portrait, as stored."
+          },
+          "siteName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ugcUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ProfileUpdate": {
+        "type": "object",
+        "description": "A stored Latest card (see the artist Latest endpoint) with the artist it belongs to. `id` is prefixed with the artist id so cards from different artists never collide.",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "text",
+          "date",
+          "imageUrl",
+          "imageCaption",
+          "sourceUrl",
+          "sourceLabel",
+          "artistId",
+          "artistName"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "release",
+              "instagram",
+              "interview",
+              "moment"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageDimensions": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "number"
+              },
+              "height": {
+                "type": "number"
+              }
+            }
+          },
+          "imageCaption": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceLabel": {
+            "type": "string"
+          },
+          "momentKind": {
+            "type": "string",
+            "enum": [
+              "video",
+              "audio",
+              "image",
+              "writing",
+              "other"
+            ]
+          },
+          "listeningLinks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "siteName": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "href": {
+                  "type": "string"
+                },
+                "iconSrc": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
