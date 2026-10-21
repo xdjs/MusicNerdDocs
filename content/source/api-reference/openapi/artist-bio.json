@@ -1130,6 +1130,7 @@
       "ArtistAbout": {
         "type": "object",
         "required": ["status", "bio", "publicAbout"],
+        "additionalProperties": false,
         "properties": {
           "status": {
             "type": "string",
@@ -1155,6 +1156,7 @@
       "RegeneratedBio": {
         "type": "object",
         "required": ["status", "bio"],
+        "additionalProperties": false,
         "properties": {
           "status": {
             "type": "string",
