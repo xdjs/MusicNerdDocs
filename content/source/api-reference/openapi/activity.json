@@ -29,8 +29,7 @@
             "required": false,
             "description": "Only events after this moment. Any string `Date.parse` accepts (ISO 8601 recommended).",
             "schema": {
-              "type": "string",
-              "format": "date-time"
+              "type": "string"
             },
             "example": "2026-10-20T00:00:00.000Z"
           }
@@ -51,28 +50,28 @@
                       "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
                       "artistName": "Bio Ritmo",
                       "platform": "bandcamp",
-                      "createdAt": "2026-10-20T18:41:07.512"
+                      "createdAt": "2026-10-20 18:41:07.512+00"
                     },
                     {
                       "type": "self_edit_updated",
                       "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
                       "artistName": "Bio Ritmo",
                       "platform": "instagram",
-                      "createdAt": "2026-10-20T17:02:55.118+00:00"
+                      "createdAt": "2026-10-20 17:02:55.118+00"
                     },
                     {
                       "type": "agent_mapping",
                       "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
                       "artistName": "Bio Ritmo",
                       "platform": "deezer",
-                      "createdAt": "2026-10-20T16:30:12.004+00:00"
+                      "createdAt": "2026-10-20 16:30:12.004+00"
                     },
                     {
                       "type": "artist_added",
                       "artistId": "7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
                       "artistName": "Celia Cruz",
                       "platform": null,
-                      "createdAt": "2026-10-20T15:12:40.771+00:00"
+                      "createdAt": "2026-10-20 15:12:40.771+00"
                     }
                   ]
                 }
@@ -114,7 +113,12 @@
       "get": {
         "summary": "Recently edited artists",
         "operationId": "getRecentEdited",
-        "security": [],
+        "security": [
+          {
+            "privyBearer": []
+          },
+          {}
+        ],
         "description": "The last three distinct artists a user's approved submissions touched, each with an image. Pass `userId` for any user; without it the signed-in user's own are returned. With neither, or when the read fails, the list is empty.",
         "parameters": [
           {
@@ -146,7 +150,7 @@
                         {
                           "ugcId": "c9d8e7f6-a5b4-4c3d-9e2f-1a0b9c8d7e6f",
                           "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
-                          "updatedAt": "2026-10-20T18:41:07.512",
+                          "updatedAt": "2026-10-20 18:41:07.512",
                           "artistName": "Bio Ritmo",
                           "spotifyId": "3pZWMMjXnxbcxurOCYK5sL",
                           "deezerId": null,
@@ -212,7 +216,7 @@
                       "siteName": "instagram",
                       "oldValue": "bioritmo",
                       "newValue": "bioritmomusic",
-                      "createdAt": "2026-10-20T17:02:55.118+00:00"
+                      "createdAt": "2026-10-20 17:02:55.118+00"
                     }
                   ],
                   "total": 1,
@@ -434,7 +438,7 @@
         ],
         "responses": {
           "200": {
-            "description": "One page of the user's links, with `Cache-Control: private, no-store`.",
+            "description": "One page of the user's links; when signed in, sent with `Cache-Control: private, no-store`.",
             "content": {
               "application/json": {
                 "schema": {
@@ -448,7 +452,7 @@
                       "entries": [
                         {
                           "id": "c9d8e7f6-a5b4-4c3d-9e2f-1a0b9c8d7e6f",
-                          "createdAt": "2026-10-20T18:40:12.004",
+                          "createdAt": "2026-10-20 18:40:12.004",
                           "siteName": "bandcamp",
                           "ugcUrl": "https://bioritmo.bandcamp.com",
                           "accepted": true,
@@ -586,7 +590,7 @@
           },
           "createdAt": {
             "type": "string",
-            "description": "When it happened, as stored (ISO 8601; some tables store without a zone)."
+            "description": "When it happened, in UTC, as Postgres timestamp text (`2026-10-20 18:41:07.512+00`)."
           }
         }
       },
@@ -754,8 +758,7 @@
             "type": "string"
           },
           "createdAt": {
-            "type": "string",
-            "format": "date-time"
+            "type": "string"
           }
         }
       },
