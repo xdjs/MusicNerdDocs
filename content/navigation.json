@@ -43,7 +43,9 @@
           "api-reference/research/review-discovery",
           "api-reference/research/research-evidence",
           "api-reference/research/ask-artist",
-          "api-reference/research/question-answer"
+          "api-reference/research/question-answer",
+          "api-reference/research/question-progress",
+          "api-reference/research/question-source"
         ]
       },
       {
