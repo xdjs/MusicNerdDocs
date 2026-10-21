@@ -1,0 +1,220 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: account",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/auth/link-wallet": {
+      "post": {
+        "summary": "Link a wallet",
+        "operationId": "linkWallet",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Links a wallet the signed-in user owns in Privy to their Music Nerd account. If a legacy (pre-Privy) account already has that wallet, the two are merged into the legacy account, which takes over the Privy identity and the signed-in account's contributions and comes back as `userId`. A name the user confirmed in the welcome flow wins over the legacy name.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["walletAddress"],
+                "properties": {
+                  "walletAddress": {
+                    "type": "string",
+                    "pattern": "^0x[a-fA-F0-9]{40}$",
+                    "description": "An EVM wallet address. It must be one of the wallets linked to the caller's Privy account; it is stored lower-cased."
+                  }
+                }
+              },
+              "example": {
+                "walletAddress": "0x1234567890abcdef1234567890abcdef12345678"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The wallet is linked. `merged: true` means a legacy account was found and merged; `userId` is then the surviving account's id, which the client must use from now on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkWalletResult"
+                },
+                "examples": {
+                  "merged": {
+                    "summary": "A legacy account had this wallet",
+                    "value": {
+                      "status": "ok",
+                      "success": true,
+                      "merged": true,
+                      "userId": "6f1c2a3b-4d5e-4f60-8a71-82b93c4d5e6f",
+                      "message": "Account merged successfully! Your contribution history has been restored."
+                    }
+                  },
+                  "linked": {
+                    "summary": "No legacy account; the wallet is saved on the current account",
+                    "value": {
+                      "status": "ok",
+                      "success": true,
+                      "merged": false,
+                      "message": "Wallet linked successfully!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body isn't JSON (`Invalid request body`), or `walletAddress` isn't a `0x` address of 40 hex characters (`Invalid wallet address`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid wallet address"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, no Music Nerd user for it, or a user without a Privy identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Privy does not list this wallet among the caller's linked accounts. A browser callback is not proof of ownership.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Wallet is not linked to your authenticated account."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The legacy account with this wallet already belongs to another Privy identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This wallet is already linked to another account"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The merge was rolled back (`Merge failed`, `User not found`, `Current user has no Privy ID`, `Legacy account is already linked to another user`), or the wallet could not be saved (`Failed to link wallet`). Nothing changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Merge failed"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Privy could not be reached to verify wallet ownership. Try again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Wallet verification unavailable. Please try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Any Music Nerd user; the account is the token's, never the request's."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "LinkWalletResult": {
+        "type": "object",
+        "required": ["status", "success", "merged", "message"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "merged": {
+            "type": "boolean",
+            "description": "True when a legacy account with this wallet was merged into."
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Only when `merged` is true: the surviving (legacy) account's id. The caller's token now maps to this account."
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

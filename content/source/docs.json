@@ -136,6 +136,12 @@
               "api-reference/users/profile-summary",
               "api-reference/users/profile-updates"
             ]
+          },
+          {
+            "group": "Account",
+            "pages": [
+              "api-reference/accounts/link-wallet"
+            ]
           }
         ]
       }
