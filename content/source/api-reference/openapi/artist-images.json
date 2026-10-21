@@ -24,7 +24,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The provider photos an artist can pick as their profile photo: one option each for Deezer and Spotify, resolved from the IDs linked on the artist. The caller gets back the current `customImage` as `expectedCustomImage`, which it passes to [Choose a provider photo](/api-reference/artist-images/choose-photo) so a stale choice is refused. Moved from Music Nerd's site; the site called `GET /api/artist/photo-choice` there with the same shape, and the API adds `status`.",
+        "description": "The provider photos an artist can pick as their profile photo: one option each for Deezer and Spotify, from the IDs linked on the artist. `expectedCustomImage` is the current photo; pass it to [Choose a provider photo](/api-reference/artist-images/choose-photo) so a stale choice is refused.",
         "parameters": [
           {
             "name": "artistId",
@@ -145,7 +145,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Sets the artist's profile photo to one of the provider photos from [Photo choices](/api-reference/artist-images/photo-choice). The server resolves the photo from the provider again and refuses the write when the artist's current photo, the linked provider ID or the provider's photo changed since the choices were loaded. A changed photo clears the saved header position unless it was set for this same image. Moved from Music Nerd's site with the same request and response; the API adds `status`.",
+        "description": "Sets the artist's profile photo to one of the provider photos from [Photo choices](/api-reference/artist-images/photo-choice). The write is refused when the artist's current photo, the linked provider ID or the provider's photo changed since the choices were loaded. A changed photo clears the saved header position unless it was set for this same image.",
         "requestBody": {
           "required": true,
           "content": {
@@ -314,7 +314,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Uploads a PNG, JPEG or WebP of at most 5 MB as the artist's profile photo. The file's bytes must match its declared type; it is stored under `profile-images/` in Music Nerd's storage, the artist's `customImage` is pointed at the public URL, and the artist's older uploads (more than 30 seconds old) are purged best-effort. Moved from Music Nerd's site with the same form fields and response; the API adds `status` and rejects a non-UUID `artistId` with 400 where the site answered 500.",
+        "description": "Uploads a PNG, JPEG or WebP of at most 5 MB as the artist's profile photo and returns its public URL. The file's bytes must match its declared type.",
         "requestBody": {
           "required": true,
           "content": {
@@ -484,7 +484,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Saves how far down the artist's header image is framed, as a percentage, together with the image it applies to. Choosing a different photo later clears it. Moved from Music Nerd's site with the same request and response; the API adds `status`.",
+        "description": "Saves how far down the artist's header image is framed, as a percentage, together with the image it applies to. Choosing a different photo later clears it.",
         "requestBody": {
           "required": true,
           "content": {
