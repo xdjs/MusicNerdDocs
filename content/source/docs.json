@@ -142,6 +142,17 @@
             "pages": [
               "api-reference/accounts/link-wallet"
             ]
+          },
+          {
+            "group": "Artist bio",
+            "pages": [
+              "api-reference/artist-bio/read-about",
+              "api-reference/artist-bio/update-about",
+              "api-reference/artist-bio/bio-correction",
+              "api-reference/artist-bio/lore-suggestion",
+              "api-reference/artist-bio/directory-discovery",
+              "api-reference/artist-bio/knowledge-doc-export"
+            ]
           }
         ]
       }
