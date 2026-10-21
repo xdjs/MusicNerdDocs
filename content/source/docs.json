@@ -214,6 +214,14 @@
               "api-reference/artist-images/upload-profile-image",
               "api-reference/artist-images/header-position"
             ]
+          },
+          {
+            "group": "Vault uploads",
+            "pages": [
+              "api-reference/vault/sign-upload",
+              "api-reference/vault/complete-upload",
+              "api-reference/vault/upload"
+            ]
           }
         ]
       }
