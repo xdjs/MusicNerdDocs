@@ -3,7 +3,7 @@
   "info": {
     "title": "Question-directed artist research",
     "version": "0.1.0",
-    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation. Web Ask About reserves a bounded planning slot before its model call: at most 10 new question plans per artist and 200 globally over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries."
+    "description": "Preview contract. Apply the Web-owned research schema before enabling the matching API implementation. The ask endpoint reserves a bounded planning slot before its model call: at most 30 new question plans per visitor per hour and 200 across the site over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries."
   },
   "servers": [
     {
@@ -926,6 +926,471 @@
           }
         }
       }
+    },
+    "/api/askArtist": {
+      "post": {
+        "summary": "Ask about an artist",
+        "operationId": "askArtist",
+        "security": [],
+        "description": "Answers a listener's question about an artist from checked public evidence, the flow behind the website's Ask About chat. Reuses a verified answer to the same request when one exists, otherwise plans the question, reserves a planning slot, starts or reuses bounded research and returns `202` with the job to poll; once the job is terminal, the answer endpoint drafts and checks the answer. No credentials: a Privy `Authorization: Bearer` token is optional and only makes the hourly visitor allowance follow the account instead of the caller's IP. Every response is `Cache-Control: private, no-store`.\n\nPorted from MusicNerdWeb's `POST /api/askArtist` (xdjs/MusicNerdWeb#1454) with its fields and status codes; this API adds `status` to every body.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskArtistRequest"
+              },
+              "example": {
+                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                "question": "Who produced Bio Ritmo's latest album?"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A checked answer, a clarification question, or a sourced explanation of why the question stays unresolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistAnswer"
+                },
+                "examples": {
+                  "answer": {
+                    "summary": "A checked answer with its cited sources",
+                    "value": {
+                      "status": "ok",
+                      "answer": "Bio Ritmo recorded the album live at Montrose Recording in Richmond. [1]",
+                      "sources": [
+                        {
+                          "n": 1,
+                          "title": "bioritmo.com, 2024-03-02",
+                          "url": "https://bioritmo.com/news/montrose-sessions",
+                          "sourceId": "vault:33333333-3333-4333-8333-333333333333",
+                          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                          "start": 0,
+                          "end": 1800,
+                          "curation": "approved",
+                          "evidenceKind": "original_text"
+                        }
+                      ],
+                      "instagramMentions": [],
+                      "fromOpenWeb": false,
+                      "webDomains": [],
+                      "suggestions": [],
+                      "bandcamp": "https://bioritmo.bandcamp.com",
+                      "limitations": []
+                    }
+                  },
+                  "clarification": {
+                    "summary": "The planner could not resolve a reference",
+                    "value": {
+                      "status": "ok",
+                      "answer": "Which song, release, or post do you mean?",
+                      "sources": [],
+                      "suggestions": []
+                    }
+                  },
+                  "unresolved": {
+                    "summary": "Research finished without enough evidence",
+                    "value": {
+                      "status": "ok",
+                      "answer": "I don't have enough information to answer that yet.",
+                      "sources": [],
+                      "suggestions": [],
+                      "research": {
+                        "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
+                        "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
+                        "stage": "unresolved",
+                        "message": "I couldn't establish this from the supported sources. The evidence gap remains explicit."
+                      },
+                      "limitations": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Research or answer checking is still running. Poll `GET /api/artist/{id}/research/questions/{jobId}` until the stage is terminal, then call the answer endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistProgress"
+                },
+                "example": {
+                  "status": "ok",
+                  "research": {
+                    "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
+                    "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
+                    "stage": "checking_saved",
+                    "message": "Checking saved public originals…",
+                    "provider": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not JSON, is over 18,000 bytes, or does not match the request schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist or question"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that `artistId`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The question is not registered on this job (a different question was asked of it). Start a new question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This question is not attached to the saved research. Start a new question."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "A limit was reached. `code` names the budget: `visitor_question_quota` (30 new questions per visitor per hour), `question_planning_quota` (200 new questions across the site per rolling day), `saved_evidence_quota` (the API's saved-question admission), `research_quota` (outside research), `research_busy` (an identical request is already running). Without a code, the saved job has already answered three distinct questions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "examples": {
+                  "visitorQuota": {
+                    "summary": "The visitor's hourly allowance",
+                    "value": {
+                      "status": "error",
+                      "code": "visitor_question_quota",
+                      "error": "You've reached your question limit for this hour. Try again in 42 minutes.",
+                      "retryAfterSeconds": 2520,
+                      "resetAt": "2026-10-21T15:42:00.000Z"
+                    }
+                  },
+                  "answerLimit": {
+                    "summary": "A saved job's answer limit",
+                    "value": {
+                      "status": "error",
+                      "error": "This saved research has reached its answer limit. Try a different question later."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the quota window resets, only when the response carries `retryAfterSeconds`.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-MusicNerd-Quota": {
+                "description": "`true` on a quota response, so a client can tell it from a transient 429.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The research job failed or was cancelled (`retryFromStart: true`), the answer could not be checked (`jobId` and `verification` say where it stopped and whether a retry can help), or research is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "examples": {
+                  "verification": {
+                    "summary": "The answer draft could not be checked",
+                    "value": {
+                      "status": "error",
+                      "error": "I couldn't finish checking this answer. Please try again.",
+                      "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
+                      "verification": {
+                        "stage": "claim_check",
+                        "retryable": true
+                      }
+                    }
+                  },
+                  "failed": {
+                    "summary": "The job failed; the client starts over",
+                    "value": {
+                      "status": "error",
+                      "error": "I couldn't finish that lookup. Please try again.",
+                      "retryFromStart": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/questionResearch/{jobId}/answer": {
+      "post": {
+        "summary": "Collect a question's answer",
+        "operationId": "collectQuestionAnswer",
+        "security": [],
+        "description": "Drafts and checks the answer to a question already registered on a research job, once the job's stage is terminal. Never plans, reserves a planning slot or starts new research for the question: an unregistered question is `409`. `202` means the job is still running, the answer is still being checked, or a candidate miss moved the same job on to full research. No credentials. Every response is `Cache-Control: private, no-store`.\n\nPorted from MusicNerdWeb's `POST /api/artist/[id]/questionResearch/[jobId]/answer` (xdjs/MusicNerdWeb#1454); this API adds `status` to every body.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          },
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "The research job returned in `research.jobId` by the ask endpoint.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectQuestionAnswerRequest"
+              },
+              "example": {
+                "question": "Who produced Bio Ritmo's latest album?"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A checked answer, a clarification question, or a sourced explanation of why the question stays unresolved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistAnswer"
+                },
+                "examples": {
+                  "answer": {
+                    "summary": "A checked answer with its cited sources",
+                    "value": {
+                      "status": "ok",
+                      "answer": "Bio Ritmo recorded the album live at Montrose Recording in Richmond. [1]",
+                      "sources": [
+                        {
+                          "n": 1,
+                          "title": "bioritmo.com, 2024-03-02",
+                          "url": "https://bioritmo.com/news/montrose-sessions",
+                          "sourceId": "vault:33333333-3333-4333-8333-333333333333",
+                          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                          "start": 0,
+                          "end": 1800,
+                          "curation": "approved",
+                          "evidenceKind": "original_text"
+                        }
+                      ],
+                      "instagramMentions": [],
+                      "fromOpenWeb": false,
+                      "webDomains": [],
+                      "suggestions": [],
+                      "bandcamp": "https://bioritmo.bandcamp.com",
+                      "limitations": []
+                    }
+                  },
+                  "clarification": {
+                    "summary": "The planner could not resolve a reference",
+                    "value": {
+                      "status": "ok",
+                      "answer": "Which song, release, or post do you mean?",
+                      "sources": [],
+                      "suggestions": []
+                    }
+                  },
+                  "unresolved": {
+                    "summary": "Research finished without enough evidence",
+                    "value": {
+                      "status": "ok",
+                      "answer": "I don't have enough information to answer that yet.",
+                      "sources": [],
+                      "suggestions": [],
+                      "research": {
+                        "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
+                        "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
+                        "stage": "unresolved",
+                        "message": "I couldn't establish this from the supported sources. The evidence gap remains explicit."
+                      },
+                      "limitations": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Research or answer checking is still running. Poll `GET /api/artist/{id}/research/questions/{jobId}` until the stage is terminal, then call the answer endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistProgress"
+                },
+                "example": {
+                  "status": "ok",
+                  "research": {
+                    "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
+                    "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
+                    "stage": "checking_saved",
+                    "message": "Checking saved public originals…",
+                    "provider": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` or `jobId` is not a UUID, or the body is not `{ question }` (JSON, at most 18,000 bytes).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid question"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that `artistId`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The question is not registered on this job (a different question was asked of it). Start a new question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This question is not attached to the saved research. Start a new question."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "A limit was reached. `code` names the budget: `saved_evidence_quota` (the API's saved-question admission), `research_quota` (outside research) or `research_busy`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "example": {
+                  "status": "error",
+                  "code": "research_busy",
+                  "error": "Research is busy right now. Please try again shortly."
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the quota window resets, only when the response carries `retryAfterSeconds`.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-MusicNerd-Quota": {
+                "description": "`true` on a quota response, so a client can tell it from a transient 429.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The research job failed or was cancelled (`retryFromStart: true`), the answer could not be checked (`jobId` and `verification` say where it stopped and whether a retry can help), or research is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskArtistError"
+                },
+                "examples": {
+                  "verification": {
+                    "summary": "The answer draft could not be checked",
+                    "value": {
+                      "status": "error",
+                      "error": "I couldn't finish checking this answer. Please try again.",
+                      "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
+                      "verification": {
+                        "stage": "claim_check",
+                        "retryable": true
+                      }
+                    }
+                  },
+                  "failed": {
+                    "summary": "The job failed; the client starts over",
+                    "value": {
+                      "status": "error",
+                      "error": "I couldn't finish that lookup. Please try again.",
+                      "retryFromStart": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1339,6 +1804,357 @@
           "evidenceId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "ChatTurn": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "question",
+          "answer"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3000
+          },
+          "sourceUrls": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "maxLength": 2048
+            },
+            "description": "The public `http(s)` citations shown with that answer."
+          }
+        }
+      },
+      "AskArtistRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artistId",
+          "question"
+        ],
+        "properties": {
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Resume this job instead of planning a new question; the answer endpoint is the usual way to do that."
+          },
+          "conversation": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "$ref": "#/components/schemas/ChatTurn"
+            },
+            "description": "The visitor's earlier turns on this page, at most 12,000 characters in all, so a follow-up can be resolved. Never interview memory."
+          }
+        }
+      },
+      "CollectQuestionAnswerRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "question"
+        ],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "The `research.resolvedQuestion` the ask endpoint returned, or the original question."
+          }
+        }
+      },
+      "AnswerSource": {
+        "type": "object",
+        "required": [
+          "n",
+          "title",
+          "url",
+          "sourceId",
+          "revision",
+          "start",
+          "end",
+          "curation",
+          "evidenceKind"
+        ],
+        "properties": {
+          "n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "The citation number in `answer`."
+          },
+          "title": {
+            "type": "string",
+            "description": "The source's hostname and, when known, its publication date."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "start": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "curation": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "pending"
+            ]
+          },
+          "evidenceKind": {
+            "type": "string",
+            "enum": [
+              "original_text",
+              "caption",
+              "provider_transcript"
+            ]
+          }
+        }
+      },
+      "ResearchProgress": {
+        "type": "object",
+        "required": [
+          "jobId",
+          "stage",
+          "message"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "resolvedQuestion": {
+            "type": "string",
+            "description": "The standalone question the planner resolved; send it back to the answer endpoint."
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "checking_saved",
+              "searching",
+              "reading",
+              "transcribing",
+              "waiting_provider",
+              "complete",
+              "unresolved",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outsideResearchReason": {
+            "type": "string",
+            "enum": [
+              "quota"
+            ]
+          }
+        }
+      },
+      "AskArtistProgress": {
+        "type": "object",
+        "required": [
+          "status",
+          "research"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "research": {
+            "$ref": "#/components/schemas/ResearchProgress"
+          }
+        }
+      },
+      "AskArtistAnswer": {
+        "type": "object",
+        "required": [
+          "status",
+          "answer",
+          "sources",
+          "suggestions"
+        ],
+        "properties": {
+          "status": {
+            "const": "ok"
+          },
+          "answer": {
+            "type": "string",
+            "description": "Sentences with bracketed citation numbers, or a clarification question, or why the question stays unresolved."
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "$ref": "#/components/schemas/AnswerSource"
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instagramMentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Handles in `answer` that a cited Instagram source actually mentions."
+          },
+          "fromOpenWeb": {
+            "type": "boolean",
+            "description": "True when any cited source is still pending curation."
+          },
+          "webDomains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bandcamp": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uri",
+            "description": "The artist's Bandcamp page, with a checked answer."
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The job's recorded evidence limitations."
+          },
+          "research": {
+            "$ref": "#/components/schemas/ResearchProgress",
+            "description": "Present when the answer explains an unresolved or source-changed job."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "research_quota"
+            ],
+            "description": "With an unresolved answer: outside research was not admitted."
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "resetAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "retryFromStart": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AskArtistError": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "const": "error"
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "visitor_question_quota",
+              "question_planning_quota",
+              "saved_evidence_quota",
+              "research_quota",
+              "research_busy"
+            ]
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "resetAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "retryFromStart": {
+            "type": "boolean",
+            "description": "The job failed or was cancelled; ask again from the start."
+          },
+          "jobId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "With a 503 verification failure: the job whose answer could not be checked."
+          },
+          "verification": {
+            "type": "object",
+            "required": [
+              "stage",
+              "retryable"
+            ],
+            "properties": {
+              "stage": {
+                "type": "string",
+                "enum": [
+                  "read_original",
+                  "fetch_original",
+                  "validate_original",
+                  "draft",
+                  "quote_check",
+                  "claim_check",
+                  "store_result"
+                ]
+              },
+              "retryable": {
+                "type": "boolean"
+              }
+            }
           }
         }
       }
