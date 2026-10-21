@@ -24,7 +24,7 @@
             "adminBearer": []
           }
         ],
-        "description": "The Agent work tab of the admin: ID-mapping coverage per platform, the last write and the last hour's rate, hourly resolve/exclude counts for the past 24 hours, and every worker's heartbeat. With `sections=details` it returns the heavy sections instead: the paginated audit log, the per-agent breakdown, exclusions grouped by platform, and the 50 most recent runs. Moved from MusicNerdWeb's `/api/admin/agent-work` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "description": "ID-mapping agent statistics: coverage per platform, the last write and the last hour's rate, hourly resolve/exclude counts for the past 24 hours, and every worker's heartbeat. With `sections=details` it returns the heavy sections instead: the paginated audit log, the per-agent breakdown, exclusions grouped by platform, and the 50 most recent runs.",
         "parameters": [
           {
             "name": "sections",
@@ -250,10 +250,10 @@
             "adminBearer": []
           }
         ],
-        "description": "The Artist data tab of the admin: how many artists exist and have a Spotify ID, platform-ID coverage from `artist_id_mappings` with today's count, link coverage per tracked column (today's count comes from MCP writes only), the distribution of how many tracked fields each artist has, and enrichment readiness. The result is cached for 30 seconds on the server, so a repeat call may return the same numbers. Moved from MusicNerdWeb's `/api/admin/artist-data` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "description": "Artist data coverage: how many artists exist and have a Spotify ID, platform-ID coverage with today's count, link coverage per platform (today's count comes from MCP writes only), the distribution of how many tracked fields each artist has, and enrichment readiness.",
         "responses": {
           "200": {
-            "description": "The catalog summary.",
+            "description": "The catalog summary; a repeat call within 30 seconds may return the same numbers.",
             "content": {
               "application/json": {
                 "schema": {
@@ -331,7 +331,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Marks a pending About correction report `resolved` or `dismissed`, recording who reviewed it and when. A report that was already reviewed is not changed. To fix the About itself, use [Save the About for a report](/api-reference/admin/save-correction-about), which resolves the report as part of the save. Moved from MusicNerdWeb's `/api/admin/bio-corrections/{id}` (xdjs/MusicNerdWeb#1454).",
+        "description": "Marks a pending About correction report `resolved` or `dismissed`, recording who reviewed it and when. A report that was already reviewed is not changed. To fix the About itself, use [Save the About for a report](/api-reference/admin/save-correction-about), which resolves the report as part of the save.",
         "parameters": [
           {
             "$ref": "#/components/parameters/reportId"
@@ -432,7 +432,7 @@
             "adminBearer": []
           }
         ],
-        "description": "The About currently published for the artist a pending correction report is about, with a `revision` hash to send back on save. For a claimed artist that is `artists.bio`; for an unclaimed one it is the public directory About. The response is never cached (`Cache-Control: private, no-store`). Moved from MusicNerdWeb's `/api/admin/bio-corrections/{id}/about` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "description": "The About currently published for the artist a pending correction report is about, with a `revision` hash to send back on save. For a claimed artist that is their own About; for an unclaimed one, the public directory About.",
         "parameters": [
           {
             "$ref": "#/components/parameters/reportId"
@@ -525,7 +525,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Replaces the artist's published About and resolves the report, in one transaction: the old and new texts are kept in the artist's bio history, an `about_edited` activity is recorded, and the report becomes `resolved`. `revision` must match what [Read the About for a report](/api-reference/admin/get-correction-about) returned; if the About or the artist's ownership changed since, nothing is saved and the response is 409. Moved from MusicNerdWeb's `/api/admin/bio-corrections/{id}/about` (xdjs/MusicNerdWeb#1454).",
+        "description": "Replaces the artist's published About and resolves the report in one step, keeping the old text in the artist's bio history and recording an `about_edited` activity. `revision` must match what [Read the About for a report](/api-reference/admin/get-correction-about) returned; if the About or the artist's ownership changed since, nothing is saved and the response is 409.",
         "parameters": [
           {
             "$ref": "#/components/parameters/reportId"
@@ -644,7 +644,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Every MCP API key, newest first, including revoked ones. Only the first 8 characters of each key's hash are returned; the key itself is shown once, on creation. Moved from MusicNerdWeb's `/api/admin/mcp-keys` (xdjs/MusicNerdWeb#1454). The response is a bare array, as MusicNerdWeb returned it, not this API's `{ status }` envelope.",
+        "description": "Every MCP API key, newest first, including revoked ones. Only the first 8 characters of each key's hash are returned; the key itself is shown once, on creation. The response is a bare array, not this API's `{ status }` envelope.",
         "responses": {
           "200": {
             "description": "The keys, newest first.",
@@ -694,7 +694,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Creates an MCP API key with a label and returns the key. This is the only time the key is available: only its SHA-256 hash is stored, which is what the MCP server checks a `Bearer` key against. Moved from MusicNerdWeb's `/api/admin/mcp-keys` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "description": "Creates an MCP API key with a label and returns the key. This is the only time the key is shown; only its hash is stored.",
         "requestBody": {
           "required": true,
           "content": {
@@ -781,7 +781,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Revokes an MCP API key: it stops authenticating immediately and stays listed with its `revokedAt`. A key that is already revoked, or doesn't exist, is 404. Moved from MusicNerdWeb's `/api/admin/mcp-keys/{id}/revoke` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"`, and an `id` that isn't a UUID is now 400 rather than a server error.",
+        "description": "Revokes an MCP API key: it stops authenticating immediately and stays listed with its `revokedAt`. A key that is already revoked, or doesn't exist, is 404.",
         "parameters": [
           {
             "name": "id",
@@ -869,7 +869,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Updates a user's wallet, email, user name or role flags. Only the fields sent are changed; `null` clears `wallet` or `email`. Making someone an admin also whitelists them, and `isWhiteListed` is ignored in that same request. A user name must be 1–50 characters, not an email or wallet address, and not taken (case-insensitive); a refused name fails the whole update. Moved from MusicNerdWeb's `/api/admin/whitelist-user/{id}` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"`, and an `id` that isn't a UUID or a field of the wrong type is now a specific 400.",
+        "description": "Updates a user's wallet, email, user name or role flags; only the fields sent are changed, and `null` clears `wallet` or `email`. Making someone an admin also whitelists them, and `isWhiteListed` is ignored in that same request. A user name must be 1–50 characters, not an email or wallet address, and not taken (case-insensitive); a refused name fails the whole update.",
         "parameters": [
           {
             "name": "id",
@@ -1005,7 +1005,7 @@
           },
           {}
         ],
-        "description": "How many user-submitted links are waiting for admin review: `ugcresearch` rows not accepted and not yet processed. Music Nerd's site calls it for every signed-in user to decide whether to show the admin badge, so a caller who is not signed in, or not an admin, gets `count: 0` rather than an error; so does a database failure. Moved from MusicNerdWeb's `/api/pendingUGCCount` (xdjs/MusicNerdWeb#1454); the response adds `status: \"ok\"` and is otherwise the same.",
+        "description": "How many user-submitted links are waiting for admin review. A caller who is not signed in or not an admin gets `count: 0` rather than an error, and so does a database failure.",
         "responses": {
           "200": {
             "description": "The count; 0 for anyone who isn't an admin.",
