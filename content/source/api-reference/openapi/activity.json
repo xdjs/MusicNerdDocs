@@ -1,0 +1,880 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: activity and contributions",
+    "version": "1.0.0",
+    "description": "The public activity feed and a signed-in user's own contributions: their recent edits, profile edits, submission counts and submissions."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/activity": {
+      "get": {
+        "summary": "Activity feed",
+        "operationId": "getActivity",
+        "security": [],
+        "description": "The 15 most recent public events, newest first: agent link mappings, approved submissions, artists' own profile edits and new artists. Pass `since` to get only events after a timestamp. Unmoderated submissions never appear.",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Only events after this moment. Any string `Date.parse` accepts (ISO 8601 recommended).",
+            "schema": {
+              "type": "string"
+            },
+            "example": "2026-10-20T00:00:00.000Z"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The events, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityFeed"
+                },
+                "example": {
+                  "status": "ok",
+                  "events": [
+                    {
+                      "type": "ugc_approved",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo",
+                      "platform": "bandcamp",
+                      "createdAt": "2026-10-20 18:41:07.512+00"
+                    },
+                    {
+                      "type": "self_edit_updated",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo",
+                      "platform": "instagram",
+                      "createdAt": "2026-10-20 17:02:55.118+00"
+                    },
+                    {
+                      "type": "agent_mapping",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo",
+                      "platform": "deezer",
+                      "createdAt": "2026-10-20 16:30:12.004+00"
+                    },
+                    {
+                      "type": "artist_added",
+                      "artistId": "7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+                      "artistName": "Celia Cruz",
+                      "platform": null,
+                      "createdAt": "2026-10-20 15:12:40.771+00"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`since` is not a date.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid since parameter"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The feed couldn't be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to fetch activity"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recentEdited": {
+      "get": {
+        "summary": "Recently edited artists",
+        "operationId": "getRecentEdited",
+        "security": [
+          {
+            "privyBearer": []
+          },
+          {}
+        ],
+        "description": "The last three distinct artists a user's approved submissions touched, each with an image. Pass `userId` for any user; without it the signed-in user's own are returned. With neither, or when the read fails, the list is empty.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "description": "The user whose edits to list. Omit for the signed-in user.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "0f3c5e1a-9b7d-4c2e-8a6f-1d2e3f4a5b6c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Up to three artists, most recently edited first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecentEdited"
+                },
+                "examples": {
+                  "withEdits": {
+                    "summary": "A contributor with approved edits",
+                    "value": {
+                      "status": "ok",
+                      "entries": [
+                        {
+                          "ugcId": "c9d8e7f6-a5b4-4c3d-9e2f-1a0b9c8d7e6f",
+                          "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                          "updatedAt": "2026-10-20 18:41:07.512",
+                          "artistName": "Bio Ritmo",
+                          "spotifyId": "3pZWMMjXnxbcxurOCYK5sL",
+                          "deezerId": null,
+                          "customImage": null,
+                          "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb1a2b3c4d5e6f7a8b9c0d1e2f"
+                        }
+                      ]
+                    }
+                  },
+                  "empty": {
+                    "summary": "No user given and no token, or no approved edits",
+                    "value": {
+                      "status": "ok",
+                      "entries": []
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/selfEdits": {
+      "get": {
+        "summary": "Profile edit history",
+        "operationId": "getSelfEdits",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The signed-in user's edits to their own artist profile, ten per page, newest first, with the artist's name and the old and new value of each link. A page past the end returns the last page.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page, from 1. Default 1; a page past the last is clamped to it.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of edits, with `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfEdits"
+                },
+                "example": {
+                  "status": "ok",
+                  "entries": [
+                    {
+                      "id": "5e4d3c2b-1a0f-4e9d-8c7b-6a5f4e3d2c1b",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "artistName": "Bio Ritmo",
+                      "siteName": "instagram",
+                      "oldValue": "bioritmo",
+                      "newValue": "bioritmomusic",
+                      "createdAt": "2026-10-20 17:02:55.118+00"
+                    }
+                  ],
+                  "total": 1,
+                  "page": 1,
+                  "pageCount": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`page` is not a whole number of 1 or more.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid page"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The history couldn't be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Unable to load profile edits"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ugcCount": {
+      "get": {
+        "summary": "Submission count",
+        "operationId": "getUgcCount",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "How many links the signed-in user has submitted, approved or not. Without a valid token, or when the count can't be read, the count is 0 rather than an error.",
+        "responses": {
+          "200": {
+            "description": "The user's submission count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "examples": {
+                  "signedIn": {
+                    "summary": "A contributor",
+                    "value": {
+                      "status": "ok",
+                      "count": 42
+                    }
+                  },
+                  "signedOut": {
+                    "summary": "No token",
+                    "value": {
+                      "status": "ok",
+                      "count": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/approvedUGCCount": {
+      "get": {
+        "summary": "Approved submission count",
+        "operationId": "getApprovedUgcCount",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "How many of the signed-in user's submitted links an admin has approved. Without a valid token, or when the count can't be read, the count is 0 rather than an error.",
+        "responses": {
+          "200": {
+            "description": "The user's approved submission count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "examples": {
+                  "signedIn": {
+                    "summary": "A contributor",
+                    "value": {
+                      "status": "ok",
+                      "count": 37
+                    }
+                  },
+                  "signedOut": {
+                    "summary": "No token",
+                    "value": {
+                      "status": "ok",
+                      "count": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/userEntries": {
+      "get": {
+        "summary": "Submitted links",
+        "operationId": "getUserEntries",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The signed-in user's submitted links with the artist each one belongs to, ten per page, newest first, filterable by platform, approval status and artist name. `all=true` returns every entry in one page. Without a valid token the list is empty with `total` 0.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page, from 1. Anything that isn't a positive number means page 1. Ignored with `all=true`.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "siteName",
+            "in": "query",
+            "required": false,
+            "description": "Only links on this platform (a `platforms` value). `all` or omitted: every platform.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "all"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "`approved` or `pending`. Anything else: both.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "pending"
+              ]
+            },
+            "example": "approved"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Only links whose artist's name contains this text, case-insensitively. Trimmed and cut to 100 characters.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "example": "ritmo"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "`oldest` for oldest first. Anything else: newest first.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "oldest",
+                "newest"
+              ]
+            },
+            "example": "newest"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "description": "`true` returns every matching entry as a single page (`pageCount` 1).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the user's links; when signed in, sent with `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEntries"
+                },
+                "examples": {
+                  "signedIn": {
+                    "summary": "A contributor's first page",
+                    "value": {
+                      "status": "ok",
+                      "entries": [
+                        {
+                          "id": "c9d8e7f6-a5b4-4c3d-9e2f-1a0b9c8d7e6f",
+                          "createdAt": "2026-10-20 18:40:12.004",
+                          "siteName": "bandcamp",
+                          "ugcUrl": "https://bioritmo.bandcamp.com",
+                          "accepted": true,
+                          "artistName": "Bio Ritmo",
+                          "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+                        }
+                      ],
+                      "total": 1,
+                      "pageCount": 1,
+                      "platforms": [
+                        "bandcamp",
+                        "instagram"
+                      ]
+                    }
+                  },
+                  "signedOut": {
+                    "summary": "No token",
+                    "value": {
+                      "status": "ok",
+                      "entries": [],
+                      "total": 0,
+                      "pageCount": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The links couldn't be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ActivityFeed": {
+        "type": "object",
+        "required": [
+          "status",
+          "events"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "events": {
+            "type": "array",
+            "maxItems": 15,
+            "description": "Newest first.",
+            "items": {
+              "$ref": "#/components/schemas/ActivityEvent"
+            }
+          }
+        }
+      },
+      "ActivityEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "artistId",
+          "artistName",
+          "platform",
+          "createdAt"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "agent_mapping",
+              "ugc_approved",
+              "self_edit_added",
+              "self_edit_updated",
+              "artist_added"
+            ],
+            "description": "`agent_mapping`: an agent resolved a platform link. `ugc_approved`: an admin approved a submitted link. `self_edit_added` / `self_edit_updated`: the artist added or changed one of their own links. `artist_added`: a new artist."
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "platform": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The platform the event concerns (`mapping:` stripped from agent mappings), or null for a new artist."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "When it happened, in UTC, as Postgres timestamp text (`2026-10-20 18:41:07.512+00`)."
+          }
+        }
+      },
+      "RecentEdited": {
+        "type": "object",
+        "required": [
+          "status",
+          "entries"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "maxItems": 3,
+            "description": "Most recently edited first.",
+            "items": {
+              "$ref": "#/components/schemas/RecentEditedArtist"
+            }
+          }
+        }
+      },
+      "RecentEditedArtist": {
+        "type": "object",
+        "required": [
+          "ugcId",
+          "artistId",
+          "updatedAt",
+          "artistName",
+          "spotifyId",
+          "deezerId",
+          "customImage",
+          "imageUrl"
+        ],
+        "properties": {
+          "ugcId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The most recent approved submission for this artist."
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "When that submission was last updated."
+          },
+          "artistName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spotifyId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deezerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The artist's own uploaded image URL, as stored."
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The image to show: the upload, else Spotify's, else Deezer's 250 px picture, else null."
+          }
+        }
+      },
+      "SelfEdits": {
+        "type": "object",
+        "required": [
+          "status",
+          "entries",
+          "total",
+          "page",
+          "pageCount"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/SelfEdit"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "All of the user's profile edits."
+          },
+          "page": {
+            "type": "integer",
+            "description": "The page returned, after clamping."
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "SelfEdit": {
+        "type": "object",
+        "required": [
+          "id",
+          "artistId",
+          "artistName",
+          "siteName",
+          "oldValue",
+          "newValue",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "siteName": {
+            "type": "string",
+            "description": "The platform column that changed."
+          },
+          "oldValue": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null when the link was added."
+          },
+          "newValue": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "Count": {
+        "type": "object",
+        "required": [
+          "status",
+          "count"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "UserEntries": {
+        "type": "object",
+        "required": [
+          "status",
+          "entries",
+          "total",
+          "pageCount"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserEntry"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "description": "How many entries match the filters."
+          },
+          "pageCount": {
+            "type": "integer",
+            "description": "0 when signed out; 1 with `all=true`."
+          },
+          "platforms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Every platform the user has submitted to, for the filter menu. Absent when signed out."
+          }
+        }
+      },
+      "UserEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "createdAt",
+          "siteName",
+          "ugcUrl",
+          "accepted",
+          "artistName",
+          "artistId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "siteName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ugcUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accepted": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "True once an admin approved it."
+          },
+          "artistName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "artistId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      }
+    }
+  }
+}
