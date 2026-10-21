@@ -1,0 +1,1160 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artist links",
+    "version": "1.0.0",
+    "description": "Writing, ordering, checking and reviewing the platform links on an artist's profile. Ported from the website's routes of the same paths (xdjs/MusicNerdWeb#1454)."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/artist/link-order": {
+      "put": {
+        "summary": "Save the artist's link order",
+        "operationId": "putArtistLinkOrder",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Saves the order the artist's claimant or an admin dragged the `links` or `support` section into. Every name must be `spotify`, `deezer` or a urlmap platform; the order is stored on the artist and the next profile render uses it. Returns `{ status: \"ok\", success: true }`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artistId",
+                  "section",
+                  "order"
+                ],
+                "properties": {
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "section": {
+                    "type": "string",
+                    "enum": [
+                      "links",
+                      "support"
+                    ],
+                    "description": "Which link group was reordered."
+                  },
+                  "order": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "description": "Platform names (urlmap `siteName`s) in display order, no duplicates."
+                  }
+                }
+              },
+              "example": {
+                "artistId": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b",
+                "section": "links",
+                "order": [
+                  "spotify",
+                  "instagram",
+                  "youtube"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not a valid link order (`Invalid link order`), or a name is not a known platform (`Unknown platform`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid link order"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is not the artist's approved claimant or an admin (`Not authorized for this artist`), or the claim changed while saving (`Artist ownership changed; this operation was cancelled.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The order could not be saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not save link order"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/directEditLink": {
+      "post": {
+        "summary": "Set or clear an artist link",
+        "operationId": "postDirectEditLink",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Writes one platform link straight onto the artist, for the approved claimant or an admin. `set` reads the platform and id out of `url`: a song or album URL is refused; an Apple Music or Beatport artist page is saved as an approved Lore source instead of a column (`siteName` is then `applemusic` or `beatport`); anything else goes through the urlmap patterns and lands in that platform's column. A changed value posts to Discord, is recorded as the claimant's self-edit, and counts a `profile_edit` analytics event; saving the same value again does none of that. `clear` empties the column. Returns the platform written.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artistId",
+                  "action"
+                ],
+                "properties": {
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "set",
+                      "clear"
+                    ]
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "The profile URL to save. Required for `set`."
+                  },
+                  "siteName": {
+                    "type": "string",
+                    "description": "The platform column to empty. Required for `clear`."
+                  }
+                }
+              },
+              "examples": {
+                "set": {
+                  "value": {
+                    "artistId": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b",
+                    "action": "set",
+                    "url": "https://www.instagram.com/p3t3rango/"
+                  }
+                },
+                "clear": {
+                  "value": {
+                    "artistId": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b",
+                    "action": "clear",
+                    "siteName": "instagram"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Written. `siteName` and `platformName` come back for `set`; `platformName` is the urlmap display name and may be null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "success"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "siteName": {
+                      "type": "string",
+                      "description": "The column written, or `applemusic` / `beatport` for a source-backed link."
+                    },
+                    "platformName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "siteName": "instagram",
+                  "platformName": "Instagram"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet — we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "url is required for set action"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is not the artist's approved claimant or an admin (`Not authorized for this artist`), or the claim changed while writing (`Artist ownership changed; this operation was cancelled.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The id belongs to another artist (`That spotify artist ID is already linked to a different artist`, `That spotify artist ID conflicts with an existing artist mapping`; same for `deezer`), or the Apple Music / Beatport page is already in Lore (`This link has already been suggested. Review it in Lore.`). `code` is always `CONFLICT`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "That spotify artist ID is already linked to a different artist",
+                  "code": "CONFLICT"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/removeArtistData": {
+      "post": {
+        "summary": "Remove an artist link",
+        "operationId": "postRemoveArtistData",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Empties one platform column on an artist, for any whitelisted user or admin (not only the claimant: this is the contributor-side remove). The contributor's original UGC row is kept so their credit stands. `wallets` is handled by the array path, which removes the artist's own id from the array as the website does. Counts a `profile_edit` analytics event. Returns `{ status: \"ok\", success: true, message }`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artistId",
+                  "siteName"
+                ],
+                "properties": {
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "siteName": {
+                    "type": "string",
+                    "description": "The platform column to empty."
+                  }
+                }
+              },
+              "example": {
+                "artistId": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b",
+                "siteName": "instagram"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "success",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "message": "Artist data removed"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not JSON (`Invalid request body`) or a field is missing (`artistId and siteName are required`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId and siteName are required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither whitelisted nor an admin (`Unauthorized`), the column is not a writable link (`Invalid platform column`), or the write failed (`Error removing artist data`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Unauthorized"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The user could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/validateLink": {
+      "post": {
+        "summary": "Check a profile link is live",
+        "operationId": "postValidateLink",
+        "security": [],
+        "description": "Fetches a YouTube, SoundCloud, Bandcamp, Audius, Last.fm, OpenSea, Zora, Catalog, Supercollector or Mintsongs profile URL and says whether the page exists. The platform is matched by its urlmap pattern when the table has one, else a built-in one. A 404, a SoundCloud redirect to `/404`, or a known not-found phrase in the page gives `valid: false` with a `reason`; a network failure does too. No credentials.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "url": "https://soundcloud.com/peterango"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checked. `reason` is present only when `valid` is false: `404 Not Found`, `soundcloud 404 redirect`, `<platform> error page` or `Network error or invalid URL`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "valid"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "valid": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "valid": false,
+                  "reason": "soundcloud error page"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`url` is missing, not a string, or the body is not JSON (`No URL provided`), or no supported platform reads it (`Unsupported platform or invalid URL`). The website's `valid` and `reason` fields are kept beside the error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "error",
+                    "valid",
+                    "reason"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "error"
+                      ]
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "valid": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Unsupported platform or invalid URL",
+                  "valid": false,
+                  "reason": "Unsupported platform or invalid URL"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/platformRegexes": {
+      "get": {
+        "summary": "List platform URL patterns",
+        "operationId": "getPlatformRegexes",
+        "security": [],
+        "description": "Every urlmap platform's URL pattern, except `ens` and `wallets`, so a client can recognise a link before submitting it. Catalog, Foundation and sound.xyz are left out as they are everywhere in this API. The website returned a bare array; here it is `regexes` inside the `{ status }` envelope. No credentials.",
+        "responses": {
+          "200": {
+            "description": "The patterns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "regexes"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "regexes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "siteName",
+                          "regex"
+                        ],
+                        "properties": {
+                          "siteName": {
+                            "type": "string"
+                          },
+                          "regex": {
+                            "type": "string",
+                            "description": "A JavaScript regular expression source."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "regexes": [
+                    {
+                      "siteName": "instagram",
+                      "regex": "^https?://(www\\.)?instagram\\.com/([^/?#]+)"
+                    },
+                    {
+                      "siteName": "soundcloud",
+                      "regex": "^https://(www\\.)?soundcloud\\.com/([^/]+)(?:/.*)?$"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The table could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load platform patterns"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/link-suggestions": {
+      "get": {
+        "summary": "List link suggestions",
+        "operationId": "getArtistLinkSuggestions",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The links contributors and research have proposed for the artist, pending first then newest, 100 per page, for the approved claimant or an admin. Each item is a UGC submission or a Lore source that resolves to an artist destination; song and album URLs are left out. Who suggested or reviewed it is a display name only, `Automated research` for research, `Not recorded` when hidden or unknown. Returns `items`, `hasMore` and the `nextOffset` to request.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Where the page starts; 0 to 100000.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "items",
+                    "hasMore",
+                    "nextOffset"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LinkSuggestion"
+                      }
+                    },
+                    "hasMore": {
+                      "type": "boolean"
+                    },
+                    "nextOffset": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "description": "The `offset` for the next page, or null on the last one."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "items": [
+                    {
+                      "id": "0f3a7c62-1d7e-4b1e-9a7a-5b1f0c0e2a11",
+                      "kind": "ugc",
+                      "url": "https://www.instagram.com/p3t3rango/",
+                      "title": "instagram",
+                      "platform": "instagram",
+                      "hidden": false,
+                      "status": "pending",
+                      "origin": "submission",
+                      "submittedAt": "2026-10-20T18:02:11.000Z",
+                      "suggestedBy": {
+                        "id": "4d1a2b3c-0000-4000-8000-000000000042",
+                        "name": "musicnerd_fan"
+                      },
+                      "reviewedAt": null,
+                      "reviewedBy": null
+                    }
+                  ],
+                  "hasMore": false,
+                  "nextOffset": null
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "`private, no-store`: the list is the caller's, never shared or cached.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` is not a UUID (`Invalid artist ID`) or `offset` is not an integer in range (`Invalid page offset`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid page offset"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is not the artist's approved claimant or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The list could not be loaded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load link suggestions"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Review a link suggestion",
+        "operationId": "postArtistLinkSuggestionReview",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Approves, dismisses, removes or restores one suggestion, as the approved claimant or an admin, in a single transaction with the artist locked. Approving a UGC link writes the platform column (or, for an Apple Music / Beatport page, files it as an approved Lore source); approving a source marks it approved and queues its text extraction; `remove` hides an approved source's icon and `restore` shows it again, both keeping the source in Lore. Every decision is written to the artist's activity. Returns `{ status: \"ok\", success: true }`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "kind",
+                  "decision"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The suggestion's id, from the list."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "ugc",
+                      "source"
+                    ]
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "dismiss",
+                      "remove",
+                      "restore"
+                    ],
+                    "description": "`remove` and `restore` apply only to an approved source."
+                  }
+                }
+              },
+              "example": {
+                "id": "0f3a7c62-1d7e-4b1e-9a7a-5b1f0c0e2a11",
+                "kind": "ugc",
+                "decision": "approve"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reviewed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` is not a UUID or the body is not a valid decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid review request"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is not the artist's approved claimant or an admin, or the claim changed during the review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The suggestion cannot be reviewed as asked: it is gone (`This suggestion is no longer available. Refresh the profile.`), already reviewed (`This suggestion has already been reviewed. Refresh the profile.`), not a profile link (`This is not an artist profile link. Review it in Lore.`), only approved sources can be removed or restored, the URL already exists in Lore (`This URL already exists in Lore. Review that source instead.`), or a different account is already connected on that platform (`A different account is already connected. Remove the existing link before approving this replacement.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This suggestion has already been reviewed. Refresh the profile."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The review could not be saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not review this link"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Link writes need the artist's approved claimant or a Music Nerd admin; `removeArtistData` accepts any whitelisted user too."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ConflictError": {
+        "type": "object",
+        "required": [
+          "status",
+          "error",
+          "code"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "CONFLICT"
+            ]
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "required": [
+          "status",
+          "success"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
+      },
+      "LinkSuggestion": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "url",
+          "title",
+          "platform",
+          "hidden",
+          "status",
+          "origin",
+          "submittedAt",
+          "suggestedBy",
+          "reviewedAt",
+          "reviewedBy"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ugc",
+              "source"
+            ],
+            "description": "A contributor's UGC submission, or a Lore source."
+          },
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "description": "The platform name for UGC; the source's title, else the destination's label, else `Website`."
+          },
+          "platform": {
+            "type": "string",
+            "description": "The platform column for UGC; the destination's platform for a source, else `website`."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "True when an approved source's icon was removed from the profile."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "description": "`submission`, `research`, `upload` or `unknown`."
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "suggestedBy": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "reviewedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "reviewedBy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Person"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Person": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "A display name only; no email or wallet. `id` is null and `name` is `Not recorded` when the account is hidden or unknown; research shows as `Automated research`.",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

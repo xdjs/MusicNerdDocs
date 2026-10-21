@@ -178,6 +178,18 @@
               "api-reference/activity/approved-ugc-count",
               "api-reference/activity/user-entries"
             ]
+          },
+          {
+            "group": "Artist links",
+            "pages": [
+              "api-reference/artist-links/link-order",
+              "api-reference/artist-links/direct-edit-link",
+              "api-reference/artist-links/remove-artist-data",
+              "api-reference/artist-links/validate-link",
+              "api-reference/artist-links/platform-regexes",
+              "api-reference/artist-links/link-suggestions",
+              "api-reference/artist-links/review-link-suggestion"
+            ]
           }
         ]
       }
