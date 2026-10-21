@@ -1,13 +1,14 @@
 {
-  "navigationPages": 77,
+  "navigationPages": 78,
   "guidePages": 4,
-  "apiPages": 73,
+  "apiPages": 74,
   "specifications": [
     "accounts.json",
     "agents.json",
     "artist-bio.json",
     "artist-latest.json",
     "artist-lookups.json",
+    "fun-facts.json",
     "health.json",
     "interview-memory.json",
     "interview-responses.json",
