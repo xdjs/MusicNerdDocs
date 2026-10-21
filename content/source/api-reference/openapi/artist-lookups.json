@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: artist lookups",
     "version": "1.0.0",
-    "description": "The public lookups MusicNerdWeb served and Sleeve Note and other clients call: an artist by Spotify ID, Instagram handle or Deezer ID, an artist's X handle, Spotify artist data, artist search, track links, the contributor leaderboard and an artist's image. No credentials. Responses keep MusicNerdWeb's exact shapes, plain-text errors included, not this API's `{ status }` envelope."
+    "description": "Public lookups: an artist by Spotify ID, Instagram handle or Deezer ID, an artist's X handle, Spotify artist data, artist search, track links, the contributor leaderboard and an artist's image. No credentials. Each endpoint answers in its own shape, with plain-text errors, not this API's `{ status }` envelope."
   },
   "servers": [
     {
@@ -1254,7 +1254,7 @@
             }
           },
           "500": {
-            "description": "An unexpected server error. MusicNerdWeb answered an empty 500 here; this API answers JSON.",
+            "description": "An unexpected server error.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1321,7 +1321,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The ranked entries: an array, or `{ entries, total, pageCount }` when paginated. Counts are strings in the all-time list and integers in a period, as MusicNerdWeb returned them.",
+            "description": "The ranked entries: an array, or `{ entries, total, pageCount }` when paginated. Counts are strings in the all-time list and integers in a period.",
             "content": {
               "application/json": {
                 "schema": {
