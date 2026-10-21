@@ -484,7 +484,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Saves how far down the artist's header image is framed, as a percentage, together with the image it applies to. Choosing a different photo later clears it.",
+        "description": "Saves how far down the artist's header image is framed, as a percentage, together with the image it applies to. Choosing a different provider photo later clears it.",
         "requestBody": {
           "required": true,
           "content": {
