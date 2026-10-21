@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: artist lookups",
     "version": "1.0.0",
-    "description": "Find an artist by Spotify ID or Instagram handle, or an artist's X handle. No credentials."
+    "description": "The public lookups MusicNerdWeb served and Sleeve Note and other clients call: an artist by Spotify ID, Instagram handle or Deezer ID, an artist's X handle, Spotify artist data, artist search, track links, the contributor leaderboard and an artist's image. No credentials. Responses keep MusicNerdWeb's exact shapes, plain-text errors included, not this API's `{ status }` envelope."
   },
   "servers": [
     {
@@ -407,6 +407,1044 @@
                 "example": "Something went wrong on our end"
               }
             }
+          }
+        }
+      }
+    },
+    "/api/findArtistByDeezerID": {
+      "post": {
+        "summary": "Find an artist by Deezer ID",
+        "description": "Returns the artist whose `deezer` equals `deezerID` exactly. If several match, the first is returned. `bio` is the artist's own About when they hold an approved claim; otherwise it is the public directory About, or `null` when there is none, so an unclaimed artist's private draft never leaves the server.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope. A database failure answers 500, as the Spotify and Instagram lookups do (MusicNerdWeb answered 404).",
+        "operationId": "findArtistByDeezerID",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deezerID"
+                ],
+                "properties": {
+                  "deezerID": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "deezerID": "11600"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The matching artist, with `Cache-Control: private, no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "result"
+                  ],
+                  "properties": {
+                    "result": {
+                      "$ref": "#/components/schemas/Artist"
+                    }
+                  }
+                },
+                "example": {
+                  "result": {
+                    "id": "6cb3d81a-0000-4000-8000-000000000000",
+                    "legacyId": null,
+                    "bandcamp": null,
+                    "facebook": null,
+                    "x": "exampleartist",
+                    "soundcloud": null,
+                    "notes": null,
+                    "patreon": null,
+                    "name": "Example Artist",
+                    "instagram": "exampleartist",
+                    "youtube": null,
+                    "youtubechannel": null,
+                    "lcname": "example artist",
+                    "soundcloudId": null,
+                    "spotify": "4Z8W4fKeB5YxbusRsdQVPb",
+                    "twitch": null,
+                    "imdb": null,
+                    "musicbrainz": null,
+                    "wikidata": null,
+                    "mixcloud": null,
+                    "facebookId": null,
+                    "discogs": null,
+                    "tiktok": null,
+                    "tiktokId": null,
+                    "jaxsta": null,
+                    "famousbirthdays": null,
+                    "songexploder": null,
+                    "colorsxstudios": null,
+                    "bandsintown": null,
+                    "linktree": null,
+                    "onlyfans": null,
+                    "wikipedia": null,
+                    "audius": null,
+                    "zora": null,
+                    "catalog": null,
+                    "opensea": null,
+                    "foundation": null,
+                    "lastfm": null,
+                    "linkedin": null,
+                    "soundxyz": null,
+                    "mirror": null,
+                    "glassnode": null,
+                    "collectsNfTs": null,
+                    "spotifyusername": null,
+                    "bandcampfan": null,
+                    "tellie": null,
+                    "wallets": null,
+                    "ens": null,
+                    "lens": null,
+                    "addedBy": null,
+                    "cameo": null,
+                    "farcaster": null,
+                    "createdAt": "2024-05-01 12:00:00.123+00",
+                    "updatedAt": "2026-10-01 12:00:00.123+00",
+                    "supercollector": null,
+                    "bio": null,
+                    "customImage": null,
+                    "headerImagePosition": null,
+                    "linkOrder": null,
+                    "webmapdata": null,
+                    "nodePfp": null,
+                    "deezer": "11600",
+                    "subvert": null,
+                    "bluesky": null,
+                    "inprocess": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`deezerID` is missing or not a string, or the body is not JSON.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Missing or invalid required parameters: deezerID"
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has that value.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "The artist you're searching for is not found"
+              }
+            }
+          },
+          "500": {
+            "description": "The database could not be read.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Something went wrong on our end"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/getSpotifyData": {
+      "get": {
+        "summary": "Get Spotify artist data",
+        "description": "Returns Spotify's artist object for one `spotifyId`, or for up to 50 comma-separated `spotifyIds` (an unknown id in a batch comes back as `null`). When both are sent, `spotifyIds` wins. Spotify is called on every request; MusicNerdWeb's 24-hour copy is not kept here.",
+        "operationId": "getSpotifyData",
+        "security": [],
+        "parameters": [
+          {
+            "name": "spotifyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "One Spotify artist id."
+          },
+          {
+            "name": "spotifyIds",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated Spotify artist ids, at most 50."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist (`spotifyId`), or the artists in request order (`spotifyIds`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/SpotifyArtist"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "$ref": "#/components/schemas/SpotifyArtist"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "single": {
+                    "value": {
+                      "data": {
+                        "external_urls": {
+                          "spotify": "https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb"
+                        },
+                        "followers": {
+                          "href": null,
+                          "total": 12345
+                        },
+                        "genres": [
+                          "house"
+                        ],
+                        "href": "https://api.spotify.com/v1/artists/4Z8W4fKeB5YxbusRsdQVPb",
+                        "id": "4Z8W4fKeB5YxbusRsdQVPb",
+                        "images": [
+                          {
+                            "url": "https://i.scdn.co/image/ab6761610000e5eb0000000000000000deadbeef",
+                            "height": 640,
+                            "width": 640
+                          }
+                        ],
+                        "name": "Example Artist",
+                        "popularity": 40,
+                        "type": "artist",
+                        "uri": "spotify:artist:4Z8W4fKeB5YxbusRsdQVPb"
+                      }
+                    }
+                  },
+                  "batch": {
+                    "value": {
+                      "data": [
+                        {
+                          "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb"
+                          },
+                          "followers": {
+                            "href": null,
+                            "total": 12345
+                          },
+                          "genres": [
+                            "house"
+                          ],
+                          "href": "https://api.spotify.com/v1/artists/4Z8W4fKeB5YxbusRsdQVPb",
+                          "id": "4Z8W4fKeB5YxbusRsdQVPb",
+                          "images": [
+                            {
+                              "url": "https://i.scdn.co/image/ab6761610000e5eb0000000000000000deadbeef",
+                              "height": 640,
+                              "width": 640
+                            }
+                          ],
+                          "name": "Example Artist",
+                          "popularity": 40,
+                          "type": "artist",
+                          "uri": "spotify:artist:4Z8W4fKeB5YxbusRsdQVPb"
+                        },
+                        null
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Neither parameter was sent, or `spotifyIds` holds more than 50 ids (`Maximum 50 IDs allowed per request`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "spotifyId or spotifyIds is required"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Spotify did not return the artist. For `spotifyId` the message says why: `Invalid Spotify ID`, `Spotify authentication failed`, `Rate limit exceeded, please try again later`, `Network error while fetching artist data` or `Failed to fetch artist data from Spotify`; for `spotifyIds` it is `Failed to fetch artist data`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Invalid Spotify ID"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Spotify has rate-limited the shared credentials and no token could be fetched. `Retry-After` says how many seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Seconds until Spotify may be called again."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Spotify is temporarily rate limited. Please try again later."
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Get Spotify artist data in batch",
+        "description": "Returns Spotify's artist objects for up to 50 `spotifyIds`, trimmed and de-duplicated, in request order; an unknown id comes back as `null`. Gives up after 12 seconds.",
+        "operationId": "getSpotifyDataBatch",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "spotifyIds"
+                ],
+                "properties": {
+                  "spotifyIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 50
+                  }
+                }
+              },
+              "example": {
+                "spotifyIds": [
+                  "4Z8W4fKeB5YxbusRsdQVPb",
+                  "0000000000000000000000"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The artists, in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/SpotifyArtist"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "external_urls": {
+                        "spotify": "https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb"
+                      },
+                      "followers": {
+                        "href": null,
+                        "total": 12345
+                      },
+                      "genres": [
+                        "house"
+                      ],
+                      "href": "https://api.spotify.com/v1/artists/4Z8W4fKeB5YxbusRsdQVPb",
+                      "id": "4Z8W4fKeB5YxbusRsdQVPb",
+                      "images": [
+                        {
+                          "url": "https://i.scdn.co/image/ab6761610000e5eb0000000000000000deadbeef",
+                          "height": 640,
+                          "width": 640
+                        }
+                      ],
+                      "name": "Example Artist",
+                      "popularity": 40,
+                      "type": "artist",
+                      "uri": "spotify:artist:4Z8W4fKeB5YxbusRsdQVPb"
+                    },
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`spotifyIds` is not a non-empty array (`spotifyIds array is required`), every id is blank (`No valid Spotify IDs provided`), or there are more than 50 (`Maximum 50 IDs allowed per request`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "spotifyIds array is required"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "Spotify did not answer within 12 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Request timed out"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The body is not JSON, or Spotify could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/searchArtists": {
+      "post": {
+        "summary": "Search artists",
+        "description": "Searches Music Nerd's artists by name (substring matches on the normalised name first, then trigram similarity, at most 10) and Deezer's catalogue (at most 10), and returns both lists merged and ranked: exact name, then prefix, then substring, then similarity; bookmarked artists, then more links, then name. Deezer artists already in Music Nerd are dropped; the rest are `isExternalOnly: true` so the add-artist flow can offer them. Results are kept for 5 minutes per query and bookmark list, and the search gives up after 12 seconds.",
+        "operationId": "searchArtists",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query"
+                ],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "The name to search for."
+                  },
+                  "bookmarkedArtistIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Artists the caller has bookmarked; they rank first within a match tier."
+                  }
+                }
+              },
+              "example": {
+                "query": "Example Artist",
+                "bookmarkedArtistIds": []
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The ranked results. A Music Nerd artist carries its row's identity and link columns with `bio` always `null`; a Deezer-only artist has `id: null`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "results"
+                  ],
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/SearchArtistResult"
+                          },
+                          {
+                            "$ref": "#/components/schemas/ExternalArtistResult"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "results": [
+                    {
+                      "id": "6cb3d81a-0000-4000-8000-000000000000",
+                      "name": "Example Artist",
+                      "spotify": "4Z8W4fKeB5YxbusRsdQVPb",
+                      "deezer": "11600",
+                      "bandcamp": null,
+                      "youtube": null,
+                      "youtubechannel": null,
+                      "instagram": "exampleartist",
+                      "x": "exampleartist",
+                      "facebook": null,
+                      "tiktok": null,
+                      "customImage": null,
+                      "match_type": 0,
+                      "bio": null,
+                      "isExternalOnly": false,
+                      "imageUrl": "https://e-cdns-images.dzcdn.net/images/artist/0000000000000000deadbeef/250x250-000000-80-0-0.jpg",
+                      "matchScore": 0,
+                      "linkCount": 2
+                    },
+                    {
+                      "id": null,
+                      "name": "Example Artist II",
+                      "platformId": "11601",
+                      "platform": "deezer",
+                      "imageUrl": "https://e-cdns-images.dzcdn.net/images/artist/0000000000000000deadbeef/1000x1000-000000-80-0-0.jpg",
+                      "profileUrl": "https://www.deezer.com/artist/11601",
+                      "isExternalOnly": true,
+                      "matchScore": 1,
+                      "linkCount": 0
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`query` is missing, empty or not a string.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Invalid query parameter"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "The search did not finish within 12 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Search timed out. Please try a more specific search term."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The body is not JSON, or the database could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/searchArtists/batch": {
+      "post": {
+        "summary": "Search artists in batch",
+        "description": "Returns the best Music Nerd match for each name in `query.artists` (or the one `query.artist`), in request order, `null` where nothing matches. Names are trimmed and de-duplicated; Deezer is not searched. Results are kept for 5 minutes per list, and the search gives up after 12 seconds.",
+        "operationId": "searchArtistsBatch",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query"
+                ],
+                "properties": {
+                  "query": {
+                    "type": "object",
+                    "properties": {
+                      "artists": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Names to search for."
+                      },
+                      "artist": {
+                        "type": "string",
+                        "description": "One name; used when `artists` is absent."
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "query": {
+                  "artists": [
+                    "Example Artist",
+                    "Nobody At All"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One best match or `null` per name, in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "results"
+                  ],
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "$ref": "#/components/schemas/BatchSearchArtistResult"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "results": [
+                    {
+                      "id": "6cb3d81a-0000-4000-8000-000000000000",
+                      "name": "Example Artist",
+                      "spotify": "4Z8W4fKeB5YxbusRsdQVPb",
+                      "deezer": "11600",
+                      "bandcamp": null,
+                      "youtube": null,
+                      "youtubechannel": null,
+                      "instagram": "exampleartist",
+                      "x": "exampleartist",
+                      "facebook": null,
+                      "tiktok": null,
+                      "customImage": null,
+                      "match_type": 0,
+                      "bio": null,
+                      "isSpotifyOnly": false,
+                      "matchScore": 0
+                    },
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No non-blank name was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "No queries provided"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "The search did not finish within 12 seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Search timed out. Please try a more specific search term."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The body is not JSON, or the database could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trackLinks": {
+      "get": {
+        "summary": "Find a track on other services",
+        "description": "Looks a song or album up on Apple Music and Deezer by `title` and `artist` and returns the links whose title matches exactly and whose credits name the artist (or whose title carries them in a bracketed remix or mix credit). Each provider gets 4 seconds; a completed search is kept for an hour, and answered from memory with `cached: true`.",
+        "operationId": "trackLinks",
+        "security": [],
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "The song or album title."
+          },
+          {
+            "name": "artist",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "The artist's name."
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "album"
+              ]
+            },
+            "description": "`album` searches albums; anything else searches songs."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The matching links, none when neither provider has the record. `cached` is present only on an answer from memory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "links"
+                  ],
+                  "properties": {
+                    "links": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TrackLink"
+                      }
+                    },
+                    "cached": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  }
+                },
+                "examples": {
+                  "found": {
+                    "value": {
+                      "links": [
+                        {
+                          "service": "Apple Music",
+                          "url": "https://music.apple.com/us/album/rush/1000000001?i=1000000002"
+                        },
+                        {
+                          "service": "Deezer",
+                          "url": "https://www.deezer.com/track/1000000003"
+                        }
+                      ]
+                    }
+                  },
+                  "cached": {
+                    "value": {
+                      "links": [],
+                      "cached": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`title` or `artist` is missing (`title and artist are required`) or longer than 200 characters (`title or artist too long`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorMessage"
+                },
+                "example": {
+                  "error": "title and artist are required"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leaderboard": {
+      "get": {
+        "summary": "Read the contributor leaderboard",
+        "description": "Returns every account that has added an artist or submitted research, ranked by artists added plus research submissions (hidden accounts last), all-time or within `from`..`to`. `username` is the account's chosen name or `Anonymous`; `email` and `wallet` are always `null`. With `page` or `perPage` the list is paginated, otherwise it is the whole list.",
+        "operationId": "leaderboard",
+        "security": [],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Start of the period (inclusive). Counts only when `to` is also sent."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "End of the period (inclusive)."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number. Sending it paginates the response."
+          },
+          {
+            "name": "perPage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            },
+            "description": "Entries per page. Sending it paginates the response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The ranked entries: an array, or `{ entries, total, pageCount }` when paginated. Counts are strings in the all-time list and integers in a period, as MusicNerdWeb returned them.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LeaderboardEntry"
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "entries",
+                        "total",
+                        "pageCount"
+                      ],
+                      "properties": {
+                        "entries": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LeaderboardEntry"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "pageCount": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "examples": {
+                  "allTime": {
+                    "value": [
+                      {
+                        "userId": "a7b7c7d7-0000-4000-8000-000000000000",
+                        "wallet": null,
+                        "username": "Aux Bandit",
+                        "email": null,
+                        "isHidden": false,
+                        "artistsCount": "12",
+                        "ugcCount": "40"
+                      }
+                    ]
+                  },
+                  "paginatedPeriod": {
+                    "value": {
+                      "entries": [
+                        {
+                          "userId": "a7b7c7d7-0000-4000-8000-000000000000",
+                          "wallet": null,
+                          "username": "Aux Bandit",
+                          "email": null,
+                          "isHidden": false,
+                          "artistsCount": 2,
+                          "ugcCount": 5
+                        }
+                      ],
+                      "total": 1,
+                      "pageCount": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The database could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error",
+                    "details"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "error": "Failed to fetch leaderboard",
+                  "details": "Error getting leaderboard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/image": {
+      "get": {
+        "summary": "Redirect to an artist's image",
+        "description": "Redirects (307) to the artist's image: their own upload when it is an `https` URL (a relative path is resolved against this API), otherwise their Spotify portrait, then their Deezer portrait. Placeholder uploads are skipped. The redirect may be cached for an hour; every other answer has an empty body and `Cache-Control: no-store`.",
+        "operationId": "artistImage",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Redirect to the image, with `Cache-Control: public, max-age=3600`.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "description": "The image URL (`https` only)."
+              }
+            }
+          },
+          "400": {
+            "description": "`id` is not a UUID."
+          },
+          "404": {
+            "description": "No such artist, or no usable image."
+          },
+          "503": {
+            "description": "The database or a provider could not be read."
           }
         }
       }
@@ -855,6 +1893,442 @@
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "ErrorMessage": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "SpotifyArtist": {
+        "type": "object",
+        "description": "Spotify's artist object, passed through as Spotify returns it; `images`, `genres` and `followers` are always present.",
+        "required": [
+          "id",
+          "name",
+          "images",
+          "genres",
+          "followers"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "height": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "width": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "followers": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              }
+            }
+          },
+          "external_urls": {
+            "type": "object",
+            "properties": {
+              "spotify": {
+                "type": "string"
+              }
+            }
+          },
+          "href": {
+            "type": "string"
+          },
+          "popularity": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SearchArtistResult": {
+        "type": "object",
+        "description": "A Music Nerd artist in search results.",
+        "required": [
+          "id",
+          "name",
+          "spotify",
+          "deezer",
+          "bandcamp",
+          "youtube",
+          "youtubechannel",
+          "instagram",
+          "x",
+          "facebook",
+          "tiktok",
+          "customImage",
+          "match_type",
+          "bio",
+          "isExternalOnly",
+          "imageUrl",
+          "matchScore",
+          "linkCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spotify": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deezer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bandcamp": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "youtube": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "youtubechannel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instagram": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tiktok": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customImage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "match_type": {
+            "type": "integer",
+            "description": "0 for a substring match on the name, 1 for a similarity match."
+          },
+          "bio": {
+            "type": "null",
+            "description": "Always `null`; the About comes from the claim-checked lookups."
+          },
+          "isExternalOnly": {
+            "type": "boolean",
+            "const": false
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The artist's upload, else their Spotify or Deezer picture."
+          },
+          "matchScore": {
+            "type": "integer",
+            "description": "0 exact, 1 prefix, 2 substring, 3 similarity only."
+          },
+          "linkCount": {
+            "type": "integer",
+            "description": "How many of the returned link columns are set."
+          }
+        }
+      },
+      "ExternalArtistResult": {
+        "type": "object",
+        "description": "A Deezer artist not yet in Music Nerd.",
+        "required": [
+          "id",
+          "name",
+          "platformId",
+          "platform",
+          "imageUrl",
+          "profileUrl",
+          "isExternalOnly",
+          "matchScore",
+          "linkCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "null"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platformId": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "const": "deezer"
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "profileUrl": {
+            "type": "string"
+          },
+          "isExternalOnly": {
+            "type": "boolean",
+            "const": true
+          },
+          "matchScore": {
+            "type": "integer"
+          },
+          "linkCount": {
+            "type": "integer",
+            "const": 0
+          }
+        }
+      },
+      "BatchSearchArtistResult": {
+        "type": "object",
+        "description": "The best Music Nerd match for one name.",
+        "required": [
+          "id",
+          "name",
+          "spotify",
+          "deezer",
+          "bandcamp",
+          "youtube",
+          "youtubechannel",
+          "instagram",
+          "x",
+          "facebook",
+          "tiktok",
+          "customImage",
+          "match_type",
+          "bio",
+          "isSpotifyOnly",
+          "matchScore"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spotify": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deezer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bandcamp": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "youtube": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "youtubechannel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instagram": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tiktok": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "customImage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "match_type": {
+            "type": "integer",
+            "description": "0 for a substring match on the name, 1 for a similarity match."
+          },
+          "bio": {
+            "type": "null",
+            "description": "Always `null`; the About comes from the claim-checked lookups."
+          },
+          "isSpotifyOnly": {
+            "type": "boolean",
+            "const": false
+          },
+          "matchScore": {
+            "type": "integer",
+            "description": "0 exact, 1 prefix, 2 substring, 3 similarity only."
+          }
+        }
+      },
+      "TrackLink": {
+        "type": "object",
+        "required": [
+          "service",
+          "url"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "enum": [
+              "Apple Music",
+              "Deezer"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "required": [
+          "userId",
+          "wallet",
+          "username",
+          "email",
+          "isHidden",
+          "artistsCount",
+          "ugcCount"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "wallet": {
+            "type": "null"
+          },
+          "username": {
+            "type": "string",
+            "description": "The chosen name, or `Anonymous`."
+          },
+          "email": {
+            "type": "null"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "artistsCount": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Artists the account added: a numeric string all-time, an integer in a period."
+          },
+          "ugcCount": {
+            "type": [
+              "string",
+              "integer"
+            ],
+            "description": "Research submissions: a numeric string all-time, an integer in a period."
           }
         }
       }

@@ -93,7 +93,15 @@
         "pages": [
           "api-reference/lookups/find-artist-by-spotify-id",
           "api-reference/lookups/find-artist-by-ig",
-          "api-reference/lookups/find-twitter-handle"
+          "api-reference/lookups/find-twitter-handle",
+          "api-reference/lookups/find-artist-by-deezer-id",
+          "api-reference/lookups/get-spotify-data",
+          "api-reference/lookups/get-spotify-data-batch",
+          "api-reference/lookups/search-artists",
+          "api-reference/lookups/search-artists-batch",
+          "api-reference/lookups/track-links",
+          "api-reference/lookups/leaderboard",
+          "api-reference/lookups/artist-image"
         ]
       }
     ]
