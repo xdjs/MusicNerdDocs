@@ -1,0 +1,440 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: MCP server",
+    "version": "1.0.0",
+    "description": "The Music Nerd MCP server over Streamable HTTP: ten tools for searching artists, reading their links, and (with an MCP API key) writing links and cross-platform ID mappings."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/mcp": {
+      "get": {
+        "summary": "MCP server health",
+        "description": "Without `Accept: text/event-stream`, returns the server's name, version and transport so a client can check it is up. With `Accept: text/event-stream`, opens the MCP standalone SSE stream; the server is stateless and never sends server-initiated messages, so the stream stays empty until the client closes it. No credentials.",
+        "operationId": "getMcpServer",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The server is up.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerInfo"
+                },
+                "example": {
+                  "name": "Music Nerd",
+                  "version": "1.0.0",
+                  "status": "ok",
+                  "protocol": "mcp",
+                  "transport": "streamable-http"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "With `Accept: text/event-stream`: the `Mcp-Protocol-Version` header names a version the server does not support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32000,
+                    "message": "Bad Request: Unsupported protocol version: 2020-01-01 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05)"
+                  },
+                  "id": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Send an MCP message",
+        "description": "The MCP endpoint: one JSON-RPC 2.0 message (or a batch) per request, answered on a `text/event-stream` body with one `message` event per response. Send `Accept: application/json, text/event-stream`. Read-only tools need no key; the write tools need an MCP API key as `Authorization: Bearer <key>` and refuse with `AUTH_REQUIRED` without one. Every write is recorded in `mcp_audit_log` with the key's hash.\n\nTools, as `tools/list` returns them:\n\n| Tool | Key | What it does |\n| --- | --- | --- |\n| `search_artists` | no | Artists whose name matches `query`; `limit` up to 50 (default 10). Returns `{ artists: [{ id, name }], totalResults }`. |\n| `get_artist` | no | One artist by UUID: `{ artist: { id, name, bio, spotifyId, deezerId, socialLinks } }`, `socialLinks` keyed by platform with `{ handle, url }`. |\n| `set_artist_link` | yes | Sets the platform link a `url` implies on an artist (`artistId`); the platform is read from the URL. Returns `{ success, siteName, extractedId, oldValue }`. |\n| `delete_artist_link` | yes | Clears one platform link (`artistId`, `siteName`). Returns `{ success, siteName, oldValue }`; `NOT_SET` when it was empty. |\n| `get_unmapped_artists` | no | Artists with a Spotify (or, with `basePlatform: \"deezer\"`, a Deezer) ID and no mapping or exclusion for `platform`; `limit` up to 200, `offset`. |\n| `get_mapping_stats` | no | Mapping coverage per platform: `{ totalArtistsWithSpotify, totalArtistsWithDeezer, platformStats }`. |\n| `get_artist_mappings` | no | Every cross-platform ID mapping for one artist. |\n| `resolve_artist_id` | yes | Stores a mapping (`artistId`, `platform`, `platformId`, `confidence`, `source`, `reasoning?`), or many in `items` (max 100, each independent). A lower-confidence submission than the stored one is skipped. |\n| `exclude_artist_mapping` | yes | Marks an artist as excluded from future mapping batches for a platform (`reason`: `conflict`, `name_mismatch`, `too_ambiguous`; `details?`), or many in `items`. |\n| `get_mapping_exclusions` | no | Artists excluded for a `platform`; `limit` up to 500 (default 100). |\n\nA tool's failure comes back as a successful JSON-RPC result whose `isError` is true and whose text is `{ error, code }`; the codes are `AUTH_REQUIRED`, `NOT_FOUND`, `INVALID_INPUT`, `INVALID_URL`, `INVALID_PLATFORM`, `NOT_SET`, `CONFLICT` and `INTERNAL_ERROR`.",
+        "operationId": "postMcpMessage",
+        "security": [
+          {
+            "mcpApiKey": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonRpcRequest"
+              },
+              "examples": {
+                "initialize": {
+                  "summary": "initialize",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                      "protocolVersion": "2025-06-18",
+                      "capabilities": {},
+                      "clientInfo": {
+                        "name": "example-client",
+                        "version": "1.0.0"
+                      }
+                    }
+                  }
+                },
+                "toolsList": {
+                  "summary": "tools/list",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/list"
+                  }
+                },
+                "searchArtists": {
+                  "summary": "tools/call search_artists (no key)",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "search_artists",
+                      "arguments": {
+                        "query": "Bio Ritmo",
+                        "limit": 5
+                      }
+                    }
+                  }
+                },
+                "setArtistLink": {
+                  "summary": "tools/call set_artist_link (key required)",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 4,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "set_artist_link",
+                      "arguments": {
+                        "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                        "url": "https://instagram.com/bioritmomusic"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The responses, as server-sent events: one `message` event per JSON-RPC response, then the stream closes.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "searchArtists": {
+                    "summary": "search_artists result",
+                    "value": "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":3,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"artists\\\": [\\n    {\\n      \\\"id\\\": \\\"aab92f80-f9e1-4299-aa33-7dd85c8de5d3\\\",\\n      \\\"name\\\": \\\"Bio Ritmo\\\"\\n    }\\n  ],\\n  \\\"totalResults\\\": 1\\n}\"}]}}\n\n"
+                  },
+                  "toolError": {
+                    "summary": "A write tool called without a key",
+                    "value": "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":4,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"Authentication required\\\",\\\"code\\\":\\\"AUTH_REQUIRED\\\"}\"}],\"isError\":true}}\n\n"
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "The body held only notifications or responses (for example `notifications/initialized`); nothing to answer."
+          },
+          "400": {
+            "description": "The body is not valid JSON or not a JSON-RPC message, or the `Mcp-Protocol-Version` header names an unsupported version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32700,
+                    "message": "Parse error: Invalid JSON"
+                  },
+                  "id": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "An `Authorization` header was sent but the key is unknown or revoked. A request without the header is not refused; its write tools answer `AUTH_REQUIRED` instead.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32000,
+                    "message": "Invalid or revoked API key"
+                  },
+                  "id": null
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "`Accept` does not list both `application/json` and `text/event-stream`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32000,
+                    "message": "Not Acceptable: Client must accept both application/json and text/event-stream"
+                  },
+                  "id": null
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "`Content-Type` is not `application/json`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32000,
+                    "message": "Unsupported Media Type: Content-Type must be application/json"
+                  },
+                  "id": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed before the transport could answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32603,
+                    "message": "Internal server error"
+                  },
+                  "id": null
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "End an MCP session",
+        "description": "Part of the Streamable HTTP protocol. The server is stateless, so there is no session to end; it answers 200 with no body. No credentials.",
+        "operationId": "deleteMcpSession",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Acknowledged; no body."
+          },
+          "400": {
+            "description": "The `Mcp-Protocol-Version` header names a version the server does not support.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonRpcError"
+                },
+                "example": {
+                  "jsonrpc": "2.0",
+                  "error": {
+                    "code": -32000,
+                    "message": "Bad Request: Unsupported protocol version: 2020-01-01 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05)"
+                  },
+                  "id": null
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server failed to answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "mcpApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "MCP API key",
+        "description": "An MCP API key issued by a Music Nerd admin (the admin's MCP keys page). Optional: without it the read-only tools work and the write tools answer `AUTH_REQUIRED`. The server stores only its SHA-256 hash; a revoked key is refused with 401."
+      }
+    },
+    "schemas": {
+      "ServerInfo": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "status",
+          "protocol",
+          "transport"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "Music Nerd"
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "mcp"
+            ]
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "streamable-http"
+            ]
+          }
+        }
+      },
+      "JsonRpcRequest": {
+        "type": "object",
+        "description": "A JSON-RPC 2.0 request or notification. A batch is an array of these.",
+        "required": [
+          "jsonrpc",
+          "method"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "enum": [
+              "2.0"
+            ]
+          },
+          "id": {
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Omit for a notification; the server then answers 202 with no body."
+          },
+          "method": {
+            "type": "string",
+            "description": "`initialize`, `tools/list`, `tools/call`, `ping`, or a notification such as `notifications/initialized`."
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "For `tools/call`: `{ name, arguments }`."
+          }
+        }
+      },
+      "JsonRpcError": {
+        "type": "object",
+        "required": [
+          "jsonrpc",
+          "error",
+          "id"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "enum": [
+              "2.0"
+            ]
+          },
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "id": {
+            "type": "null"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
