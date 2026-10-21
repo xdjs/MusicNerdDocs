@@ -308,7 +308,7 @@
             }
           },
           "409": {
-            "description": "The id belongs to another artist (`That spotify artist ID is already linked to a different artist`, `That spotify artist ID conflicts with an existing artist mapping`; same for `deezer`), or the Apple Music / Beatport page is already in Lore (`This link has already been suggested. Review it in Lore.`). `code` is always `CONFLICT`.",
+            "description": "The id belongs to another artist (`That spotify artist ID is already linked to a different artist`, `That spotify artist ID conflicts with an existing artist mapping`; same for `deezer`), or the Apple Music / Beatport page is already in Lore (`This link has already been suggested. Review it in Lore.`) or another account is already connected on that platform (`A different account is already connected. Remove the existing link before approving this replacement.`). `code` is always `CONFLICT`.",
             "content": {
               "application/json": {
                 "schema": {
