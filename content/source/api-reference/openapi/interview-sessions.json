@@ -2893,7 +2893,7 @@
             }
           },
           "400": {
-            "description": "`Invalid artist.` when `id` isn't a UUID; `Unexpected interview query.` when the URL has a query string; `Invalid interview request.` for a body that is not one of the actions, is over 64 KB or is not JSON.",
+            "description": "`Invalid artist.` when `id` isn't a UUID; `Unexpected interview query.` when the URL has a query string.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2901,7 +2901,7 @@
                 },
                 "example": {
                   "status": "error",
-                  "error": "Invalid interview request."
+                  "error": "Invalid artist."
                 }
               }
             }
@@ -2949,7 +2949,7 @@
             }
           },
           "409": {
-            "description": "The saved interview, answer revision, boundary revision or source revision changed, or `start`/`continue`/`prepare` found no active session for `sessionId` (`Reload the saved interview before continuing.`), or the sitting already has three questions (`This session is complete. Finish when you’re ready.`).",
+            "description": "The saved interview, answer revision, boundary revision or source revision changed, or the sitting already has three questions (`This session is complete. Finish when you’re ready.`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3365,7 +3365,7 @@
             }
           },
           "413": {
-            "description": "A supported limit was exceeded (interview offers, boundaries, source size).",
+            "description": "A supported limit was exceeded (interview offers, mandatory memory, boundaries, source size).",
             "content": {
               "application/json": {
                 "schema": {
