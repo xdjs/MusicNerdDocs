@@ -1,0 +1,1263 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artist bio",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/artistBio/{id}": {
+      "get": {
+        "summary": "Read the About",
+        "operationId": "getArtistBio",
+        "security": [],
+        "description": "The artist's About as the profile shows it: the saved bio for a claimed artist, otherwise the directory's prepared About when it is still current, otherwise the claim prompt. With `regenerate=true` the caller must be the artist's claimant or an admin; the About is rewritten from the artist's Lore and saved, with the previous text kept in the bio history.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          },
+          {
+            "name": "regenerate",
+            "in": "query",
+            "required": false,
+            "description": "`true` rewrites the About from the Lore document instead of reading it. Requires the claimant's or an admin's token.",
+            "schema": {
+              "type": "string",
+              "enum": ["true"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The About. A read carries `Cache-Control: private, no-store`. A regeneration returns the new bio, or the unchanged bio with `pinned: true` when a version is pinned.",
+            "headers": {
+              "Cache-Control": {
+                "description": "`private, no-store` on a read.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ArtistAbout"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RegeneratedBio"
+                    }
+                  ]
+                },
+                "examples": {
+                  "claimed": {
+                    "summary": "A claimed artist's saved About",
+                    "value": {
+                      "status": "ok",
+                      "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                      "publicAbout": null
+                    }
+                  },
+                  "directory": {
+                    "summary": "An unclaimed artist with a current directory About",
+                    "value": {
+                      "status": "ok",
+                      "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                      "publicAbout": {
+                        "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                        "kind": "researched",
+                        "sources": [
+                          {
+                            "id": "7f1c6f0e-2b1a-4b7d-9a0a-1c2d3e4f5a6b",
+                            "url": "https://www.bioritmo.com/about",
+                            "label": "About · bioritmo.com"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "regenerated": {
+                    "summary": "`regenerate=true` wrote a new About",
+                    "value": {
+                      "status": "ok",
+                      "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia, playing since 1991."
+                    }
+                  },
+                  "pinned": {
+                    "summary": "`regenerate=true` on a pinned bio",
+                    "value": {
+                      "status": "ok",
+                      "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                      "pinned": true,
+                      "message": "Bio is pinned. Unpin it before regenerating."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`regenerate=true` without a token, or with an invalid or expired one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`regenerate=true` by a user who is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "`regenerate=true`: the model did not answer in time. The existing About is kept.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "About generation timed out. Please try again. Your existing About has been kept."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`regenerate=true`: there is no Lore document yet (`code: \"LORE_REQUIRED\"`), or the bio changed, was pinned or the artist's claim changed while the About was being written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioError"
+                },
+                "examples": {
+                  "loreRequired": {
+                    "summary": "No Lore document",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_REQUIRED",
+                      "error": "Build your Lore document before generating About. Your existing About has been kept."
+                    }
+                  },
+                  "conflict": {
+                    "summary": "The bio changed during generation",
+                    "value": {
+                      "status": "error",
+                      "error": "Your bio changed or was pinned while generation was running. Your current bio is safe; review it before trying again."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The read or the generation failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Unable to read About. Please try again."
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save or regenerate the About",
+        "operationId": "putArtistBio",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Saves the About the artist wrote, or with `regenerate: true` rewrites it from the artist's Lore, for the approved claimant or an admin. Both the old and the new text are kept in the bio history, and a pinned bio is never replaced.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bio": {
+                    "type": "string",
+                    "maxLength": 10000,
+                    "description": "The About to save. Required unless `regenerate` is true; at most 10,000 characters."
+                  },
+                  "regenerate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Rewrite the About from the Lore document instead of saving `bio`."
+                  }
+                }
+              },
+              "examples": {
+                "save": {
+                  "summary": "Save an edit",
+                  "value": {
+                    "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia."
+                  }
+                },
+                "regenerate": {
+                  "summary": "Rewrite from Lore",
+                  "value": {
+                    "regenerate": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved, or regenerated. A regeneration returns the About that is now saved and a message saying whether it changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioUpdate"
+                },
+                "examples": {
+                  "saved": {
+                    "summary": "An edit was saved",
+                    "value": {
+                      "status": "ok",
+                      "message": "Bio updated"
+                    }
+                  },
+                  "regenerated": {
+                    "summary": "The About was regenerated",
+                    "value": {
+                      "status": "ok",
+                      "message": "Bio regenerated",
+                      "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia, playing since 1991."
+                    }
+                  },
+                  "unchanged": {
+                    "summary": "Pinned, or the Lore produced the same text",
+                    "value": {
+                      "status": "ok",
+                      "message": "About unchanged. A pinned bio stays locked until you unpin it; otherwise the saved Lore produced the same text.",
+                      "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, the body isn't JSON, `bio` is missing or blank without `regenerate`, or `bio` is over 10,000 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalid": {
+                    "summary": "No bio",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid bio"
+                    }
+                  },
+                  "tooLong": {
+                    "summary": "Over the limit",
+                    "value": {
+                      "status": "error",
+                      "error": "Bio must be 10000 characters or fewer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`regenerate: true` for an artist that no longer exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "408": {
+            "description": "`regenerate: true`: the model did not answer in time. The existing About is kept.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "About generation timed out. Please try again. Your existing About has been kept."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`regenerate: true`: no Lore document yet (`code: \"LORE_REQUIRED\"`), or the bio changed, was pinned or the claim changed while the About was being written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioError"
+                },
+                "example": {
+                  "status": "error",
+                  "code": "LORE_REQUIRED",
+                  "error": "Build your Lore document before generating About. Your existing About has been kept."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed, the claim changed during the save, or an edit that differs from a pinned bio was refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "pinned": {
+                    "summary": "An edit while a bio is pinned",
+                    "value": {
+                      "status": "error",
+                      "error": "Unpin your bio before editing it. Your saved version will be kept."
+                    }
+                  },
+                  "failed": {
+                    "summary": "The write failed",
+                    "value": {
+                      "status": "error",
+                      "error": "Error updating bio"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/bio-corrections": {
+      "post": {
+        "summary": "Report a problem with the About",
+        "operationId": "postBioCorrection",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Files a correction report on the artist's About for an admin to review; any signed-in user may send one. `expectedBio` is the About text the caller read, so a report never lands on an About that has since changed. The same report sent again is acknowledged as a duplicate, and an account may file at most 10 reports in a rolling 24 hours.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "At most 18,000 characters.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason", "expectedBio"],
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "enum": ["wrong_artist", "incorrect", "outdated", "other"],
+                    "description": "What is wrong."
+                  },
+                  "details": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "What should change, in the reporter's words. Optional; trimmed."
+                  },
+                  "sourceUrl": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "description": "A public web page that backs the report. Optional; a bare domain gets `https://`. Private or local addresses are refused."
+                  },
+                  "expectedBio": {
+                    "type": "string",
+                    "maxLength": 12000,
+                    "description": "The About text the reporter saw, exactly as the read endpoint returned it."
+                  }
+                }
+              },
+              "example": {
+                "reason": "outdated",
+                "details": "The band has had twelve members since 2024.",
+                "sourceUrl": "https://www.bioritmo.com/about",
+                "expectedBio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The report was filed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioCorrectionFiled"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "duplicate": false
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "An identical pending report from this account already exists; nothing new was filed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioCorrectionFiled"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "duplicate": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, the body isn't JSON, or the report has no valid reason, details or source URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "artist": {
+                    "summary": "Bad artist id",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid artist ID"
+                    }
+                  },
+                  "json": {
+                    "summary": "Not JSON",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid report"
+                    }
+                  },
+                  "fields": {
+                    "summary": "Invalid fields",
+                    "value": {
+                      "status": "error",
+                      "error": "Choose a reason and enter valid details or a public source URL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The About has changed since the reporter read it, or there is no real About to report on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This About has changed. Reload the profile before sending your suggestion."
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is over 18,000 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Report is too long"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "This account has filed 10 reports in the past 24 hours.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "You have sent 10 reports in the past 24 hours. Please try again when an earlier report is more than 24 hours old."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The report could not be saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not save your suggestion. Please try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/lore-suggestions": {
+      "post": {
+        "summary": "Suggest a Lore source",
+        "operationId": "postLoreSuggestion",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Adds a public web page to the artist's vault as a suggested Lore source, for any signed-in user. An admin's or whitelisted contributor's source is approved at once and a Lore refresh is queued; anyone else's waits for review, with `sourceStatus` `pending`. A URL already in the vault, with or without its fragment, is refused.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "description": "A public http(s) page. A bare domain gets `https://`; the fragment is dropped. IP addresses and private or local hosts are refused."
+                  }
+                }
+              },
+              "example": {
+                "url": "https://www.styleweekly.com/bio-ritmo-at-30/"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The source was saved. `sourceStatus` is `approved` for a trusted contributor (a Lore refresh is queued) or `pending` for review. `warning` is present when the source was approved but the Lore refresh could not be queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoreSuggestionSaved"
+                },
+                "examples": {
+                  "pending": {
+                    "summary": "Submitted for review",
+                    "value": {
+                      "status": "ok",
+                      "success": true,
+                      "sourceStatus": "pending"
+                    }
+                  },
+                  "approved": {
+                    "summary": "A trusted contributor's source",
+                    "value": {
+                      "status": "ok",
+                      "success": true,
+                      "sourceStatus": "approved"
+                    }
+                  },
+                  "approvedNoRefresh": {
+                    "summary": "Approved, but the Lore refresh could not start",
+                    "value": {
+                      "status": "ok",
+                      "success": true,
+                      "sourceStatus": "approved",
+                      "warning": "Source saved and approved, but the Lore refresh could not start. An artist or admin can retry it. You do not need to submit again."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or `url` is missing, not a public web page, an IP address, a private host, or over 2,048 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "artist": {
+                    "summary": "Bad artist id",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid artist ID"
+                    }
+                  },
+                  "url": {
+                    "summary": "Not a public URL",
+                    "value": {
+                      "status": "error",
+                      "error": "Enter a public website URL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The vault already holds this URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This source has already been suggested"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The source could not be saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not submit the source. Please try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/directory-discovery": {
+      "get": {
+        "summary": "Directory discovery status",
+        "operationId": "getDirectoryDiscoveryStatus",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Whether the research started when an artist was added to the directory is still running, and a fingerprint of the profile's public links that changes when they do. Only the account that added the artist, or an admin, may read it, and only within 24 hours of the artist being added.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The discovery state and the current link fingerprint. Carries `Cache-Control: private, no-store`.",
+            "headers": {
+              "Cache-Control": {
+                "description": "`private, no-store`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectoryDiscoveryStatus"
+                },
+                "example": {
+                  "status": "ok",
+                  "state": "active",
+                  "revision": "3f8a2c1d9e0b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nothing to observe: no such artist, no directory research for it, it was added more than 24 hours ago, or the caller is neither the adding account nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Discovery is unavailable."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The status could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Discovery could not be checked."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge-doc/export": {
+      "get": {
+        "summary": "Export the Lore document",
+        "operationId": "getKnowledgeDocExport",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Downloads the artist's Lore document as one self-contained Markdown file: a dated header, the document with its `[n]` citation markers, and the numbered sources it cites. `format=csv` returns the sources as a CSV table instead. Only the artist's approved claimant or an admin may export it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "`csv` for the source table. Anything else, or nothing, for the Markdown document.",
+            "schema": {
+              "type": "string",
+              "enum": ["csv"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file, as an attachment named `<artist-slug>-<date>.md` or `<artist-slug>-sources-<date>.csv`.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "`attachment; filename=\"bio-ritmo-2026-10-21.md\"`, or `...-sources-...csv`.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Access-Control-Expose-Headers": {
+                "description": "`Content-Disposition`, so a cross-origin download can read the file name.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "# Bio Ritmo\n\n> Verified profile compiled by Music Nerd from 2 sources, exported 2026-10-21.\n> Bracketed numbers in the text refer to the numbered sources at the end.\n\nBio Ritmo is a salsa band from Richmond, Virginia, formed in 1991 [1].\n\n## Sources\n\n1. About · bioritmo.com — https://www.bioritmo.com/about\n2. Interview answer: how the band started"
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "id,kind,label,url,published\n\"1\",\"vault\",\"About · bioritmo.com\",\"https://www.bioritmo.com/about\",\"\"\n\"2\",\"interview\",\"Interview answer: how the band started\",\"\",\"\""
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such artist, or no Lore document yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "No knowledge document yet"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The export failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Export failed"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Each operation says who may call it: any signed-in user, or the artist's approved claimant or a Music Nerd admin."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "BioError": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": ["LORE_REQUIRED"],
+            "description": "Present when the About cannot be generated because there is no Lore document."
+          }
+        }
+      },
+      "PublicArtistAbout": {
+        "type": "object",
+        "description": "The directory's prepared About for an unclaimed artist, with the sources it cites. Only returned while the artist's links and sources still match what it was written from.",
+        "required": ["bio", "kind", "sources"],
+        "properties": {
+          "bio": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["official", "researched"],
+            "description": "`official` when it rests on the artist's own page or account; `researched` otherwise."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "url", "label"],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ArtistAbout": {
+        "type": "object",
+        "required": ["status", "bio", "publicAbout"],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "bio": {
+            "type": "string",
+            "description": "The saved bio for a claimed artist; otherwise the directory About's text, or the claim prompt when there is nothing verified to show."
+          },
+          "publicAbout": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PublicArtistAbout"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The directory About for an unclaimed artist, or `null`."
+          }
+        }
+      },
+      "RegeneratedBio": {
+        "type": "object",
+        "required": ["status", "bio"],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "bio": {
+            "type": ["string", "null"],
+            "description": "The About now saved."
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "`true` when a pinned version blocked the regeneration; `bio` is the unchanged About."
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "BioUpdate": {
+        "type": "object",
+        "required": ["status", "message"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string",
+            "description": "After a regeneration: the About now saved."
+          }
+        }
+      },
+      "BioCorrectionFiled": {
+        "type": "object",
+        "required": ["status", "success", "duplicate"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "duplicate": {
+            "type": "boolean",
+            "description": "`true` when an identical pending report from this account already existed."
+          }
+        }
+      },
+      "LoreSuggestionSaved": {
+        "type": "object",
+        "required": ["status", "success", "sourceStatus"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "sourceStatus": {
+            "type": "string",
+            "enum": ["approved", "pending"],
+            "description": "`approved` for an admin's or whitelisted contributor's source; `pending` for review."
+          },
+          "warning": {
+            "type": "string",
+            "description": "Present when the source was approved but the Lore refresh could not be queued."
+          }
+        }
+      },
+      "DirectoryDiscoveryStatus": {
+        "type": "object",
+        "required": ["status", "state", "revision"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "state": {
+            "type": "string",
+            "enum": ["active", "complete", "failed", "stopped"],
+            "description": "`active` while directory research jobs are pending or running; `complete` when all finished; `failed` when one gave up; `stopped` once the artist is claimed."
+          },
+          "revision": {
+            "type": "string",
+            "description": "A fingerprint of the profile's public link destinations; a change means the links changed."
+          }
+        }
+      }
+    }
+  }
+}
