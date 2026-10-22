@@ -201,6 +201,15 @@
           "api-reference/admin/whitelist-user",
           "api-reference/admin/pending-ugc-count"
         ]
+      },
+      {
+        "group": "Artist images",
+        "pages": [
+          "api-reference/artist-images/photo-choice",
+          "api-reference/artist-images/choose-photo",
+          "api-reference/artist-images/upload-profile-image",
+          "api-reference/artist-images/header-position"
+        ]
       }
     ]
   }

@@ -1,13 +1,14 @@
 {
-  "navigationPages": 105,
+  "navigationPages": 109,
   "guidePages": 4,
-  "apiPages": 101,
+  "apiPages": 105,
   "specifications": [
     "accounts.json",
     "activity.json",
     "admin.json",
     "agents.json",
     "artist-bio.json",
+    "artist-images.json",
     "artist-latest.json",
     "artist-links.json",
     "artist-lookups.json",

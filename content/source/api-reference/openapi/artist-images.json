@@ -1,0 +1,781 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artist images",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/artist/photo-choice": {
+      "get": {
+        "summary": "Photo choices",
+        "operationId": "getPhotoChoices",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The provider photos an artist can pick as their profile photo: one option each for Deezer and Spotify, from the IDs linked on the artist. `expectedCustomImage` is the current photo; pass it to [Choose a provider photo](/api-reference/artist-images/choose-photo) so a stale choice is refused.",
+        "parameters": [
+          {
+            "name": "artistId",
+            "in": "query",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The two provider options. `Cache-Control: no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoChoices"
+                },
+                "example": {
+                  "status": "ok",
+                  "expectedCustomImage": null,
+                  "options": [
+                    {
+                      "source": "deezer",
+                      "providerId": "5590",
+                      "imageUrl": "https://e-cdns-images.dzcdn.net/images/artist/0a1b2c3d4e5f/1000x1000-000000-80-0-0.jpg"
+                    },
+                    {
+                      "source": "spotify",
+                      "providerId": null,
+                      "imageUrl": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`artistId` is missing or isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it. `Cache-Control: no-store`, like every answer on this path.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database could not be read (including while checking the token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not load photo choices"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Choose a provider photo",
+        "operationId": "choosePhoto",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Sets the artist's profile photo to one of the provider photos from [Photo choices](/api-reference/artist-images/photo-choice). The write is refused when the artist's current photo, the linked provider ID or the provider's photo changed since the choices were loaded. A changed photo clears the saved header position unless it was set for this same image.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoChoice"
+              },
+              "example": {
+                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                "source": "deezer",
+                "imageUrl": "https://e-cdns-images.dzcdn.net/images/artist/0a1b2c3d4e5f/1000x1000-000000-80-0-0.jpg",
+                "expectedCustomImage": null,
+                "providerId": "5590"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The photo was saved. `Cache-Control: no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoChosen"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "imagePath": "https://e-cdns-images.dzcdn.net/images/artist/0a1b2c3d4e5f/1000x1000-000000-80-0-0.jpg",
+                  "position": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body isn't a valid photo choice: unknown fields, a non-UUID `artistId`, a `source` other than `deezer` or `spotify`, or a bad `imageUrl`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid photo choice"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it. `Cache-Control: no-store`, like every answer on this path.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed while the write ran.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notAuthorized": {
+                    "summary": "Not the claimant or an admin",
+                    "value": {
+                      "status": "error",
+                      "error": "Not authorized for this artist"
+                    }
+                  },
+                  "ownershipChanged": {
+                    "summary": "The claim changed during the write",
+                    "value": {
+                      "status": "error",
+                      "error": "Artist ownership changed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The choice is stale: the artist's current photo or linked provider ID differs from `expectedCustomImage` / `providerId`, or the provider now serves a different photo than `imageUrl`. Reload the choices.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "profileChanged": {
+                    "summary": "The artist's photo or provider ID changed",
+                    "value": {
+                      "status": "error",
+                      "error": "The profile changed. Close and reopen photo choices."
+                    }
+                  },
+                  "providerPhotoChanged": {
+                    "summary": "The provider's photo changed",
+                    "value": {
+                      "status": "error",
+                      "error": "That provider photo changed. Close and reopen photo choices."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed, or the token could not be checked. The current photo is unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not save photo. Your current photo is unchanged."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The provider has no photo for that ID right now. The current photo is unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "That photo is unavailable. Your current photo is unchanged."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/profile-image": {
+      "post": {
+        "summary": "Upload a profile image",
+        "operationId": "uploadProfileImage",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Uploads a PNG, JPEG or WebP of at most 5 MB as the artist's profile photo and returns its public URL. The file's bytes must match its declared type.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "artistId"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The image: `image/png`, `image/jpeg` or `image/webp`, at most 5 MB."
+                  },
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The artist's ID (a UUID)."
+                  }
+                }
+              },
+              "example": {
+                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The image is stored and the artist's photo points at it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileImageUploaded"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "imagePath": "https://example.supabase.co/storage/v1/object/public/vault-files/profile-images/aab92f80-f9e1-4299-aa33-7dd85c8de5d3_1761000000000.png"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`file` or `artistId` is missing, `artistId` isn't a UUID, the file is over 5 MB, its type isn't PNG, JPEG or WebP, or its bytes don't match the declared type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missing": {
+                    "summary": "A field is missing",
+                    "value": {
+                      "status": "error",
+                      "error": "File and artistId are required"
+                    }
+                  },
+                  "invalidArtist": {
+                    "summary": "artistId isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid artist"
+                    }
+                  },
+                  "tooLarge": {
+                    "summary": "Over 5 MB",
+                    "value": {
+                      "status": "error",
+                      "error": "Image too large (max 5MB)"
+                    }
+                  },
+                  "wrongType": {
+                    "summary": "Not PNG, JPEG or WebP",
+                    "value": {
+                      "status": "error",
+                      "error": "Only PNG, JPEG, and WebP images are supported"
+                    }
+                  },
+                  "magicBytes": {
+                    "summary": "The bytes aren't the declared type",
+                    "value": {
+                      "status": "error",
+                      "error": "Image content does not match declared type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The storage upload failed, the token could not be checked, or something else failed after the checks passed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "storage": {
+                    "summary": "Storage refused the upload",
+                    "value": {
+                      "status": "error",
+                      "error": "Failed to upload image to storage"
+                    }
+                  },
+                  "other": {
+                    "summary": "Any other failure",
+                    "value": {
+                      "status": "error",
+                      "error": "Failed to upload image"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Image storage isn't configured on this server (`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` missing).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Image storage is not configured on this server (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/header-position": {
+      "patch": {
+        "summary": "Set the header position",
+        "operationId": "setHeaderPosition",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Saves how far down the artist's header image is framed, as a percentage, together with the image it applies to. Choosing a different provider photo later clears it.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeaderPosition"
+              },
+              "example": {
+                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                "imageUrl": "https://e-cdns-images.dzcdn.net/images/artist/0a1b2c3d4e5f/1000x1000-000000-80-0-0.jpg",
+                "y": 35
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The position was saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Success"
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body isn't a valid position: unknown fields, a non-UUID `artistId`, an `imageUrl` that is neither a site-relative path nor an `https` URL, or a `y` outside 0 to 100.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid photo position"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed while the write ran.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notAuthorized": {
+                    "summary": "Not the claimant or an admin",
+                    "value": {
+                      "status": "error",
+                      "error": "Not authorized for this artist"
+                    }
+                  },
+                  "ownershipChanged": {
+                    "summary": "The claim changed during the write",
+                    "value": {
+                      "status": "error",
+                      "error": "Artist ownership changed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed, or the token could not be checked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not save photo position"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. The user must be the artist's approved claimant or a Music Nerd admin."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "required": ["status", "success"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          }
+        }
+      },
+      "PhotoSource": {
+        "type": "string",
+        "enum": ["deezer", "spotify"],
+        "description": "Which provider the photo comes from."
+      },
+      "PhotoChoices": {
+        "type": "object",
+        "required": ["status", "expectedCustomImage", "options"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "expectedCustomImage": {
+            "type": ["string", "null"],
+            "description": "The artist's current `customImage`. Send it back as `expectedCustomImage` when choosing."
+          },
+          "options": {
+            "type": "array",
+            "description": "One entry per provider, Deezer first, whether or not the artist has that provider linked.",
+            "items": {
+              "type": "object",
+              "required": ["source", "providerId", "imageUrl"],
+              "properties": {
+                "source": {
+                  "$ref": "#/components/schemas/PhotoSource"
+                },
+                "providerId": {
+                  "type": ["string", "null"],
+                  "description": "The provider ID linked on the artist, trimmed; `null` when none is linked."
+                },
+                "imageUrl": {
+                  "type": ["string", "null"],
+                  "description": "The provider's photo for that ID (`https` only); `null` when there is no ID, no photo, or the provider could not be reached."
+                }
+              }
+            }
+          }
+        }
+      },
+      "PhotoChoice": {
+        "type": "object",
+        "required": ["artistId", "source", "imageUrl", "expectedCustomImage", "providerId"],
+        "additionalProperties": false,
+        "properties": {
+          "artistId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The artist's ID."
+          },
+          "source": {
+            "$ref": "#/components/schemas/PhotoSource"
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 4096,
+            "description": "The option's `imageUrl` as the choices returned it. The server re-resolves the photo and refuses the write if it differs."
+          },
+          "expectedCustomImage": {
+            "type": ["string", "null"],
+            "maxLength": 4096,
+            "description": "The `expectedCustomImage` the choices returned."
+          },
+          "providerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "The option's `providerId`."
+          }
+        }
+      },
+      "PhotoChosen": {
+        "type": "object",
+        "required": ["status", "success", "imagePath", "position"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "imagePath": {
+            "type": "string",
+            "description": "The artist's new `customImage`: the provider photo URL as the server resolved it."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "The header position's `y` after the change: kept when it was set for this same image, otherwise 0."
+          }
+        }
+      },
+      "ProfileImageUploaded": {
+        "type": "object",
+        "required": ["status", "success", "imagePath"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "success": {
+            "type": "boolean",
+            "enum": [true]
+          },
+          "imagePath": {
+            "type": "string",
+            "format": "uri",
+            "description": "The stored image's public URL, now the artist's `customImage`."
+          }
+        }
+      },
+      "HeaderPosition": {
+        "type": "object",
+        "required": ["artistId", "imageUrl", "y"],
+        "additionalProperties": false,
+        "properties": {
+          "artistId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The artist's ID."
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "The header image the position applies to: a site-relative path starting with one `/`, or an `https` URL without credentials."
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "How far down the image is framed, as a percentage."
+          }
+        }
+      }
+    }
+  }
+}
