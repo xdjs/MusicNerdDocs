@@ -171,7 +171,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Writes one platform link straight onto the artist, for the approved claimant or an admin, and returns the platform written. `set` reads the platform and ID from `url`: song and album URLs are refused, and an Apple Music or Beatport artist page is saved as an approved Lore source instead (`siteName` is then `applemusic` or `beatport`). `clear` empties the platform's link.",
+        "description": "Writes one platform link straight onto the artist, for the approved claimant or an admin, and returns the platform written. `set` reads the platform and ID from `url`: song and album URLs are refused, and an Apple Music or Beatport artist page is saved as an approved Lore source instead (`siteName` is then `applemusic` or `beatport`). `clear` empties the platform's link. For Spotify or Deezer, disconnect requires `expectedValue`, the account ID actually displayed to the user (explicit null means an empty slot). The server rechecks the current identity, claim generation and authorization, archives the complete matching mapping provenance privately, removes that active mapping, clears the direct link and cancels pending identity-match jobs atomically. A stale or divergent mapping is refused for review. No exclusion is added, and a later explicit valid replacement still uses normal collision checks. The private archive is not returned.",
         "requestBody": {
           "required": true,
           "content": {
@@ -201,6 +201,14 @@
                   "siteName": {
                     "type": "string",
                     "description": "The platform column to empty. Required for `clear`."
+                  },
+                  "expectedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1,
+                    "description": "Required for Spotify/Deezer clear. Send the displayed account ID, not a freshly inferred replacement. Explicit null means already disconnected; omission is invalid. Other platforms do not require it."
                   }
                 }
               },
@@ -253,6 +261,10 @@
                         "string",
                         "null"
                       ]
+                    },
+                    "changed": {
+                      "type": "boolean",
+                      "description": "For ordinary profile-link set only: whether the stored ID changed. Omitted for clear and source-backed additions."
                     }
                   }
                 },
@@ -266,7 +278,7 @@
             }
           },
           "400": {
-            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet — we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`).",
+            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet — we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`). Catalog disconnect without a valid `expectedValue` is refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -294,7 +306,7 @@
             }
           },
           "403": {
-            "description": "The user is not the artist's approved claimant or an admin (`Not authorized for this artist`), or the claim changed while writing (`Artist ownership changed; this operation was cancelled.`).",
+            "description": "The user is not the artist's approved claimant or an admin (`Not authorized for this artist`), or the claim changed while writing (`Artist ownership changed; this operation was cancelled.`). Catalog writes recheck the current approved claim generation and live role; a changed claim or revoked role is refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -308,16 +320,11 @@
             }
           },
           "409": {
-            "description": "The id belongs to another artist (`That spotify artist ID is already linked to a different artist`, `That spotify artist ID conflicts with an existing artist mapping`; same for `deezer`), or the Apple Music / Beatport page is already in Lore (`This link has already been suggested. Review it in Lore.`) or another account is already connected on that platform (`A different account is already connected. Remove the existing link before approving this replacement.`). `code` is always `CONFLICT`.",
+            "description": "The id belongs to another artist (`That spotify artist ID is already linked to a different artist`, `That spotify artist ID conflicts with an existing artist mapping`; same for `deezer`), or the Apple Music / Beatport page is already in Lore (`This link has already been suggested. Review it in Lore.`) or another account is already connected on that platform (`A different account is already connected. Remove the existing link before approving this replacement.`). `code` is always `CONFLICT`. Catalog clear also refuses a changed displayed identity or full mapping, including a retained mapping that differs from the direct account. Refresh and review before retrying.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConflictError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "That spotify artist ID is already linked to a different artist",
-                  "code": "CONFLICT"
                 }
               }
             }
@@ -335,6 +342,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Catalog disconnect could not be confirmed because its storage capability or transaction was unavailable. Refresh before retrying; a transport failure during commit can have an uncertain outcome. There is no field-only fallback.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -348,7 +365,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Empties one platform link on an artist, for any whitelisted user or admin, not only the claimant. The contributor's original submission is kept so their credit stands. For `wallets`, only the artist's own ID is removed from the list.",
+        "description": "Empties one platform link on an artist, for any whitelisted user or admin, not only the claimant. The contributor's original submission is kept so their credit stands. For `wallets`, only the artist's own ID is removed from the list. For Spotify or Deezer, disconnect requires `expectedValue`, the account ID actually displayed to the user (explicit null means an empty slot). The server rechecks the current identity, claim generation and authorization, archives the complete matching mapping provenance privately, removes that active mapping, clears the direct link and cancels pending identity-match jobs atomically. A stale or divergent mapping is refused for review. No exclusion is added, and a later explicit valid replacement still uses normal collision checks. The private archive is not returned.",
         "requestBody": {
           "required": true,
           "content": {
@@ -367,6 +384,14 @@
                   "siteName": {
                     "type": "string",
                     "description": "The platform column to empty."
+                  },
+                  "expectedValue": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1,
+                    "description": "Required for Spotify/Deezer clear. Send the displayed account ID, not a freshly inferred replacement. Explicit null means already disconnected; omission is invalid. Other platforms do not require it."
                   }
                 }
               },
@@ -413,7 +438,7 @@
             }
           },
           "400": {
-            "description": "The body is not JSON (`Invalid request body`) or a field is missing (`artistId and siteName are required`).",
+            "description": "The body is not JSON (`Invalid request body`) or a field is missing (`artistId and siteName are required`). Catalog disconnect without a valid `expectedValue` is refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -441,7 +466,7 @@
             }
           },
           "403": {
-            "description": "The user is neither whitelisted nor an admin (`Unauthorized`), the column is not a writable link (`Invalid platform column`), or the write failed (`Error removing artist data`).",
+            "description": "The user is neither whitelisted nor an admin (`Unauthorized`), the column is not a writable link (`Invalid platform column`), or the write failed (`Error removing artist data`). Catalog writes recheck the current approved claim generation and live role; a changed claim or revoked role is refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -464,6 +489,26 @@
                 "example": {
                   "status": "error",
                   "error": "Internal server error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The displayed catalog identity or full mapping changed, or a retained mapping does not match the direct account. Refresh and review before retrying. No stale mapping is silently removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Catalog disconnect could not be confirmed because its storage capability or transaction was unavailable. Refresh before retrying; a transport failure during commit can have an uncertain outcome. There is no field-only fallback.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
