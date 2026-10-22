@@ -75,7 +75,7 @@
       },
       "post": {
         "summary": "Send an MCP message",
-        "description": "Sends one JSON-RPC 2.0 MCP message (or a batch) and answers on a `text/event-stream` body; send `Accept: application/json, text/event-stream`. `tools/list` returns the ten tools with their input schemas. `search_artists`, `get_artist`, `get_unmapped_artists`, `get_mapping_stats`, `get_artist_mappings` and `get_mapping_exclusions` need no key; `set_artist_link`, `delete_artist_link`, `resolve_artist_id` and `exclude_artist_mapping` need an MCP API key as `Authorization: Bearer <key>`.",
+        "description": "Sends one JSON-RPC 2.0 MCP message (or a batch) and answers on a `text/event-stream` body; send `Accept: application/json, text/event-stream`. `tools/list` returns the ten tools with their input schemas. `search_artists`, `get_artist`, `get_unmapped_artists`, `get_mapping_stats`, `get_artist_mappings` and `get_mapping_exclusions` need no key; `set_artist_link`, `delete_artist_link`, `resolve_artist_id` and `exclude_artist_mapping` need an MCP API key as `Authorization: Bearer <key>`. The `delete_artist_link` tool refuses Spotify and Deezer with `OWNER_DISCONNECT_REQUIRED` after API-key authentication: use the authenticated profile editor/API with the displayed account ID. An MCP key alone does not confer claimant/contributor disconnect authority. Noncatalog deletions are unchanged.",
         "operationId": "postMcpMessage",
         "security": [
           {

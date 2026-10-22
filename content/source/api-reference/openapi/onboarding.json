@@ -24,7 +24,7 @@
             "privyBearer": []
           }
         ],
-        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles \u2192 vault \u2192 interview \u2192 publish): a turn for a step that is not current gets an `error` event and the real step. Confirmed steps are resumed rather than repeated. A fresh claim's opening turn builds the whole page without asking anything; the artist corrects it on the page afterwards. Music Nerd's site no longer sends turns; it uses [Start the claim build](/api-reference/onboarding/build). A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.\n\nThe initial interview prepares up to three questions once from already saved material, with one 15-second total preparation budget. It does not wait for a social scrape. Drafting and source verification share that deadline; timed-out model work is cancelled and only verified questions may be used. Remaining slots use distinct optional general questions. The private question plan is reused after answers, skips, reloads and server restarts, scoped to the current claim. Choosing a fallback plan does not retry generation on each skip. Prepared questions are not artist testimony; only explicit answers/skips create answer records. Saved history is checked before offering the next question; a history read failure returns a recoverable error rather than restarting or completing the interview. Each answered/skipped key counts once toward the three-question cap. Existing answer revisions and explicit publication are unchanged.",
+        "description": "One turn of an artist's onboarding, streamed as server-sent events. The server owns the step order (profiles → vault → interview → publish): a turn for a step that is not current gets an `error` event and the real step. Confirmed steps are resumed rather than repeated. A fresh claim's opening turn builds the whole page without asking anything; the artist corrects it on the page afterwards. Music Nerd's site no longer sends turns; it uses [Start the claim build](/api-reference/onboarding/build). A turn stops at 55 seconds and says so, and the server finishes the work even if the client disconnects.\n\nEach event is a `data:` line holding one JSON object with a `kind`: `chat`, `progress`, `step`, `candidate`, `linked`, `unreachable`, `source`, `sources`, `text-delta`, `choices`, `draft`, `complete` or `error`. A turn ends with `step`, `draft`, `complete` or `error`.\n\nThe initial interview prepares up to three questions once from already saved material, with one 15-second total preparation budget. It does not wait for a social scrape. Drafting and source verification share that deadline; timed-out model work is cancelled and only verified questions may be used. Remaining slots use distinct optional general questions. The private question plan is reused after answers, skips, reloads and server restarts, scoped to the current claim. Choosing a fallback plan does not retry generation on each skip. Prepared questions are not artist testimony; only explicit answers/skips create answer records. Saved history is checked before offering the next question; a history read failure returns a recoverable error rather than restarting or completing the interview. Each answered/skipped key counts once toward the three-question cap. Existing answer revisions and explicit publication are unchanged. Legacy profile turns carry removal names without displayed account IDs. A Spotify or Deezer removal returns an actionable error directing the user to the profile editor before applying any decisions, confirming the step, or starting more discovery. Other removals and additions retain their existing behavior.",
         "parameters": [
           {
             "name": "artistId",
@@ -199,7 +199,7 @@
                       },
                       "question": {
                         "type": "string",
-                        "description": "The question text, for grounded (`social_\u2026`) questions."
+                        "description": "The question text, for grounded (`social_…`) questions."
                       }
                     },
                     "description": "Answer or skip one interview question."
@@ -577,7 +577,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Removes everything the claim build wrote and returns the removed values as the backup. Afterwards the state endpoint reports `currentStep: \"profiles\"`, and visiting the artist page starts a fresh build. The artist's own edits, uploads and interview answers stay.",
+        "description": "Removes everything the claim build wrote and returns the removed values as the backup. Afterwards the state endpoint reports `currentStep: \"profiles\"`, and visiting the artist page starts a fresh build. The artist's own edits, uploads and interview answers stay. Spotify and Deezer identities and their mappings are preserved. Use the authenticated profile editor to disconnect a catalog identity; build reset is not identity removal.",
         "parameters": [
           {
             "name": "artistId",
@@ -605,8 +605,15 @@
                     "value": {
                       "status": "ok",
                       "removed": {
-                        "steps": ["profiles", "vault", "interview", "publish"],
-                        "links": { "spotify": "3pZWMMjXnxbcxurOCYK5sL", "instagram": "bioritmomusic" },
+                        "steps": [
+                          "profiles",
+                          "vault",
+                          "interview",
+                          "publish"
+                        ],
+                        "links": {
+                          "instagram": "bioritmomusic"
+                        },
                         "bio": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
                         "doc": true,
                         "sources": 30,
@@ -807,28 +814,47 @@
       },
       "ClaimBuildReset": {
         "type": "object",
-        "required": ["status", "removed"],
+        "required": [
+          "status",
+          "removed"
+        ],
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["ok"]
+            "enum": [
+              "ok"
+            ]
           },
           "removed": {
             "type": "object",
-            "required": ["steps", "links", "bio", "doc", "sources", "jobs"],
+            "required": [
+              "steps",
+              "links",
+              "bio",
+              "doc",
+              "sources",
+              "jobs"
+            ],
             "properties": {
               "steps": {
                 "type": "array",
-                "items": { "type": "string" },
+                "items": {
+                  "type": "string"
+                },
                 "description": "The step names that were confirmed, now deleted."
               },
               "links": {
                 "type": "object",
-                "additionalProperties": { "type": "string" },
+                "additionalProperties": {
+                  "type": "string"
+                },
                 "description": "The link columns that had values, now null. Keys are column names; values are the old handles or IDs."
               },
               "bio": {
-                "type": ["string", "null"],
+                "type": [
+                  "string",
+                  "null"
+                ],
                 "description": "The bio text that was removed, or null if there was none."
               },
               "doc": {
