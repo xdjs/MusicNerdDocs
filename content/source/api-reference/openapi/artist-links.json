@@ -494,11 +494,11 @@
             }
           },
           "409": {
-            "description": "The catalog identity or full mapping changed, a retained mapping does not match the displayed direct account, or a destination collides with another artist. Refresh and review before retrying. No stale mapping is silently deleted.",
+            "description": "The displayed catalog identity or full mapping changed, or a retained mapping does not match the direct account. Refresh and review before retrying. No stale mapping is silently removed.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConflictError"
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
