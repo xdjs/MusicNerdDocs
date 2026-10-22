@@ -1,0 +1,762 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: vault uploads",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/vault/upload/sign": {
+      "post": {
+        "summary": "Sign an upload",
+        "operationId": "signVaultUpload",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Step one of a file upload to an artist's vault: checks the file's name, type and size, then returns a signed storage URL to `PUT` the file to and a ticket for [Complete an upload](/api-reference/vault/complete-upload) that expires after 15 minutes. Files up to 10 MB: PDF, TXT, MD, CSV, JSON, DOC, DOCX, PNG, JPEG, WebP, MP3 and WAV. A file whose `type` is empty or nonstandard is resolved from its extension, and `contentType` says which type was settled on.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["artistId", "name", "type", "size"],
+                "properties": {
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The artist's ID."
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "description": "The file's name, with its extension."
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "The browser-reported MIME type. May be empty."
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10485760,
+                    "description": "The file's size in bytes, at most 10 MB (10,485,760 bytes)."
+                  }
+                }
+              },
+              "example": {
+                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                "name": "press-kit.pdf",
+                "type": "application/pdf",
+                "size": 482133
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Where to send the file, and the ticket to complete with.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "signedUrl", "contentType", "ticket"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "signedUrl": {
+                      "type": "string",
+                      "format": "uri",
+                      "description": "A Supabase Storage signed upload URL. `PUT` the file to it as `multipart/form-data` with the file in an unnamed field. Valid for a short time."
+                    },
+                    "contentType": {
+                      "type": "string",
+                      "description": "The MIME type the upload was resolved to. Send the file with this type."
+                    },
+                    "ticket": {
+                      "type": "string",
+                      "description": "An opaque signed ticket naming the user, artist, storage path, file name, type and size. Pass it to Complete an upload within 15 minutes."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "signedUrl": "https://example.supabase.co/storage/v1/object/upload/sign/lore-upload-staging/aab92f80-f9e1-4299-aa33-7dd85c8de5d3/7f8f0a3e-0c8a-4b65-9f0e-1b1c2d3e4f50_press-kit.pdf?token=…",
+                  "contentType": "application/pdf",
+                  "ticket": "eyJ1c2VySWQiOi…fQ.3b2a9c…"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is missing a field, `artistId` isn't a UUID, `name` is blank or over 255 characters, `size` isn't a whole number from 1 to 10 MB, or the file type isn't supported.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "size": {
+                    "summary": "A bad field",
+                    "value": {
+                      "status": "error",
+                      "error": "Choose a file up to 10 MB per file."
+                    }
+                  },
+                  "type": {
+                    "summary": "An unsupported type",
+                    "value": {
+                      "status": "error",
+                      "error": "File type not supported"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it (`Not signed in`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not authorized for this artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage could not issue a signed URL, or the token could not be checked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not prepare file storage. Please try again."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vault/upload/complete": {
+      "post": {
+        "summary": "Complete an upload",
+        "operationId": "completeVaultUpload",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Step two of a file upload: checks the staged file against its ticket, publishes it to the artist's vault as an approved source, queues a Lore refresh and returns the saved source. Completing the same ticket again returns the saved source. A `retryCompletion: true` error means the same ticket should be sent again, not a new upload started.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ticket"],
+                "properties": {
+                  "ticket": {
+                    "type": "string",
+                    "description": "The ticket from Sign an upload."
+                  }
+                }
+              },
+              "example": {
+                "ticket": "eyJ1c2VySWQiOi…fQ.3b2a9c…"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved source. `warning` is set when the Lore refresh could not be queued (the file is saved) or when a PDF had no readable text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "source"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "source": {
+                      "$ref": "#/components/schemas/VaultSource"
+                    },
+                    "warning": {
+                      "type": "string",
+                      "description": "Advice to show the user. Absent when there is none."
+                    }
+                  }
+                },
+                "examples": {
+                  "saved": {
+                    "summary": "A saved PDF",
+                    "value": {
+                      "status": "ok",
+                      "source": {
+                        "id": "2c6f1c6e-4f0a-4b9b-8a6a-3b1f0b2d9e71",
+                        "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                        "origin": "upload",
+                        "activityId": "5d1e3a0c-7b2f-4c8e-9a1d-0e2f3a4b5c6d",
+                        "url": "https://example.supabase.co/storage/v1/object/public/vault-files/aab92f80-f9e1-4299-aa33-7dd85c8de5d3/7f8f0a3e-0c8a-4b65-9f0e-1b1c2d3e4f50_press-kit.pdf",
+                        "title": "press-kit.pdf",
+                        "snippet": "Bio Ritmo is a ten-piece salsa band from Richmond, Virginia…",
+                        "type": "document",
+                        "status": "approved",
+                        "fileName": "press-kit.pdf",
+                        "fileSize": 482133,
+                        "filePath": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3/7f8f0a3e-0c8a-4b65-9f0e-1b1c2d3e4f50_press-kit.pdf",
+                        "contentType": "application/pdf",
+                        "extractedText": "Bio Ritmo is a ten-piece salsa band from Richmond, Virginia…",
+                        "ogImage": null,
+                        "podcastEpisodeKey": null,
+                        "podcastShowTitle": null,
+                        "podcastEpisodeTitle": null,
+                        "publishedAt": null,
+                        "createdAt": "2026-10-21 18:04:11.512+00",
+                        "updatedAt": "2026-10-21 18:04:11.512+00"
+                      }
+                    }
+                  },
+                  "warning": {
+                    "summary": "Saved, but the Lore refresh did not start",
+                    "value": {
+                      "status": "ok",
+                      "source": {
+                        "id": "2c6f1c6e-4f0a-4b9b-8a6a-3b1f0b2d9e71",
+                        "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                        "origin": "upload",
+                        "activityId": "5d1e3a0c-7b2f-4c8e-9a1d-0e2f3a4b5c6d",
+                        "url": "https://example.supabase.co/storage/v1/object/public/vault-files/aab92f80-f9e1-4299-aa33-7dd85c8de5d3/7f8f0a3e-0c8a-4b65-9f0e-1b1c2d3e4f50_press-kit.pdf",
+                        "title": "press-kit.pdf",
+                        "snippet": "Uploaded file: press-kit.pdf",
+                        "type": "document",
+                        "status": "approved",
+                        "fileName": "press-kit.pdf",
+                        "fileSize": 482133,
+                        "filePath": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3/7f8f0a3e-0c8a-4b65-9f0e-1b1c2d3e4f50_press-kit.pdf",
+                        "contentType": "application/pdf",
+                        "extractedText": null,
+                        "ogImage": null,
+                        "podcastEpisodeKey": null,
+                        "podcastShowTitle": null,
+                        "podcastEpisodeTitle": null,
+                        "publishedAt": null,
+                        "createdAt": "2026-10-21 18:04:11.512+00",
+                        "updatedAt": "2026-10-21 18:04:11.512+00"
+                      },
+                      "warning": "File saved. Lore refresh could not start; use Look again to retry. Do not upload the file again. PDF saved, but no readable text was found. Use a text-based PDF so Lore can read it."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The ticket is missing, forged, for another user, or expired; or the staged file's size or content doesn't match the ticket. When the ticket is authentic, the staged file is removed; start a new upload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalid": {
+                    "summary": "A bad ticket",
+                    "value": {
+                      "status": "error",
+                      "error": "Upload expired or invalid. Please try again."
+                    }
+                  },
+                  "expired": {
+                    "summary": "An expired ticket",
+                    "value": {
+                      "status": "error",
+                      "error": "Upload expired. Please try again."
+                    }
+                  },
+                  "size": {
+                    "summary": "The staged file isn't the size that was signed",
+                    "value": {
+                      "status": "error",
+                      "error": "File size does not match the approved upload"
+                    }
+                  },
+                  "content": {
+                    "summary": "The file's bytes contradict its type",
+                    "value": {
+                      "status": "error",
+                      "error": "File content does not match its type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it (`Not signed in`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user may no longer edit the artist, or the artist's claim changed while the upload was in flight. The staged file is removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notAuthorized": {
+                    "summary": "Not the claimant or an admin",
+                    "value": {
+                      "status": "error",
+                      "error": "Not authorized for this artist"
+                    }
+                  },
+                  "ownershipChanged": {
+                    "summary": "The claim changed during the upload",
+                    "value": {
+                      "status": "error",
+                      "error": "Artist ownership changed; this operation was cancelled."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The upload could not be finished (the token check, storage, extraction or the save failed before anything was committed). Send the same ticket again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryableError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not finish the upload. Please retry this file.",
+                  "retryCompletion": true
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The file may have been saved but the API could not confirm it, or a rejected upload could not be cleaned up. Send the same ticket again; do not start a new upload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryableError"
+                },
+                "examples": {
+                  "unconfirmed": {
+                    "summary": "The save could not be confirmed",
+                    "value": {
+                      "status": "error",
+                      "error": "Could not confirm the upload. Retry this same file to finish; do not create a new upload.",
+                      "retryCompletion": true
+                    }
+                  },
+                  "cleanup": {
+                    "summary": "A rejected upload could not be cleaned up",
+                    "value": {
+                      "status": "error",
+                      "error": "Could not clean up the rejected upload. Please retry this file.",
+                      "retryCompletion": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vault/upload": {
+      "post": {
+        "summary": "Upload a file directly",
+        "operationId": "uploadVaultFile",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Uploads a file to an artist's vault in one request, saves it as an approved source and queues a Lore refresh. Same limits and types as [Sign an upload](/api-reference/vault/sign-upload), which with [Complete an upload](/api-reference/vault/complete-upload) sends the file straight to storage instead of through the API. Not runnable from this page: the body is `multipart/form-data`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "artistId"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The file, at most 10 MB. Bodies over about 4.5 MB are refused by the platform before reaching the API; use Sign an upload for larger files."
+                  },
+                  "artistId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The artist's ID."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved source. `warning` is set when the Lore refresh could not be queued or a PDF had no readable text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "success", "source"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true],
+                      "description": "Always true on 200."
+                    },
+                    "source": {
+                      "$ref": "#/components/schemas/VaultSource"
+                    },
+                    "warning": {
+                      "type": "string",
+                      "description": "Advice to show the user. Absent when there is none."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "success": true,
+                  "source": {
+                    "id": "2c6f1c6e-4f0a-4b9b-8a6a-3b1f0b2d9e71",
+                    "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                    "origin": "upload",
+                    "activityId": "5d1e3a0c-7b2f-4c8e-9a1d-0e2f3a4b5c6d",
+                    "url": "https://example.supabase.co/storage/v1/object/public/vault-files/aab92f80-f9e1-4299-aa33-7dd85c8de5d3/1761069851512_press-kit.pdf",
+                    "title": "press-kit.pdf",
+                    "snippet": "Bio Ritmo is a ten-piece salsa band from Richmond, Virginia…",
+                    "type": "document",
+                    "status": "approved",
+                    "fileName": "press-kit.pdf",
+                    "fileSize": 482133,
+                    "filePath": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3/1761069851512_press-kit.pdf",
+                    "contentType": "application/pdf",
+                    "extractedText": "Bio Ritmo is a ten-piece salsa band from Richmond, Virginia…",
+                    "ogImage": null,
+                    "podcastEpisodeKey": null,
+                    "podcastShowTitle": null,
+                    "podcastEpisodeTitle": null,
+                    "publishedAt": null,
+                    "createdAt": "2026-10-21 18:04:11.512+00",
+                    "updatedAt": "2026-10-21 18:04:11.512+00"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`file` or `artistId` is missing, the file is over 10 MB, its type isn't supported, or its leading bytes contradict its type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missing": {
+                    "summary": "A missing field",
+                    "value": {
+                      "status": "error",
+                      "error": "File and artistId are required"
+                    }
+                  },
+                  "size": {
+                    "summary": "Too large",
+                    "value": {
+                      "status": "error",
+                      "error": "File too large: 12.4 MB (maximum 10 MB per file)"
+                    }
+                  },
+                  "type": {
+                    "summary": "An unsupported type",
+                    "value": {
+                      "status": "error",
+                      "error": "File type not supported: \"application/zip\". Supported: PDF, TXT, MD, CSV, JSON, DOCX, images, audio."
+                    }
+                  },
+                  "content": {
+                    "summary": "The file's bytes contradict its type",
+                    "value": {
+                      "status": "error",
+                      "error": "File content does not match declared type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it (`Not signed in`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed while the upload was in flight.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notAuthorized": {
+                    "summary": "Not the claimant or an admin",
+                    "value": {
+                      "status": "error",
+                      "error": "Not authorized for this artist"
+                    }
+                  },
+                  "ownershipChanged": {
+                    "summary": "The claim changed during the upload",
+                    "value": {
+                      "status": "error",
+                      "error": "Artist ownership changed; this operation was cancelled."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Storage refused the file, the save failed, the token could not be checked, or `artistId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "storage": {
+                    "summary": "Storage refused the file",
+                    "value": {
+                      "status": "error",
+                      "error": "Failed to upload file to storage"
+                    }
+                  },
+                  "save": {
+                    "summary": "The save failed",
+                    "value": {
+                      "status": "error",
+                      "error": "Failed to upload file"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "File storage isn't configured on this deployment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "File storage is not configured on this server (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. The user must be the artist's approved claimant or a Music Nerd admin."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["status", "error"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "RetryableError": {
+        "type": "object",
+        "required": ["status", "error", "retryCompletion"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["error"]
+          },
+          "error": {
+            "type": "string"
+          },
+          "retryCompletion": {
+            "type": "boolean",
+            "enum": [true],
+            "description": "Send the same ticket to Complete an upload again. Do not start a new upload."
+          }
+        }
+      },
+      "VaultSource": {
+        "type": "object",
+        "description": "A row of the artist's vault, as stored.",
+        "required": ["id", "artistId", "origin", "url", "status", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "type": "string",
+            "description": "`upload` for a file the claimant or an admin uploaded."
+          },
+          "activityId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "The activity event that recorded the upload."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The file's public URL in storage."
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "The file's name."
+          },
+          "snippet": {
+            "type": ["string", "null"],
+            "description": "The first 300 characters of extracted text, or `Uploaded file: <name>` when there is none."
+          },
+          "type": {
+            "type": ["string", "null"],
+            "enum": ["document", "data", "image", "audio", null],
+            "description": "`image` and `audio` by MIME type, `data` for CSV and JSON, `document` otherwise."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"],
+            "description": "Always `approved` for an upload."
+          },
+          "fileName": {
+            "type": ["string", "null"]
+          },
+          "fileSize": {
+            "type": ["integer", "null"],
+            "description": "Bytes."
+          },
+          "filePath": {
+            "type": ["string", "null"],
+            "description": "The storage key (`<artistId>/<name>`), not the URL."
+          },
+          "contentType": {
+            "type": ["string", "null"],
+            "description": "The resolved MIME type."
+          },
+          "extractedText": {
+            "type": ["string", "null"],
+            "description": "The file's text, for text files and PDFs with readable text."
+          },
+          "ogImage": {
+            "type": ["string", "null"]
+          },
+          "podcastEpisodeKey": {
+            "type": ["string", "null"]
+          },
+          "podcastShowTitle": {
+            "type": ["string", "null"]
+          },
+          "podcastEpisodeTitle": {
+            "type": ["string", "null"]
+          },
+          "publishedAt": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    }
+  }
+}

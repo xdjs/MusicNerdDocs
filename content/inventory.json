@@ -1,7 +1,7 @@
 {
-  "navigationPages": 109,
+  "navigationPages": 112,
   "guidePages": 4,
-  "apiPages": 105,
+  "apiPages": 108,
   "specifications": [
     "accounts.json",
     "activity.json",
@@ -22,7 +22,8 @@
     "onboarding.json",
     "question-research.json",
     "research.json",
-    "users.json"
+    "users.json",
+    "vault.json"
   ],
   "additionalOperations": [],
   "gaps": []
