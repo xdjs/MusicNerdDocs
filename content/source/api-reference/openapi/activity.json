@@ -311,46 +311,6 @@
         }
       }
     },
-    "/api/approvedUGCCount": {
-      "get": {
-        "summary": "Approved submission count",
-        "operationId": "getApprovedUgcCount",
-        "security": [
-          {
-            "privyBearer": []
-          }
-        ],
-        "description": "How many of the signed-in user's submitted links an admin has approved. Without a valid token, or when the count can't be read, the count is 0 rather than an error.",
-        "responses": {
-          "200": {
-            "description": "The user's approved submission count.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Count"
-                },
-                "examples": {
-                  "signedIn": {
-                    "summary": "A contributor",
-                    "value": {
-                      "status": "ok",
-                      "count": 37
-                    }
-                  },
-                  "signedOut": {
-                    "summary": "No token",
-                    "value": {
-                      "status": "ok",
-                      "count": 0
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/userEntries": {
       "get": {
         "summary": "Submitted links",

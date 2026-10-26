@@ -169,7 +169,6 @@
               "api-reference/activity/recent-edited",
               "api-reference/activity/self-edits",
               "api-reference/activity/ugc-count",
-              "api-reference/activity/approved-ugc-count",
               "api-reference/activity/user-entries"
             ]
           },
@@ -196,7 +195,6 @@
               "api-reference/admin/list-mcp-keys",
               "api-reference/admin/create-mcp-key",
               "api-reference/admin/revoke-mcp-key",
-              "api-reference/admin/whitelist-user",
               "api-reference/admin/pending-ugc-count"
             ]
           },
