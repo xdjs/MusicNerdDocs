@@ -163,12 +163,6 @@
             ]
           },
           {
-            "group": "Fun facts",
-            "pages": [
-              "api-reference/fun-facts/generate"
-            ]
-          },
-          {
             "group": "Activity and contributions",
             "pages": [
               "api-reference/activity/feed",
