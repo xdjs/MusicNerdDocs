@@ -2977,7 +2977,7 @@
             }
           },
           "503": {
-            "description": "The interview preview is not enabled (`MUSICNERD_API_INTERVIEWER_ENABLED` is not `true`), persistence is unavailable, or the saved context exceeds its budget (a distinct message asks the artist to review topic instructions).",
+            "description": "Persistence is unavailable, or the saved context exceeds its budget (a distinct message asks the artist to review topic instructions).",
             "content": {
               "application/json": {
                 "schema": {
@@ -3379,7 +3379,7 @@
             }
           },
           "503": {
-            "description": "The interview preview is not enabled (`MUSICNERD_API_INTERVIEWER_ENABLED` is not `true`), persistence is unavailable, or the saved context exceeds its budget (a distinct message asks the artist to review topic instructions).",
+            "description": "Persistence is unavailable, or the saved context exceeds its budget (a distinct message asks the artist to review topic instructions).",
             "content": {
               "application/json": {
                 "schema": {
