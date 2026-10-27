@@ -9,6 +9,7 @@ import { summarizeOperation } from '@/lib/docs/playground/summarizeOperation';
 import { responseExamples } from '@/lib/docs/ui/responseExamples';
 import { splitDescription } from '@/lib/docs/ui/splitDescription';
 import { isStagingApiUrl } from '@/lib/docs/ui/isStagingApiUrl';
+import { isSecurityOptional } from '@/lib/docs/ui/isSecurityOptional';
 import { siteConfig } from '@/lib/config';
 import { CopyPage } from './copy-page';
 import { EndpointPath } from './endpoint-bar';
@@ -41,7 +42,7 @@ function ParameterRow({param,spec}:{param:ApiObject;spec:ApiObject}) {
 }
 function Authorizations({security,spec}:{security:ApiObject[]|undefined;spec:ApiObject}) {
  const schemes=[...new Set((security??[]).flatMap(item=>Object.keys(item)))].map(name=>({name,scheme:spec.components?.securitySchemes?.[name]||{}}));
- return <section id="authorizations" className="mn-section"><h2>Authorizations</h2>{security?.length===0?<p className="mn-section-note">None. This endpoint is public.</p>:schemes.length?schemes.map(({name,scheme})=>{const bearer=scheme.scheme==='bearer';return <div className="docs-property" key={name}><div className="docs-property-heading"><code>{bearer?'Authorization':scheme.name||name}</code><span>string</span><span>{bearer?'header':scheme.in||'header'}</span><em>required</em></div><DocDescription text={`${bearer?'Bearer authentication header of the form `Bearer <token>`. ':''}${scheme.description||''}`}/></div>;}):<p className="mn-section-note">See the <Link href="/authentication">authentication guide</Link>.</p>}</section>;
+ return <section id="authorizations" className="mn-section"><h2>Authorizations</h2>{security?.length===0?<p className="mn-section-note">None. This endpoint is public.</p>:schemes.length?schemes.map(({name,scheme})=>{const bearer=scheme.scheme==='bearer';return <div className="docs-property" key={name}><div className="docs-property-heading"><code>{bearer?'Authorization':scheme.name||name}</code><span>string</span><span>{bearer?'header':scheme.in||'header'}</span><em>{isSecurityOptional(security)?'optional':'required'}</em></div><DocDescription text={`${bearer?'Bearer authentication header of the form `Bearer <token>`. ':''}${scheme.description||''}`}/></div>;}):<p className="mn-section-note">See the <Link href="/authentication">authentication guide</Link>.</p>}</section>;
 }
 export async function EndpointPage({page,footer}:{page:DocPage;footer?:ReactNode}) {
  if(!page.api?.spec)return null;
