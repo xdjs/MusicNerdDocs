@@ -1,0 +1,261 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artist chat",
+    "version": "0.1.0",
+    "description": "A listener's conversation about one artist, answered from the artist's approved sources and the web and streamed as it is written. Each request counts against the same allowance as [Ask about an artist](/api-reference/research/ask-artist): 30 questions per visitor per hour (per account with a token, per IP without) and 200 across the site over a rolling 24 hours."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/artist/{id}/chat": {
+      "post": {
+        "summary": "Chat about an artist",
+        "operationId": "postArtistChat",
+        "security": [
+          {
+            "privyBearer": []
+          },
+          {}
+        ],
+        "description": "Answers the last user message about this artist, using earlier messages as context, and streams the reply as an [AI SDK UI message stream](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot): tool steps as the model searches and reads sources, a `source-url` part for each source it read, and the answer text citing them as `[n]`. No credentials are needed; an optional Privy `Authorization: Bearer` token makes the hourly allowance follow the account instead of the caller's IP.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              },
+              "example": {
+                "messages": [
+                  {
+                    "id": "msg_1",
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "Where did Bio Ritmo record their latest album?"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reply, streamed as server-sent events in the AI SDK UI message stream protocol. Read it with `useChat` from `@ai-sdk/react` and a `DefaultChatTransport` pointed at this endpoint ([chatbot guide](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot)); the assistant message's `parts` then hold:\n\n- **Tool steps** `tool-searchSources` (searching the artist's saved sources), `tool-readSource` (reading one) and `tool-webSearch` (searching the web), each moving from `input-available` to `output-available`. Show them as progress, for example \"Searching saved sources…\", \"Reading bioritmo.com…\", \"Searching the web…\".\n- **`source-url`** `{ sourceId, url, title }`, once per distinct source the model read. `sourceId` is `\"1\"`, `\"2\"`, … in order of first read.\n- **`text`**, the answer, streamed in deltas. It cites sources inline as `[n]`, matching a `source-url` part's `sourceId`, and says plainly when the sources don't answer the question.\n\nOn the wire each event is a `data:` line holding one JSON chunk (`start`, `start-step`, `tool-input-start`, `tool-input-available`, `tool-output-available`, `source-url`, `text-start`, `text-delta`, `text-end`, `finish-step`, `finish`), ending with `data: [DONE]`.",
+            "headers": {
+              "x-vercel-ai-ui-message-stream": {
+                "description": "The stream protocol version.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "v1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "data: {\"type\":\"start\",\"messageId\":\"msg_8f2c1d\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"call_1\",\"toolName\":\"searchSources\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"call_1\",\"toolName\":\"searchSources\",\"input\":{\"query\":\"latest album recording studio\"}}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"call_1\",\"output\":[{\"sourceId\":\"vault:33333333-3333-4333-8333-333333333333\",\"title\":\"bioritmo.com, 2024-03-02\",\"url\":\"https://bioritmo.com/news/montrose-sessions\",\"snippet\":\"The band tracked the new record live at Montrose Recording…\"}]}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"call_2\",\"toolName\":\"readSource\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"call_2\",\"toolName\":\"readSource\",\"input\":{\"sourceId\":\"vault:33333333-3333-4333-8333-333333333333\"}}\n\ndata: {\"type\":\"source-url\",\"sourceId\":\"1\",\"url\":\"https://bioritmo.com/news/montrose-sessions\",\"title\":\"bioritmo.com, 2024-03-02\"}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"call_2\",\"output\":{\"n\":1,\"title\":\"bioritmo.com, 2024-03-02\",\"url\":\"https://bioritmo.com/news/montrose-sessions\",\"text\":\"The band tracked the new record live at Montrose Recording in Richmond…\"}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"text-start\",\"id\":\"txt_0\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"txt_0\",\"delta\":\"Bio Ritmo recorded the album live \"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"txt_0\",\"delta\":\"at Montrose Recording in Richmond. [1]\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"txt_0\"}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"finish\"}\n\ndata: [DONE]\n\n"
+              }
+            }
+          },
+          "400": {
+            "description": "The artist ID is not a UUID, the body is not JSON, `messages` is empty, the last message is not a `user` message with a non-empty text part, or that question is over 500 characters. Only the last 12 messages are read; earlier ones are ignored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid chat request"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The question allowance is spent. `code` names it: `visitor_question_quota` (30 questions per visitor per hour) or `question_planning_quota` (200 across the site per rolling day).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the quota window resets, only when the response carries `retryAfterSeconds`.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-MusicNerd-Quota": {
+                "description": "`true` on a quota response, so a client can tell it from a transient 429.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatError"
+                },
+                "examples": {
+                  "visitorQuota": {
+                    "summary": "The visitor's hourly allowance",
+                    "value": {
+                      "status": "error",
+                      "code": "visitor_question_quota",
+                      "error": "You've reached your question limit for this hour. Try again in 42 minutes.",
+                      "retryAfterSeconds": 2520,
+                      "resetAt": "2026-10-21T15:42:00.000Z"
+                    }
+                  },
+                  "siteQuota": {
+                    "summary": "The site's daily allowance",
+                    "value": {
+                      "status": "error",
+                      "code": "question_planning_quota",
+                      "error": "Music Nerd has reached its daily chat allowance. Try again in 3 minutes.",
+                      "retryAfterSeconds": 180,
+                      "resetAt": "2026-10-21T15:03:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "Optional. The signed-in user's access token, so the allowance counts per account. Copy it at https://musicnerd.net/access after signing in."
+      }
+    },
+    "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/UIMessage"
+            },
+            "description": "The conversation so far, oldest first, as AI SDK `UIMessage`s; `useChat` sends this for you. The last message is the question; at most the last 12 are read."
+          }
+        }
+      },
+      "UIMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "parts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Message parts. Only `text` parts `{ \"type\": \"text\", \"text\": \"…\" }` are read; tool, source and other parts the client echoes back are accepted and ignored."
+          }
+        }
+      },
+      "ChatError": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "const": "error"
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "visitor_question_quota",
+              "question_planning_quota"
+            ]
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "resetAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
