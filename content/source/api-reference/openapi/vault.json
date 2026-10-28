@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Music Nerd API: vault uploads",
+    "title": "Music Nerd API: vault",
     "version": "1.0.0"
   },
   "servers": [
@@ -626,6 +626,721 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/knowledge/sources": {
+      "post": {
+        "summary": "Add a source",
+        "operationId": "addArtistSource",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Adds a web page to the artist's sources. It is approved at once when the caller is an admin or a whitelisted contributor, and then starts a Lore refresh; otherwise it waits for review. Returns the saved source.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2048,
+                    "description": "A public http(s) web page. A bare domain gets `https://`; the fragment is dropped."
+                  }
+                }
+              },
+              "example": {
+                "url": "https://pitchfork.com/reviews/albums/bio-ritmo-puerta-del-sur/"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The saved source. `warning` is set when the source was approved but the Lore refresh could not start.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "source"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "source": {
+                      "$ref": "#/components/schemas/VaultSource"
+                    },
+                    "warning": {
+                      "type": "string",
+                      "description": "Advice to show the user. Absent when there is none."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "source": {
+                    "id": "2c6f1c6e-4f0a-4b9b-8a6a-3b1f0b2d9e71",
+                    "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                    "origin": "submission",
+                    "activityId": "5d1e3a0c-7b2f-4c8e-9a1d-0e2f3a4b5c6d",
+                    "url": "https://pitchfork.com/reviews/albums/bio-ritmo-puerta-del-sur/",
+                    "title": "Bio Ritmo: Puerta del Sur Album Review",
+                    "snippet": null,
+                    "type": "review",
+                    "status": "approved",
+                    "fileName": null,
+                    "fileSize": null,
+                    "filePath": null,
+                    "contentType": null,
+                    "extractedText": null,
+                    "ogImage": "https://media.pitchfork.com/photos/bio-ritmo.jpg",
+                    "podcastEpisodeKey": null,
+                    "podcastShowTitle": null,
+                    "podcastEpisodeTitle": null,
+                    "publishedAt": null,
+                    "createdAt": "2026-10-28T18:02:11.512Z",
+                    "updatedAt": "2026-10-28T18:02:11.512Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or `url` isn't a public web page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badId": {
+                    "summary": "`id` isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "artistId must be a UUID"
+                    }
+                  },
+                  "badUrl": {
+                    "summary": "Not a public web page",
+                    "value": {
+                      "status": "error",
+                      "error": "Enter a public website URL"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's approved claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notYours": {
+                    "summary": "Not the claimant or an admin",
+                    "value": {
+                      "status": "error",
+                      "error": "Not your artist"
+                    }
+                  },
+                  "ownershipChanged": {
+                    "summary": "The claim changed during the request",
+                    "value": {
+                      "status": "error",
+                      "error": "Artist ownership changed; this operation was cancelled."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The artist already has this source.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This source has already been added"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The source could not be saved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to add source"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove sources",
+        "operationId": "removeArtistSources",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Deletes several of the artist's sources at once and starts a Lore refresh. Nothing is deleted unless every ID belongs to the artist. Returns how many were deleted.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["sourceIds"],
+                "properties": {
+                  "sourceIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "The sources to delete."
+                  }
+                }
+              },
+              "example": {
+                "sourceIds": [
+                  "2c6f1c6e-4f0a-4b9b-8a6a-3b1f0b2d9e71",
+                  "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The sources were deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "count"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "How many sources were deleted."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "count": 2
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or `sourceIds` is missing, empty, over 200 long or holds a value that isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badId": {
+                    "summary": "`id` isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "artistId must be a UUID"
+                    }
+                  },
+                  "badIds": {
+                    "summary": "A bad `sourceIds`",
+                    "value": {
+                      "status": "error",
+                      "error": "sourceIds must be 1 to 200 source IDs"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's approved claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or more IDs don't belong to the artist. Nothing was deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "One or more sources not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The sources could not be deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to delete sources"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge/sources/{sourceId}": {
+      "patch": {
+        "summary": "Update a source",
+        "operationId": "updateArtistSource",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Approves or rejects one of the artist's sources, or changes its type. A status change starts a Lore refresh, so the artist's Lore follows the decision.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "description": "The source's ID. It must belong to the artist.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["approved", "rejected"],
+                    "description": "The review decision."
+                  },
+                  "expectedStatus": {
+                    "type": "string",
+                    "enum": ["pending"],
+                    "description": "Apply `status` only if the source is still pending. Send it from a review queue so a second reviewer doesn't overwrite the first. Needs `status`."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "article",
+                      "interview",
+                      "review",
+                      "profile",
+                      "document",
+                      "image",
+                      "audio",
+                      "video",
+                      "data",
+                      "social",
+                      "website",
+                      "music"
+                    ],
+                    "description": "The source's type."
+                  }
+                }
+              },
+              "examples": {
+                "approve": {
+                  "summary": "Approve from a review queue",
+                  "value": {
+                    "status": "approved",
+                    "expectedStatus": "pending"
+                  }
+                },
+                "type": {
+                  "summary": "Change the type",
+                  "value": {
+                    "type": "interview"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The source was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` or `sourceId` isn't a UUID, or the body has neither `status` nor `type`, an unknown value, or `expectedStatus` without `status`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badId": {
+                    "summary": "`id` isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "artistId must be a UUID"
+                    }
+                  },
+                  "badBody": {
+                    "summary": "A bad body",
+                    "value": {
+                      "status": "error",
+                      "error": "Send status or type"
+                    }
+                  },
+                  "badSource": {
+                    "summary": "`sourceId` isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "sourceId must be a UUID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's approved claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "notYours": {
+                    "summary": "Not the claimant or an admin",
+                    "value": {
+                      "status": "error",
+                      "error": "Not your artist"
+                    }
+                  },
+                  "ownershipChanged": {
+                    "summary": "The claim changed during the request",
+                    "value": {
+                      "status": "error",
+                      "error": "Artist ownership changed; this operation was cancelled."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No source with that ID belongs to the artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Source not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`expectedStatus` was sent and the source has already been reviewed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This Lore source was already reviewed. Refresh the queue to see its current status."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The source could not be updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to update source"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a source",
+        "operationId": "removeArtistSource",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Deletes one of the artist's sources and starts a Lore refresh.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sourceId",
+            "in": "path",
+            "required": true,
+            "description": "The source's ID. It must belong to the artist.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The source was deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` or `sourceId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badId": {
+                    "summary": "`id` isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "artistId must be a UUID"
+                    }
+                  },
+                  "badSource": {
+                    "summary": "`sourceId` isn't a UUID",
+                    "value": {
+                      "status": "error",
+                      "error": "sourceId must be a UUID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's approved claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No source with that ID belongs to the artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Source not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The source could not be deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to delete source"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -671,7 +1386,7 @@
       },
       "VaultSource": {
         "type": "object",
-        "description": "A row of the artist's vault, as stored.",
+        "description": "A source in the artist's vault: a web page or an uploaded file.",
         "required": ["id", "artistId", "origin", "url", "status", "createdAt"],
         "properties": {
           "id": {
@@ -684,35 +1399,34 @@
           },
           "origin": {
             "type": "string",
-            "description": "`upload` for a file the claimant or an admin uploaded."
+            "description": "`upload` for an uploaded file, `submission` for a page a user added, `research` for one Music Nerd found."
           },
           "activityId": {
             "type": ["string", "null"],
             "format": "uuid",
-            "description": "The activity event that recorded the upload."
+            "description": "The activity event that recorded the addition."
           },
           "url": {
             "type": "string",
             "format": "uri",
-            "description": "The file's public URL in storage."
+            "description": "The web page, or an uploaded file's public URL in storage."
           },
           "title": {
             "type": ["string", "null"],
-            "description": "The file's name."
+            "description": "The page's title, or the uploaded file's name."
           },
           "snippet": {
             "type": ["string", "null"],
-            "description": "The first 300 characters of extracted text, or `Uploaded file: <name>` when there is none."
+            "description": "A short excerpt. For an upload, the first 300 characters of extracted text, or `Uploaded file: <name>`."
           },
           "type": {
             "type": ["string", "null"],
-            "enum": ["document", "data", "image", "audio", null],
-            "description": "`image` and `audio` by MIME type, `data` for CSV and JSON, `document` otherwise."
+            "description": "`article`, `interview`, `review`, `profile`, `document`, `image`, `audio`, `video`, `data`, `social`, `website` or `music`. An upload is `image` or `audio` by MIME type, `data` for CSV and JSON, `document` otherwise."
           },
           "status": {
             "type": "string",
             "enum": ["pending", "approved", "rejected"],
-            "description": "Always `approved` for an upload."
+            "description": "An upload is always `approved`."
           },
           "fileName": {
             "type": ["string", "null"]
