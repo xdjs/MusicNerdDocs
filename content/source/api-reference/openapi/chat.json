@@ -3,7 +3,7 @@
   "info": {
     "title": "Music Nerd API: artist chat",
     "version": "0.1.0",
-    "description": "A listener's conversation about one artist, answered from the artist's approved sources and the web and streamed as it is written. Each request counts against the same allowance as [Ask about an artist](/api-reference/research/ask-artist): 30 questions per visitor per hour (per account with a token, per IP without) and 200 across the site over a rolling 24 hours."
+    "description": "A listener's conversation about one artist, answered from the artist's approved sources and the web and streamed as it is written."
   },
   "servers": [
     {
@@ -21,7 +21,7 @@
           },
           {}
         ],
-        "description": "Answers the last user message about this artist, using earlier messages as context, and streams the reply as an [AI SDK UI message stream](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot): tool steps as the model searches and reads sources, a `source-url` part for each source it read, and the answer text citing them as `[n]`. No credentials are needed; an optional Privy `Authorization: Bearer` token makes the hourly allowance follow the account instead of the caller's IP.",
+        "description": "Answers the latest question about this artist, using earlier messages as context, and streams the reply as it is written: progress while sources are searched and read, each source it cites, then the answer citing them as `[n]`. No credentials are needed; with a token, the hourly allowance follows the account instead of the IP.",
         "parameters": [
           {
             "name": "id",
@@ -61,29 +61,18 @@
         },
         "responses": {
           "200": {
-            "description": "The reply, streamed as server-sent events in the AI SDK UI message stream protocol. Read it with `useChat` from `@ai-sdk/react` and a `DefaultChatTransport` pointed at this endpoint ([chatbot guide](https://ai-sdk.dev/docs/ai-sdk-ui/chatbot)); the assistant message's `parts` then hold:\n\n- **Tool steps** `tool-searchSources`, `tool-readSource` and `tool-webSearch`, each moving from `input-available` to `output-available`. Show them as progress, for example \"Searching saved sources…\", \"Reading richmondfolkfestival.org…\", \"Searching the web…\". Outputs: `searchSources` → `{ sources: [{ sourceId, title, url, snippet }] }` (up to 8 saved sources); `readSource` → `{ n, title, url, text }`, or `{ error }` for an unknown `sourceId`; `webSearch` → `{ results: [{ n, title, url, snippet }] }`.\n- **`source-url`** `{ sourceId, url, title }`, once per distinct source: on a saved source's first read, and for each web search result. `sourceId` is `\"1\"`, `\"2\"`, … in order. `title` is the host name for a saved source (saved sources keep no page title) and the result's title for a web result.\n- **`text`**, the answer. It cites sources inline as `[n]`, matching a `source-url` part's `sourceId`, and says plainly when the sources don't answer the question.\n\nOn the wire each event is a `data:` line holding one JSON chunk, ending with `data: [DONE]`:\n\n- `start`: the reply begins (`messageId`).\n- `start-step` / `finish-step`: one model step begins / ends; a reply takes up to 6.\n- `tool-input-start`: a tool call begins (`toolCallId`, `toolName`).\n- `tool-input-delta`: a piece of the tool call's JSON input as the model writes it (`inputTextDelta`).\n- `tool-input-available` / `tool-output-available`: the call's full `input` / its `output`.\n- `source-url`: a citable source, as above.\n- `text-start`, `text-delta` (`delta`), `text-end`: the answer text.\n- `finish`: the reply is done (`finishReason`).",
-            "headers": {
-              "x-vercel-ai-ui-message-stream": {
-                "description": "The stream protocol version.",
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "v1"
-                  ]
-                }
-              }
-            },
+            "description": "The reply as server-sent events, one JSON chunk per `data:` line, ending with `data: [DONE]`. `source-url` chunks are the cited sources (`sourceId` `\"1\"`, `\"2\"`, …, matching the `[n]` markers), `text-delta` chunks carry the answer, and `tool-*` chunks report progress.",
             "content": {
               "text/event-stream": {
                 "schema": {
                   "type": "string"
                 },
-                "example": "data: {\"type\":\"start\",\"messageId\":\"frAjrewNeeOFTMom\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"toolu_01A4o41EuhFye6wVUVtWDWQC\",\"toolName\":\"searchSources\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"toolu_01A4o41EuhFye6wVUVtWDWQC\",\"inputTextDelta\":\"{\\\"query\\\": \\\"Bio\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"toolu_01A4o41EuhFye6wVUVtWDWQC\",\"inputTextDelta\":\" Ritmo founders\\\"}\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"toolu_01A4o41EuhFye6wVUVtWDWQC\",\"toolName\":\"searchSources\",\"input\":{\"query\":\"Bio Ritmo founders\"}}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"toolu_01A4o41EuhFye6wVUVtWDWQC\",\"output\":{\"sources\":[{\"sourceId\":\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\",\"title\":\"richmondfolkfestival.org\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"snippet\":\"Bio Ritmo has been a fixture of the Richmond music scene since 1991…\"},{\"sourceId\":\"vault:635a4493-d845-43da-bfdf-b30bf7af1298\",\"title\":\"richmondmagazine.com\",\"url\":\"https://richmondmagazine.com/news/features/bio-ritmo\",\"snippet\":\"The band started as a college project at VCU…\"}]}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"toolu_014GgE88wimonwbnhnaxS8Nu\",\"toolName\":\"readSource\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"toolu_014GgE88wimonwbnhnaxS8Nu\",\"inputTextDelta\":\"{\\\"sourceId\\\": \\\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\\\"}\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"toolu_014GgE88wimonwbnhnaxS8Nu\",\"toolName\":\"readSource\",\"input\":{\"sourceId\":\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\"}}\n\ndata: {\"type\":\"source-url\",\"sourceId\":\"1\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"title\":\"richmondfolkfestival.org\"}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"toolu_014GgE88wimonwbnhnaxS8Nu\",\"output\":{\"n\":1,\"title\":\"richmondfolkfestival.org\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"text\":\"Bio Ritmo has been a fixture of the Richmond music scene since 1991…\"}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"text-start\",\"id\":\"0\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"0\",\"delta\":\"Bio Ritmo\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"0\",\"delta\":\" started in Richmond, Virginia, in 1991. [1]\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"0\"}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"finish\",\"finishReason\":\"stop\"}\n\ndata: [DONE]\n\n"
+                "example": "data: {\"type\":\"start\",\"messageId\":\"frAjrewNeeOFTMom\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"call_1\",\"toolName\":\"searchSources\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"call_1\",\"inputTextDelta\":\"{\\\"query\\\": \\\"Bio\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"call_1\",\"inputTextDelta\":\" Ritmo founders\\\"}\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"call_1\",\"toolName\":\"searchSources\",\"input\":{\"query\":\"Bio Ritmo founders\"}}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"call_1\",\"output\":{\"sources\":[{\"sourceId\":\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\",\"title\":\"richmondfolkfestival.org\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"snippet\":\"Bio Ritmo has been a fixture of the Richmond music scene since 1991…\"},{\"sourceId\":\"vault:635a4493-d845-43da-bfdf-b30bf7af1298\",\"title\":\"richmondmagazine.com\",\"url\":\"https://richmondmagazine.com/news/features/bio-ritmo\",\"snippet\":\"The band started as a college project at VCU…\"}]}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"call_2\",\"toolName\":\"readSource\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"call_2\",\"inputTextDelta\":\"{\\\"sourceId\\\": \\\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\\\"}\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"call_2\",\"toolName\":\"readSource\",\"input\":{\"sourceId\":\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\"}}\n\ndata: {\"type\":\"source-url\",\"sourceId\":\"1\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"title\":\"richmondfolkfestival.org\"}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"call_2\",\"output\":{\"n\":1,\"title\":\"richmondfolkfestival.org\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"text\":\"Bio Ritmo has been a fixture of the Richmond music scene since 1991…\"}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"text-start\",\"id\":\"0\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"0\",\"delta\":\"Bio Ritmo\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"0\",\"delta\":\" started in Richmond, Virginia, in 1991. [1]\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"0\"}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"finish\",\"finishReason\":\"stop\"}\n\ndata: [DONE]\n\n"
               }
             }
           },
           "400": {
-            "description": "The artist ID is not a UUID, the body is not JSON, `messages` is empty, the last message is not a `user` message with a non-empty text part, or that question is over 500 characters. Only the last 12 messages are read; earlier ones are ignored.",
+            "description": "The body is invalid: no messages, the last message isn't a `user` message with text, or the question is over 500 characters.",
             "content": {
               "application/json": {
                 "schema": {
@@ -184,13 +173,13 @@
             "type": "array",
             "minItems": 1,
             "items": {
-              "$ref": "#/components/schemas/UIMessage"
+              "$ref": "#/components/schemas/ChatMessage"
             },
-            "description": "The conversation so far, oldest first, as AI SDK `UIMessage`s; `useChat` sends this for you. The last message is the question; at most the last 12 are read."
+            "description": "The conversation so far, oldest first. The last message is the question; at most the last 12 are read."
           }
         }
       },
-      "UIMessage": {
+      "ChatMessage": {
         "type": "object",
         "required": [
           "id",
@@ -221,7 +210,7 @@
                 }
               }
             },
-            "description": "Message parts. Only `text` parts `{ \"type\": \"text\", \"text\": \"…\" }` are read; tool, source and other parts the client echoes back are accepted and ignored."
+            "description": "Message parts. Only `text` parts `{ \"type\": \"text\", \"text\": \"…\" }` are read; other parts are ignored."
           }
         }
       },
