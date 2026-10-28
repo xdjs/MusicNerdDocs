@@ -1,0 +1,451 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artist claims",
+    "version": "1.0.0",
+    "description": "Claiming an artist profile and the admin review of claims. A signed-in user requests a claim and gets a reference code to send from the artist's official account; an admin then approves, rejects or revokes it."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/artist/{id}/claim": {
+      "post": {
+        "summary": "Claim an artist profile",
+        "operationId": "claimArtistProfile",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Requests a claim on the artist's profile for the caller and returns the reference code to send to @musicnerdnet on Instagram from the artist's official account. The claim stays pending until an admin approves it. A profile with a pending or approved claim can't be claimed again.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The claim is pending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "referenceCode"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "referenceCode": {
+                      "type": "string",
+                      "pattern": "^MN-[A-Z2-9]{4}$",
+                      "description": "The code the claimant sends from the artist's account."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "referenceCode": "MN-7KQ4"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid artist ID"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The profile already has a pending or approved claim.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This artist profile has already been claimed"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/claims/{id}/approve": {
+      "post": {
+        "summary": "Approve a claim",
+        "operationId": "approveClaim",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Approves a claim: the claimant now manages the artist, gets an email, and their page starts building. When some of that follow-up work can't start, the claim is still approved and `warning` says what to retry.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/claimId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The claim is approved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "warning": {
+                      "type": "string",
+                      "description": "Present when follow-up work could not start; the approval stands."
+                    }
+                  }
+                },
+                "examples": {
+                  "approved": {
+                    "summary": "Approved",
+                    "value": {
+                      "status": "ok"
+                    }
+                  },
+                  "warning": {
+                    "summary": "Approved, with work to retry",
+                    "value": {
+                      "status": "ok",
+                      "warning": "Claim approved, but the page build could not start. It restarts when the artist taps “Try again” on their page."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidClaimId"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "404": {
+            "$ref": "#/components/responses/ClaimNotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/claims/{id}/reject": {
+      "post": {
+        "summary": "Reject a claim",
+        "operationId": "rejectClaim",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Rejects a claim. The rejected claim stays on record, and the profile can be claimed again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/claimId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The claim is rejected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidClaimId"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "404": {
+            "$ref": "#/components/responses/ClaimNotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/claims/{id}/revoke": {
+      "post": {
+        "summary": "Revoke a claim",
+        "operationId": "revokeClaim",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Revokes an approved claim and deletes what the claimant added: their uploaded files, sources, Lore, interview and onboarding progress. The profile can then be claimed by someone else. This can't be undone.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/claimId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The claim is revoked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidClaimId"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "404": {
+            "$ref": "#/components/responses/ClaimNotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "409": {
+            "description": "The claim isn't approved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Can only revoke approved claims"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in."
+      },
+      "adminBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "A Music Nerd admin's access token. Copy it at https://musicnerd.net/access after signing in. A signed-in user who is not an admin gets 403."
+      }
+    },
+    "parameters": {
+      "claimId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The claim's ID (a UUID).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "3c0b6f9e-2d4a-4e8b-9f1c-5a7d2e6b8c41"
+      }
+    },
+    "responses": {
+      "NotSignedIn": {
+        "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Not signed in"
+            }
+          }
+        }
+      },
+      "NotAdmin": {
+        "description": "The user is not an admin.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Forbidden"
+            }
+          }
+        }
+      },
+      "InvalidClaimId": {
+        "description": "`id` isn't a UUID.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Invalid claim ID"
+            }
+          }
+        }
+      },
+      "ClaimNotFound": {
+        "description": "No claim with that ID.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Claim not found"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "The database could not be read or written.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Internal server error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
