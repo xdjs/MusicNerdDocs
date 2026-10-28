@@ -911,6 +911,400 @@
           }
         }
       }
+    },
+    "/api/admin/users": {
+      "get": {
+        "summary": "Search users",
+        "operationId": "searchAdminUsers",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Users whose wallet address or username contains `search`, case-insensitive, ordered by username then wallet. Use a result's `id` to change that user's roles.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": true,
+            "description": "At least 3 characters of a wallet address or username. Trimmed.",
+            "schema": {
+              "type": "string",
+              "minLength": 3
+            },
+            "example": "dutch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The matching users; empty when none match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "users"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminUserMatch"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "users": [
+                    {
+                      "id": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                      "username": "dutchyyy",
+                      "wallet": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`search` is missing or shorter than 3 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Search must be at least 3 characters"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change user roles",
+        "operationId": "setAdminUserRole",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Turns one role on or off for the given users and returns how many were updated. `whitelisted` marks a trusted contributor, `admin` grants the admin (turning it on also whitelists the user), and `hidden` keeps the user off leaderboards.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userIds", "role", "enabled"],
+                "properties": {
+                  "userIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "The users to change, from [Search users](/api-reference/admin/search-users) or the admin's user list."
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["whitelisted", "admin", "hidden"]
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "description": "`true` to grant the role, `false` to remove it."
+                  }
+                }
+              },
+              "example": {
+                "userIds": ["0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10"],
+                "role": "whitelisted",
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The roles are changed. IDs with no user are ignored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "updated"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "updated": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "How many users were updated."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "updated": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not a list of user IDs, a role and `enabled`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid role change"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/submissions": {
+      "get": {
+        "summary": "List a contributor's pending submissions",
+        "operationId": "listContributorPendingSubmissions",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "The user's own link suggestions and Lore sources (submitted or uploaded) that are still pending, oldest first, across every artist. Returns up to 200, and `hasMore` when there are more.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/userId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pending submissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "items", "hasMore"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "items": {
+                      "type": "array",
+                      "maxItems": 200,
+                      "items": {
+                        "$ref": "#/components/schemas/PendingSubmission"
+                      }
+                    },
+                    "hasMore": {
+                      "type": "boolean",
+                      "description": "`true` when more than 200 are pending; approve these, then list again."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "hasMore": false,
+                  "items": [
+                    {
+                      "id": "5f2d0c1e-8a7b-4c3d-9e1f-0a2b3c4d5e6f",
+                      "type": "link",
+                      "title": "instagram",
+                      "url": "https://instagram.com/dutchyyy",
+                      "artistName": "Dutchyyy"
+                    },
+                    {
+                      "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+                      "type": "lore",
+                      "title": "Interview with Dutchyyy",
+                      "url": "https://example.com/dutchyyy-interview",
+                      "artistName": "Dutchyyy"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid user ID"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/submissions/approve": {
+      "post": {
+        "summary": "Approve a contributor's submissions",
+        "operationId": "approveContributorSubmissions",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Approves up to 10 of the user's pending submissions from [the list](/api-reference/admin/pending-submissions), and returns how many were approved, skipped (already reviewed, or not this user's) and failed. Approved Lore sources queue a Lore refresh for their artist; `warning` says when one could not start.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/userId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "type"],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": ["link", "lore", "upload"]
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "items": [
+                  {
+                    "id": "5f2d0c1e-8a7b-4c3d-9e1f-0a2b3c4d5e6f",
+                    "type": "link"
+                  },
+                  {
+                    "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+                    "type": "lore"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The counts. A failed item stays pending for individual review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "approved", "skipped", "failed"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "approved": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "skipped": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "failed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "warning": {
+                      "type": "string",
+                      "description": "Present when a Lore refresh could not start."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "approved": 2,
+                  "skipped": 0,
+                  "failed": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or `items` isn't 1 to 10 submissions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid approval selection"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -933,6 +1327,17 @@
           "format": "uuid"
         },
         "example": "e7a5f235-4e66-40ba-9ff6-7276339fe34f"
+      },
+      "userId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The contributor's user ID (a UUID).",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "example": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10"
       }
     },
     "responses": {
@@ -1698,6 +2103,47 @@
               }
             ],
             "description": "`null` while the key is active."
+          }
+        }
+      },
+      "AdminUserMatch": {
+        "type": "object",
+        "required": ["id", "username", "wallet"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": ["string", "null"]
+          },
+          "wallet": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "PendingSubmission": {
+        "type": "object",
+        "required": ["id", "type", "title", "url", "artistName"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["link", "lore", "upload"],
+            "description": "A link suggestion, a Lore source, or an uploaded file."
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "The platform for a link, the source title otherwise."
+          },
+          "url": {
+            "type": ["string", "null"]
+          },
+          "artistName": {
+            "type": ["string", "null"]
           }
         }
       }
