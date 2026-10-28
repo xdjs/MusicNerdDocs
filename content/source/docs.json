@@ -171,8 +171,15 @@
             ]
           },
           {
+            "group": "Artists",
+            "pages": [
+              "api-reference/artists/add-artist"
+            ]
+          },
+          {
             "group": "Artist links",
             "pages": [
+              "api-reference/artist-links/suggest-link",
               "api-reference/artist-links/link-order",
               "api-reference/artist-links/direct-edit-link",
               "api-reference/artist-links/remove-artist-data",

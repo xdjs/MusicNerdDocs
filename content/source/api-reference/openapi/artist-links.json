@@ -1019,6 +1019,189 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/links": {
+      "post": {
+        "summary": "Suggest an artist link",
+        "operationId": "postArtistLink",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Suggests a platform link for an artist, for any signed-in user. An admin's or whitelisted user's link is written to the profile at once; anyone else's waits for review, and an Apple Music or Beatport artist page waits for review in Lore. Returns whether the link was approved and the platform it was read as.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The artist's profile URL on the platform."
+                  }
+                }
+              },
+              "example": {
+                "url": "https://www.instagram.com/p3t3rango/"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. `approved` is true when the link is already on the profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "approved",
+                    "siteName",
+                    "platformName",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "approved": {
+                      "type": "boolean"
+                    },
+                    "siteName": {
+                      "type": "string",
+                      "description": "The platform column, or `applemusic` / `beatport` for a Lore source."
+                    },
+                    "platformName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The platform's display name."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "A sentence to show the user."
+                    }
+                  }
+                },
+                "examples": {
+                  "approved": {
+                    "value": {
+                      "status": "ok",
+                      "approved": true,
+                      "siteName": "instagram",
+                      "platformName": "Instagram",
+                      "message": "We updated the artist with that data"
+                    }
+                  },
+                  "pending": {
+                    "value": {
+                      "status": "ok",
+                      "approved": false,
+                      "siteName": "instagram",
+                      "platformName": "Instagram",
+                      "message": "Thanks for adding, we'll review this addition before posting"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or wrong input: `id must be a UUID`, `url is required`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet — we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "url is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has this id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The profile already has this link (`This artist data has already been added`), the Apple Music or Beatport page is already in Lore (`This link has already been suggested. Review it in Lore.`), or the ID belongs to another artist (`That spotify artist ID is already linked to a different artist`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This artist data has already been added"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something failed on the server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Error adding artist data, please try again"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1027,7 +1210,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "Access token",
-        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Link writes need the artist's approved claimant or a Music Nerd admin; `removeArtistData` accepts any whitelisted user too."
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Link writes need the artist's approved claimant or a Music Nerd admin; `removeArtistData` accepts any whitelisted user too; suggesting a link accepts any signed-in user."
       }
     },
     "schemas": {
