@@ -1,0 +1,315 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artists",
+    "version": "1.0.0",
+    "description": "Adding artists to the Music Nerd directory."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/artist": {
+      "post": {
+        "summary": "Add an artist",
+        "operationId": "postArtist",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Adds an artist to the directory from their Spotify or Deezer artist ID, for any signed-in user. `result` says what happened: the artist was `created`, already `exists` with that profile, may be a `possible_duplicate` of the `candidates` with the same name (send `forceCreate: true` to add a separate artist when `canCreateSeparate` is not false), or is a `conflict` because the profiles belong to different artists.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "platformId"
+                ],
+                "properties": {
+                  "platformId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The artist's ID on the platform."
+                  },
+                  "platform": {
+                    "type": "string",
+                    "enum": [
+                      "spotify",
+                      "deezer"
+                    ],
+                    "default": "spotify"
+                  },
+                  "forceCreate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Add a separate artist even when one with the same name exists."
+                  }
+                }
+              },
+              "examples": {
+                "spotify": {
+                  "value": {
+                    "platformId": "4Z8W4fKeB5YxbusRsdQVPb",
+                    "platform": "spotify"
+                  }
+                },
+                "separate": {
+                  "value": {
+                    "platformId": "4Z8W4fKeB5YxbusRsdQVPb",
+                    "platform": "spotify",
+                    "forceCreate": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What happened. `artistId` and `artistName` come back for `created` and `exists`; `candidates`, `platform` and `platformId` for `possible_duplicate` and `conflict`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "result",
+                    "message"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "result": {
+                      "type": "string",
+                      "enum": [
+                        "created",
+                        "exists",
+                        "possible_duplicate",
+                        "conflict"
+                      ]
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "A sentence to show the user."
+                    },
+                    "artistId": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "artistName": {
+                      "type": "string"
+                    },
+                    "candidates": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ArtistCandidate"
+                      }
+                    },
+                    "platform": {
+                      "type": "string",
+                      "enum": [
+                        "spotify",
+                        "deezer"
+                      ]
+                    },
+                    "platformId": {
+                      "type": "string",
+                      "description": "The platform's own ID for the submitted artist."
+                    },
+                    "canCreateSeparate": {
+                      "type": "boolean",
+                      "description": "False when the other platform's matching profile already belongs to a candidate, so a separate artist can't be added."
+                    }
+                  }
+                },
+                "examples": {
+                  "created": {
+                    "value": {
+                      "status": "ok",
+                      "result": "created",
+                      "artistId": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b",
+                      "artistName": "Radiohead",
+                      "message": "Success! You can now find this artist in our directory"
+                    }
+                  },
+                  "possible_duplicate": {
+                    "value": {
+                      "status": "ok",
+                      "result": "possible_duplicate",
+                      "artistName": "Radiohead",
+                      "platform": "spotify",
+                      "platformId": "4Z8W4fKeB5YxbusRsdQVPb",
+                      "candidates": [
+                        {
+                          "id": "6cb3d81a-3d02-4c57-a711-bb7902a9af1b",
+                          "name": "Radiohead",
+                          "spotify": null,
+                          "deezer": "399"
+                        }
+                      ],
+                      "message": "We found an artist with the same name. Choose the existing artist or confirm this is a different artist."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or wrong input: `platformId is required`, `platform must be 'spotify' or 'deezer'` or `forceCreate must be a boolean`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "platformId is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The platform has no artist with that ID (`Could not find artist on spotify`, or `deezer`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not find artist on spotify"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another record changed at the same time (`The artist could not be created because another record changed at the same time. Please try again.`), or the artist was added meanwhile (`This artist is already in our database`). Retry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "This artist is already in our database"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Something failed on the server.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Something went wrong on our end, please try again"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "The signed-in user's access token. Copy it at https://musicnerd.net/access after signing in. Any signed-in user may add an artist."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "ArtistCandidate": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "spotify",
+          "deezer"
+        ],
+        "description": "An artist already in the directory.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "spotify": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Their Spotify artist ID."
+          },
+          "deezer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Their Deezer artist ID."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Their profile image, when one was uploaded."
+          }
+        }
+      }
+    }
+  }
+}
