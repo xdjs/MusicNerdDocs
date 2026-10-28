@@ -159,7 +159,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "Access token",
-        "description": "Optional. The signed-in user's access token, so the allowance counts per account. Copy it at https://musicnerd.net/access after signing in."
+        "description": "Optional. The signed-in user's access token, so the allowance counts per account. Copy it at [musicnerd.net/access](https://musicnerd.net/access) after signing in."
       }
     },
     "schemas": {
