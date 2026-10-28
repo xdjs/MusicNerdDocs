@@ -154,9 +154,16 @@
             "pages": [
               "api-reference/artist-bio/read-about",
               "api-reference/artist-bio/update-about",
+              "api-reference/artist-bio/bio-versions",
+              "api-reference/artist-bio/pin-bio-version",
+              "api-reference/artist-bio/unpin-bio",
+              "api-reference/artist-bio/delete-bio-version",
               "api-reference/artist-bio/bio-correction",
               "api-reference/artist-bio/lore-suggestion",
               "api-reference/artist-bio/directory-discovery",
+              "api-reference/artist-bio/knowledge-doc",
+              "api-reference/artist-bio/knowledge-doc-correction",
+              "api-reference/artist-bio/knowledge-doc-undo-correction",
               "api-reference/artist-bio/knowledge-doc-export"
             ]
           },
