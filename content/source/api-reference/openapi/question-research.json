@@ -3,7 +3,7 @@
   "info": {
     "title": "Question-directed artist research",
     "version": "0.1.0",
-    "description": "Preview contract. The ask endpoint reserves a bounded planning slot before its model call: at most 30 new question plans per visitor per hour and 200 across the site over rolling 24 hours, recorded without question or conversation text. This is separate from the API research ledgers; polling existing jobs does not plan again. Rejected reservations perform no model call. Planning uses no automatic model retries. The ask, answer, progress and source endpoints have no per-IP request limit; the planning allowance and the research ledgers are the bound."
+    "description": "Preview contract. Queue question research on an artist's public evidence, follow and continue the job, read its evidence, and review its discoveries."
   },
   "servers": [
     {
@@ -14,7 +14,7 @@
     "/api/artist/{id}/research/questions": {
       "post": {
         "summary": "Request question-directed research",
-        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. Explicit URL and date constraints can select stored originals even without matching words in their body. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Stored Spotify/Deezer release catalogs and InProcess moments share durable snapshots with the public Latest endpoint. Provider refreshes run only in queued latest_refresh work; question/status/original reads never refresh these providers. A bounded agent explores the saved public snapshot with paginated browsing, model-chosen searches and exact source-window reads before selecting unchanged evidence; exact supporting quotations and factual claims are checked during answer drafting. If stored evidence is insufficient, the model chooses a next lookup from server-validated web, page or connected social options based on the missing information. There is no fixed social-platform priority. Explicit URL/platform restrictions, account identity and existing provider budgets still constrain execution; the chosen plan is persisted and revalidated before subsequent job slices. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time. Every new job reserves one slot in the rolling global saved-question admission cap (100 per 24 hours), with no per-artist saved-chat cap. This is an operational request limit, not a dollar spending guarantee. Direct or saved-source answers consume no outside-research slot. Only when insufficient saved evidence leads to a validated external lookup does the server reserve outside allowance (5 per artist and 100 globally per rolling 24 hours). That reservation is atomic, lease-fenced, and idempotent for the same job; all existing per-job provider/model/lifetime limits still apply. Exhausted outside allowance ends the job unresolved without starting a provider, with outsideResearchReason=quota plus quotaScope, retryAfterSeconds and resetAt. Exhausted global saved admission returns saved_evidence_quota (429), quotaScope=saved_global, and the same reset fields; Retry-After matches retryAfterSeconds. Reset timing comes from the actual rolling-window boundary and is an estimate assuming no newer reservations consume capacity. Old jobs retain their original quota accounting until their rolling window expires. Single-active-job research_busy remains distinct. Completed matching jobs can be reused independently of these admission limits, subject to current eligibility and cache lifetime. Cache identity preserves topic and all source/date/evidence constraints; reuse is not restricted to an arbitrary last-ten-jobs window. Saved research reads all eligible originals within the existing corpus guard, independently of the Latest UI card limits. Published answers retain publication eligibility and private answers remain excluded. Partial saved support is revalidated and combined with newly collected originals before final assessment. Saved selection returns at most 12,000 original characters; combined outside assessment can return at most six windows totaling 24,000 characters. Exploration uses a current public-research model through AI Gateway, with per-step reservation and usage tracking; external provider budgets are unchanged. Service callers may opt into preferDirectEvidence: true to offer bounded saved candidates before model-driven evidence exploration. This option is not part of the persisted neutral request. Selection candidates means evidence is ready for a checked answer attempt, not that it answers the question. At most six exact windows and 12,000 characters are selected. Latest reporting overviews select the six newest distinct canonical posts first, preferring written evidence over a duplicate transcript, then interleave providers only within that cohort. For overview follow-ups with excluded source URLs and no target URL, known In Process posts from the same connected account and stable collection URL contribute their newest eligible representative before the six-candidate limit. Other social posts remain separate activities. Collection names and question keywords do not determine grouping. This diversifies candidate evidence without treating an entire collection as excluded or answered; focused requests and overviews without exclusions keep individual-post selection. Explicit source, platform, evidence-kind, date and URL exclusions still apply. Semantic project exclusions remain an answer-layer obligation. An empty selection enters ordinary research. Candidate jobs reserve the same quota once and preserve normal claim and expiry checks. Legacy callers never reuse a candidate-only job. A client must register and verify its answer, reread current evidence, and continue the same job if the candidate answer is insufficient or fails verification.",
+        "description": "Queues research for a question about this artist, or reuses a matching finished job, and returns the job to follow. It reads the artist's saved public sources first and looks further only when they can't answer. New jobs count against a rolling 24-hour allowance; when it is spent, the 429 carries `retryAfterSeconds` and `resetAt`.",
         "security": [
           {
             "PrivyAuth": []
@@ -150,7 +150,7 @@
     "/api/artist/{id}/research/questions/{jobId}": {
       "get": {
         "summary": "Read question research progress",
-        "description": "Safe resumable progress and bounded original references; no raw request, provider payload or private interview memory.",
+        "description": "Returns the job's progress and the public sources it has found so far.",
         "security": [
           {
             "PrivyAuth": []
@@ -285,7 +285,7 @@
     "/api/artist/{id}/research/discoveries": {
       "get": {
         "summary": "List discoveries for artist review",
-        "description": "Current claimant/admin only. Pending originals and account candidates are separate from official Lore and Links.",
+        "description": "Lists the sources and accounts research found for this artist that are waiting for review. Only the artist's claimant or an admin can call it.",
         "security": [
           {
             "PrivyAuth": []
@@ -447,7 +447,7 @@
     "/api/artist/{id}/research/discoveries/{candidateId}/review": {
       "post": {
         "summary": "Review a research discovery",
-        "description": "Recheck claim and exact revision under the artist lock. Approve to Lore or supported profile Links atomically with attribution. Decline, wrong-artist and incorrect decisions suppress automatic resurfacing. Existing link conflicts return 409.",
+        "description": "Approves or declines one discovery. Approving adds it to the artist's Lore or profile links with attribution; declining stops it from coming back. A link that conflicts with an existing one returns 409.",
         "security": [
           {
             "PrivyAuth": []
@@ -601,7 +601,7 @@
     "/api/artist/{id}/research/evidence/{evidenceId}": {
       "get": {
         "summary": "Read a public research original",
-        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID public_answer:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Published responses already visible in Latest are eligible with exact response text; edited responses invalidate old revisions and unpublished/deleted responses become unavailable. Uploaded/private material, private interview sessions and correction history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
+        "description": "Returns the exact text of one public source that research read. Pass a reference's URL-encoded `sourceId` or an evidence ID; a 409 means the source has changed since. Private and uploaded material is never returned.",
         "security": [
           {
             "PrivyAuth": []
@@ -788,7 +788,7 @@
     "/api/artist/{id}/research/questions/{jobId}/continue": {
       "post": {
         "summary": "Continue after a saved-candidate answer attempt",
-        "description": "Service-only, idempotent transition of a candidate job into ordinary bounded research. Send no body or an empty JSON object; client routing, counters, permissions and source overrides are rejected. The same job ID, original neutral request, activity, quota lane, created time and model/provider counters are preserved. A candidate job transitions atomically once under the artist/job lock, subject to current claim, original lifetime and the one-active-question limit. Repeated calls return the current job status. Clients must fence an in-flight candidate answer lease before continuing, retain answer registration, and retry the checked answer against the new current references. This operation does not extend budgets, expiry or reset answer retry limits. It never decides that candidate evidence is sufficient. New-budget continuation preserves the single global saved admission and does not charge outside allowance; that is reserved only if validated external collection becomes necessary.",
+        "description": "Moves a job that offered saved candidates into ordinary research, keeping its ID, request and limits. Call it when the answer drafted from those candidates wasn't enough. Service credential only, with no body; repeated calls return the current status.",
         "security": [
           {
             "ResearchService": []
@@ -926,736 +926,6 @@
           }
         }
       }
-    },
-    "/api/askArtist": {
-      "post": {
-        "summary": "Ask about an artist",
-        "operationId": "askArtist",
-        "security": [],
-        "description": "Answers a listener's question about an artist from checked public evidence. Reuses a verified answer to the same request when one exists; otherwise starts or reuses research and returns `202` with the job to poll, then [Collect a question answer](/api-reference/research/question-answer) drafts it. No credentials: an optional Privy `Authorization: Bearer` token makes the hourly visitor allowance follow the account instead of the caller's IP.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AskArtistRequest"
-              },
-              "example": {
-                "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
-                "question": "Who produced Bio Ritmo's latest album?"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "A checked answer, a clarification question, or a sourced explanation of why the question stays unresolved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistAnswer"
-                },
-                "examples": {
-                  "answer": {
-                    "summary": "A checked answer with its cited sources",
-                    "value": {
-                      "status": "ok",
-                      "answer": "Bio Ritmo recorded the album live at Montrose Recording in Richmond. [1]",
-                      "sources": [
-                        {
-                          "n": 1,
-                          "title": "bioritmo.com, 2024-03-02",
-                          "url": "https://bioritmo.com/news/montrose-sessions",
-                          "sourceId": "vault:33333333-3333-4333-8333-333333333333",
-                          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-                          "start": 0,
-                          "end": 1800,
-                          "curation": "approved",
-                          "evidenceKind": "original_text"
-                        }
-                      ],
-                      "instagramMentions": [],
-                      "fromOpenWeb": false,
-                      "webDomains": [],
-                      "suggestions": [],
-                      "bandcamp": "https://bioritmo.bandcamp.com",
-                      "limitations": []
-                    }
-                  },
-                  "clarification": {
-                    "summary": "The planner could not resolve a reference",
-                    "value": {
-                      "status": "ok",
-                      "answer": "Which song, release, or post do you mean?",
-                      "sources": [],
-                      "suggestions": []
-                    }
-                  },
-                  "unresolved": {
-                    "summary": "Research finished without enough evidence",
-                    "value": {
-                      "status": "ok",
-                      "answer": "I don't have enough information to answer that yet.",
-                      "sources": [],
-                      "suggestions": [],
-                      "research": {
-                        "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                        "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
-                        "stage": "unresolved",
-                        "message": "I couldn't establish this from the supported sources. The evidence gap remains explicit."
-                      },
-                      "limitations": []
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Research or answer checking is still running. Poll `GET /api/artist/{id}/questionResearch/{jobId}` (no credentials) until the stage is terminal, then call the answer endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistProgress"
-                },
-                "example": {
-                  "status": "ok",
-                  "research": {
-                    "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                    "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
-                    "stage": "checking_saved",
-                    "message": "Checking saved public originals…",
-                    "provider": null
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "The body is not JSON, is over 18,000 characters, or does not match the request schema.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Invalid artist or question"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No artist with that `artistId`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Artist not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The question is not registered on this job (a different question was asked of it). Start a new question.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "This question is not attached to the saved research. Start a new question."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "A limit was reached. `code` names the budget: `visitor_question_quota` (30 new questions per visitor per hour), `question_planning_quota` (200 new questions across the site per rolling day), `saved_evidence_quota` (the API's saved-question admission), `research_quota` (outside research), `research_busy` (an identical request is already running). Without a code, the saved job has already answered three distinct questions, or research is at capacity.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "examples": {
-                  "visitorQuota": {
-                    "summary": "The visitor's hourly allowance",
-                    "value": {
-                      "status": "error",
-                      "code": "visitor_question_quota",
-                      "error": "You've reached your question limit for this hour. Try again in 42 minutes.",
-                      "retryAfterSeconds": 2520,
-                      "resetAt": "2026-10-21T15:42:00.000Z"
-                    }
-                  },
-                  "answerLimit": {
-                    "summary": "A saved job's answer limit",
-                    "value": {
-                      "status": "error",
-                      "error": "This saved research has reached its answer limit. Try a different question later."
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the quota window resets, only when the response carries `retryAfterSeconds`.",
-                "schema": {
-                  "type": "integer",
-                  "minimum": 1
-                }
-              },
-              "X-MusicNerd-Quota": {
-                "description": "`true` on a quota response, so a client can tell it from a transient 429.",
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "true"
-                  ]
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The research job failed or was cancelled (`retryFromStart: true`), the answer could not be checked (`jobId` and `verification` say where it stopped and whether a retry can help), or research is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "examples": {
-                  "verification": {
-                    "summary": "The answer draft could not be checked",
-                    "value": {
-                      "status": "error",
-                      "error": "I couldn't finish checking this answer. Please try again.",
-                      "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                      "verification": {
-                        "stage": "claim_check",
-                        "retryable": true
-                      }
-                    }
-                  },
-                  "failed": {
-                    "summary": "The job failed; the client starts over",
-                    "value": {
-                      "status": "error",
-                      "error": "I couldn't finish that lookup. Please try again.",
-                      "retryFromStart": true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/artist/{id}/questionResearch/{jobId}/answer": {
-      "post": {
-        "summary": "Collect a question's answer",
-        "operationId": "collectQuestionAnswer",
-        "security": [],
-        "description": "Drafts and checks the answer to a question already registered on a research job, once the job's stage is terminal; it never starts new research, so an unregistered question is `409`. `202` means the job is still running, the answer is still being checked, or a candidate miss moved the same job on to full research. No credentials.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "The artist's ID (a UUID).",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
-          },
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "description": "The research job returned in `research.jobId` by the ask endpoint.",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "example": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CollectQuestionAnswerRequest"
-              },
-              "example": {
-                "question": "Who produced Bio Ritmo's latest album?"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "A checked answer or a sourced explanation of why the question stays unresolved.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistAnswer"
-                },
-                "examples": {
-                  "answer": {
-                    "summary": "A checked answer with its cited sources",
-                    "value": {
-                      "status": "ok",
-                      "answer": "Bio Ritmo recorded the album live at Montrose Recording in Richmond. [1]",
-                      "sources": [
-                        {
-                          "n": 1,
-                          "title": "bioritmo.com, 2024-03-02",
-                          "url": "https://bioritmo.com/news/montrose-sessions",
-                          "sourceId": "vault:33333333-3333-4333-8333-333333333333",
-                          "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-                          "start": 0,
-                          "end": 1800,
-                          "curation": "approved",
-                          "evidenceKind": "original_text"
-                        }
-                      ],
-                      "instagramMentions": [],
-                      "fromOpenWeb": false,
-                      "webDomains": [],
-                      "suggestions": [],
-                      "bandcamp": "https://bioritmo.bandcamp.com",
-                      "limitations": []
-                    }
-                  },
-                  "clarification": {
-                    "summary": "The planner could not resolve a reference",
-                    "value": {
-                      "status": "ok",
-                      "answer": "Which song, release, or post do you mean?",
-                      "sources": [],
-                      "suggestions": []
-                    }
-                  },
-                  "unresolved": {
-                    "summary": "Research finished without enough evidence",
-                    "value": {
-                      "status": "ok",
-                      "answer": "I don't have enough information to answer that yet.",
-                      "sources": [],
-                      "suggestions": [],
-                      "research": {
-                        "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                        "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
-                        "stage": "unresolved",
-                        "message": "I couldn't establish this from the supported sources. The evidence gap remains explicit."
-                      },
-                      "limitations": []
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "Research or answer checking is still running. Poll `GET /api/artist/{id}/questionResearch/{jobId}` (no credentials) until the stage is terminal, then call the answer endpoint.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistProgress"
-                },
-                "example": {
-                  "status": "ok",
-                  "research": {
-                    "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                    "resolvedQuestion": "Who produced Bio Ritmo's latest album?",
-                    "stage": "checking_saved",
-                    "message": "Checking saved public originals…",
-                    "provider": null
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "`id` or `jobId` is not a UUID, or the body is not `{ question }` (JSON, at most 18,000 characters).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Invalid question"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No artist with that `id`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Artist not found"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The question is not registered on this job (a different question was asked of it). Start a new question.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "This question is not attached to the saved research. Start a new question."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "A limit was reached. `code` names the budget: `saved_evidence_quota` (the API's saved-question admission), `research_quota` (outside research) or `research_busy`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "code": "research_busy",
-                  "error": "Research is busy right now. Please try again shortly."
-                }
-              }
-            },
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until the quota window resets, only when the response carries `retryAfterSeconds`.",
-                "schema": {
-                  "type": "integer",
-                  "minimum": 1
-                }
-              },
-              "X-MusicNerd-Quota": {
-                "description": "`true` on a quota response, so a client can tell it from a transient 429.",
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "true"
-                  ]
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The research job failed or was cancelled (`retryFromStart: true`), the answer could not be checked (`jobId` and `verification` say where it stopped and whether a retry can help), or research is temporarily unavailable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "examples": {
-                  "verification": {
-                    "summary": "The answer draft could not be checked",
-                    "value": {
-                      "status": "error",
-                      "error": "I couldn't finish checking this answer. Please try again.",
-                      "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                      "verification": {
-                        "stage": "claim_check",
-                        "retryable": true
-                      }
-                    }
-                  },
-                  "failed": {
-                    "summary": "The job failed; the client starts over",
-                    "value": {
-                      "status": "error",
-                      "error": "I couldn't finish that lookup. Please try again.",
-                      "retryFromStart": true
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/artist/{id}/questionResearch/{jobId}": {
-      "get": {
-        "summary": "Check a question's research progress",
-        "operationId": "getQuestionProgress",
-        "security": [],
-        "description": "Returns the stage, provider and message of a public question's research job, the job [Ask about an artist](/api-reference/research/ask-artist) returned with `202`. While the job is not terminal, each call also advances its research by one bounded step. No credentials.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "The artist's ID (a UUID).",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
-          },
-          {
-            "name": "jobId",
-            "in": "path",
-            "required": true,
-            "description": "The research job returned in `research.jobId` by the ask endpoint.",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "example": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The job's current stage. Poll again after `retryAfterMs` until the stage is `complete`, `unresolved`, `failed` or `cancelled`, then call the answer endpoint.",
-            "headers": {
-              "Cache-Control": {
-                "description": "Always `private, no-store`.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuestionProgress"
-                },
-                "example": {
-                  "status": "ok",
-                  "jobId": "5b1c6a3e-2d2f-4c58-9c0a-8f3e3d1a7b42",
-                  "stage": "reading",
-                  "provider": "web",
-                  "message": "I haven't found enough in saved sources. I'm checking public reporting and original release pages.",
-                  "retryAfterMs": 5000
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "`id` or `jobId` is not a UUID.",
-            "headers": {
-              "Cache-Control": {
-                "description": "Always `private, no-store`.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Invalid research job"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The job could not be read or advanced (including an unknown job). The saved job can be polled again.",
-            "headers": {
-              "Cache-Control": {
-                "description": "Always `private, no-store`.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Research could not be checked. The saved job can be resumed."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/artist/{id}/questionResearch/source": {
-      "get": {
-        "summary": "Read a cited source",
-        "operationId": "getQuestionSource",
-        "security": [],
-        "description": "Returns a window of up to 12,000 characters of an original cited by an answer, under the same eligibility checks as research. Pass `nextStart` back as `start` to read further. No credentials.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "The artist's ID (a UUID).",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
-          },
-          {
-            "name": "sourceId",
-            "in": "query",
-            "required": true,
-            "description": "A cited source's `sourceId`: `discovery:`, `vault:` or `public_answer:` with a UUID, `social:<uuid>:caption|transcript`, or `latest:<spotify|deezer|inprocess>:<64 hex>`.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "vault:33333333-3333-4333-8333-333333333333"
-          },
-          {
-            "name": "revision",
-            "in": "query",
-            "required": true,
-            "description": "The cited `revision`.",
-            "schema": {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            "example": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-          },
-          {
-            "name": "start",
-            "in": "query",
-            "description": "Character offset to start from.",
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 4000000,
-              "default": 0
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The passage, the original's length and where the next window starts (`null` at the end).",
-            "headers": {
-              "Cache-Control": {
-                "description": "Always `private, no-store`.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "status",
-                    "passage",
-                    "totalChars",
-                    "nextStart"
-                  ],
-                  "properties": {
-                    "status": {
-                      "const": "ok"
-                    },
-                    "passage": {
-                      "$ref": "#/components/schemas/Reference"
-                    },
-                    "totalChars": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "nextStart": {
-                      "type": [
-                        "integer",
-                        "null"
-                      ],
-                      "minimum": 0
-                    }
-                  }
-                },
-                "example": {
-                  "status": "ok",
-                  "passage": {
-                    "sourceId": "vault:33333333-3333-4333-8333-333333333333",
-                    "revision": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-                    "start": 0,
-                    "end": 1800,
-                    "text": "Bio Ritmo recorded the album live at Montrose Recording in Richmond.",
-                    "url": "https://bioritmo.com/news/montrose-sessions",
-                    "curation": "approved",
-                    "evidenceKind": "original_text",
-                    "speaker": "not_applicable",
-                    "publishedAt": "2024-03-02T00:00:00.000Z",
-                    "retrievedAt": "2026-10-01T12:00:00.000Z",
-                    "truncated": false
-                  },
-                  "totalChars": 1800,
-                  "nextStart": null
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "`id` is not a UUID, or `sourceId`, `revision` or `start` is invalid, or another query parameter was sent.",
-            "headers": {
-              "Cache-Control": {
-                "description": "Always `private, no-store`.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "Invalid source reference"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The original changed, is no longer eligible, or could not be read. Refresh the research.",
-            "headers": {
-              "Cache-Control": {
-                "description": "Always `private, no-store`.",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskArtistError"
-                },
-                "example": {
-                  "status": "error",
-                  "error": "This original changed or is no longer available. Refresh the research."
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -1704,7 +974,7 @@
               "recent"
             ],
             "default": "stored",
-            "description": "For relevance retrieval, recent defaults to the past seven days unless fromDate is supplied. For latest retrieval, newest available evidence may be older; answers must preserve its actual date and coverage limitations."
+            "description": "With `relevance` retrieval, `recent` means the past seven days unless `fromDate` is set. With `latest` retrieval, the newest evidence may be older."
           },
           "targetUrl": {
             "type": "string",
@@ -1721,7 +991,7 @@
               "spotify",
               "deezer"
             ],
-            "description": "Restrict evidence to this platform, including when targetUrl is supplied. InProcess and catalog providers use stored Latest snapshots. If these cannot answer, research ends unresolved with provider_latest_refresh_required; no unrelated social provider is selected. Conflicting platform and target URL ends unresolved with source_platform_mismatch."
+            "description": "Restrict evidence to this platform. If that platform's saved sources can't answer, or it conflicts with `targetUrl`, the job ends unresolved."
           },
           "fromDate": {
             "type": "string",
@@ -1738,7 +1008,7 @@
               "latest"
             ],
             "default": "relevance",
-            "description": "Use latest for a newest-available activity overview or newest post on a requested platform. Selects dated originals in descending order without requiring topic keyword overlap or imposing a seven-day cutoff. Explicit fromDate/toDate bounds still apply. Use relevance for a specific topic or fact; latest is not proof of current exhaustive coverage. For latest release_date requests, prefer eligible catalog originals with activityDateKind=release after applying explicit source and date constraints. If none exist, other eligible originals may be read as candidates; their publication dates never establish release dates."
+            "description": "`latest` for the newest activity or the newest post on a platform; `relevance` for a specific topic or fact. `fromDate` and `toDate` apply to both."
           },
           "excludeSourceUrls": {
             "type": "array",
@@ -1759,11 +1029,11 @@
               "overview"
             ],
             "default": "focused",
-            "description": "Use overview for a broad account of recent activity, focused for a specific post, release or detail. The agent can browse all eligible saved public sources by page or provider, search with its own terms, and read exact original windows. Broad browsing includes multiple available providers instead of selecting only the newest posts from one busy account. Source, date, URL, speech and exclusion constraints remain authoritative. Exploration is bounded by five model steps, twelve tool calls, 24,000 original-text characters, and the job slice deadline. Saved exploration returns at most six read windows and 12,000 characters; an overview selects up to three distinct useful activities. A limit or invalid selection is an operational failure, not evidence that information is absent. Outside collection keeps its existing budgets and can run only from a validated server plan. Saved exploration does not refresh providers. This is not a comprehensive freshness guarantee."
+            "description": "`overview` for a broad account of recent activity, `focused` for one post, release or detail."
           },
           "preferDirectEvidence": {
             "type": "boolean",
-            "description": "Service credential only. Offer bounded candidates for a checked answer attempt before normal research. Optional and false by default; not persisted in the neutral request or its identity."
+            "description": "Service credential only. Offer saved candidates for an answer attempt before ordinary research. Defaults to false."
           }
         }
       },
@@ -1872,7 +1142,7 @@
             "enum": [
               "quota"
             ],
-            "description": "Outside collection was not admitted. Saved sources may still provide a bounded answer. New quota-blocked jobs include a shared quota scope and reset time; retry from a new question after reset, without restarting this terminal job. Older saved-only jobs can omit reset metadata."
+            "description": "Why research didn't look beyond saved sources. Saved sources may still answer; a quota block includes when to ask again."
           },
           "selection": {
             "type": "string",
@@ -1880,7 +1150,7 @@
               "candidates",
               "research"
             ],
-            "description": "Optional for legacy jobs. candidates is an unassessed evidence selection, not an answer or a sufficiency finding. If the checked answer is insufficient, continue this same job. research means the normal bounded research path."
+            "description": "`candidates`: saved evidence offered for an answer attempt, not yet an answer; continue this job if it isn't enough. `research`: the ordinary research path."
           },
           "quotaScope": {
             "type": "string",
@@ -1917,7 +1187,7 @@
         "properties": {
           "sourceId": {
             "type": "string",
-            "description": "Stable current source reference, including latest:<spotify|deezer|inprocess>:<64hex> provider snapshot originals. Removing/changing the connected account or successfully refreshing away a hidden/removed item makes its old reference unavailable; changed originals have a different revision."
+            "description": "Stable reference to the source. It stops working if the source is removed or its account is disconnected; a changed source gets a new revision."
           },
           "revision": {
             "type": "string"
@@ -2069,415 +1339,6 @@
           "evidenceId": {
             "type": "string",
             "format": "uuid"
-          }
-        }
-      },
-      "ChatTurn": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "question",
-          "answer"
-        ],
-        "properties": {
-          "question": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 500
-          },
-          "answer": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 3000
-          },
-          "sourceUrls": {
-            "type": "array",
-            "maxItems": 3,
-            "items": {
-              "type": "string",
-              "format": "uri",
-              "maxLength": 2048
-            },
-            "description": "The public `http(s)` citations shown with that answer."
-          }
-        }
-      },
-      "AskArtistRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "artistId",
-          "question"
-        ],
-        "properties": {
-          "artistId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "question": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 500
-          },
-          "jobId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Resume this job instead of planning a new question; the answer endpoint is the usual way to do that."
-          },
-          "conversation": {
-            "type": "array",
-            "maxItems": 4,
-            "items": {
-              "$ref": "#/components/schemas/ChatTurn"
-            },
-            "description": "The visitor's earlier turns in this conversation, at most 12,000 characters in all, so a follow-up can be resolved. Never interview memory."
-          }
-        }
-      },
-      "CollectQuestionAnswerRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "question"
-        ],
-        "properties": {
-          "question": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 500,
-            "description": "The `research.resolvedQuestion` the ask endpoint returned, or the original question."
-          }
-        }
-      },
-      "AnswerSource": {
-        "type": "object",
-        "required": [
-          "n",
-          "title",
-          "url",
-          "sourceId",
-          "revision",
-          "start",
-          "end",
-          "curation",
-          "evidenceKind"
-        ],
-        "properties": {
-          "n": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 6,
-            "description": "The citation number in `answer`."
-          },
-          "title": {
-            "type": "string",
-            "description": "The source's hostname and, when known, its publication date."
-          },
-          "url": {
-            "type": "string",
-            "format": "uri"
-          },
-          "sourceId": {
-            "type": "string"
-          },
-          "revision": {
-            "type": "string",
-            "pattern": "^[a-f0-9]{64}$"
-          },
-          "start": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "end": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "curation": {
-            "type": "string",
-            "enum": [
-              "approved",
-              "pending"
-            ]
-          },
-          "evidenceKind": {
-            "type": "string",
-            "enum": [
-              "original_text",
-              "caption",
-              "provider_transcript"
-            ]
-          }
-        }
-      },
-      "ResearchProgress": {
-        "type": "object",
-        "required": [
-          "jobId",
-          "stage",
-          "message"
-        ],
-        "properties": {
-          "jobId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "resolvedQuestion": {
-            "type": "string",
-            "description": "The standalone question the planner resolved; send it back to the answer endpoint."
-          },
-          "stage": {
-            "type": "string",
-            "enum": [
-              "checking_saved",
-              "searching",
-              "reading",
-              "transcribing",
-              "waiting_provider",
-              "complete",
-              "unresolved",
-              "failed",
-              "cancelled"
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "provider": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "outsideResearchReason": {
-            "type": "string",
-            "enum": [
-              "quota"
-            ]
-          }
-        }
-      },
-      "AskArtistProgress": {
-        "type": "object",
-        "required": [
-          "status",
-          "research"
-        ],
-        "properties": {
-          "status": {
-            "const": "ok"
-          },
-          "research": {
-            "$ref": "#/components/schemas/ResearchProgress"
-          }
-        }
-      },
-      "AskArtistAnswer": {
-        "type": "object",
-        "required": [
-          "status",
-          "answer",
-          "sources",
-          "suggestions"
-        ],
-        "properties": {
-          "status": {
-            "const": "ok"
-          },
-          "answer": {
-            "type": "string",
-            "description": "Sentences with bracketed citation numbers, or a clarification question, or why the question stays unresolved."
-          },
-          "sources": {
-            "type": "array",
-            "maxItems": 6,
-            "items": {
-              "$ref": "#/components/schemas/AnswerSource"
-            }
-          },
-          "suggestions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "instagramMentions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Handles in `answer` that a cited Instagram source actually mentions."
-          },
-          "fromOpenWeb": {
-            "type": "boolean",
-            "description": "True when any cited source is still pending curation."
-          },
-          "webDomains": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "bandcamp": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uri",
-            "description": "The artist's Bandcamp page, with a checked answer."
-          },
-          "limitations": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The job's recorded evidence limitations."
-          },
-          "research": {
-            "$ref": "#/components/schemas/ResearchProgress",
-            "description": "Present when the answer explains an unresolved or source-changed job."
-          },
-          "code": {
-            "type": "string",
-            "enum": [
-              "research_quota"
-            ],
-            "description": "With an unresolved answer: outside research was not admitted."
-          },
-          "retryAfterSeconds": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "resetAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "retryFromStart": {
-            "type": "boolean"
-          }
-        }
-      },
-      "AskArtistError": {
-        "type": "object",
-        "required": [
-          "status",
-          "error"
-        ],
-        "properties": {
-          "status": {
-            "const": "error"
-          },
-          "error": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string",
-            "enum": [
-              "visitor_question_quota",
-              "question_planning_quota",
-              "saved_evidence_quota",
-              "research_quota",
-              "research_busy"
-            ]
-          },
-          "retryAfterSeconds": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 86400
-          },
-          "resetAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "retryFromStart": {
-            "type": "boolean",
-            "description": "The job failed or was cancelled; ask again from the start."
-          },
-          "jobId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "With a 503 verification failure: the job whose answer could not be checked."
-          },
-          "verification": {
-            "type": "object",
-            "required": [
-              "stage",
-              "retryable"
-            ],
-            "properties": {
-              "stage": {
-                "type": "string",
-                "enum": [
-                  "read_original",
-                  "fetch_original",
-                  "validate_original",
-                  "draft",
-                  "quote_check",
-                  "claim_check",
-                  "store_result"
-                ]
-              },
-              "retryable": {
-                "type": "boolean"
-              }
-            }
-          }
-        }
-      },
-      "QuestionProgress": {
-        "type": "object",
-        "required": [
-          "status",
-          "jobId",
-          "stage",
-          "provider",
-          "message",
-          "retryAfterMs"
-        ],
-        "properties": {
-          "status": {
-            "const": "ok"
-          },
-          "jobId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "stage": {
-            "type": "string",
-            "enum": [
-              "checking_saved",
-              "searching",
-              "reading",
-              "transcribing",
-              "waiting_provider",
-              "complete",
-              "unresolved",
-              "failed",
-              "cancelled"
-            ]
-          },
-          "provider": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "web",
-              "page",
-              "instagram",
-              "instagram_reels",
-              "tiktok",
-              "x",
-              null
-            ]
-          },
-          "message": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "retryAfterMs": {
-            "type": "integer",
-            "const": 5000,
-            "description": "How long to wait before polling again."
           }
         }
       }
