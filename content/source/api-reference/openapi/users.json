@@ -16,6 +16,67 @@
     }
   ],
   "paths": {
+    "/api/user/me": {
+      "get": {
+        "summary": "Read the signed-in account",
+        "operationId": "getMe",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The caller's own user record and role flags, found from the token alone. A first call for a new sign-in creates the account, and an account without a usable name is given a generated one. `needsLegacyLink` is true while the account has no wallet and the caller has not dismissed the prompt to link one.",
+        "responses": {
+          "200": {
+            "description": "The caller's account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                },
+                "example": {
+                  "status": "ok",
+                  "id": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6",
+                  "email": null,
+                  "username": "Vinyl Otter",
+                  "usernameNeedsConfirmation": true,
+                  "usernamePromptedAt": null,
+                  "wallet": null,
+                  "privyUserId": "did:privy:example",
+                  "createdAt": "2026-10-01 12:00:00.123456+00",
+                  "updatedAt": "2026-10-01 12:00:00.123456+00",
+                  "legacyId": null,
+                  "isAdmin": false,
+                  "isWhiteListed": false,
+                  "isSuperAdmin": false,
+                  "isHidden": false,
+                  "legacyLinkDismissed": false,
+                  "acceptedUgcCount": 3,
+                  "needsLegacyLink": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, or an invalid or expired token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/api/user/{id}": {
       "get": {
         "summary": "Read your account",
@@ -341,6 +402,77 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/user/{id}/dismiss-legacy-link": {
+      "post": {
+        "summary": "Dismiss the wallet-link prompt",
+        "operationId": "dismissLegacyLink",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Records that the caller is a new user with no older wallet-based account, so the prompt to link a wallet stops showing. Afterwards `needsLegacyLink` is false on the caller's account.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The caller's user id (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6f1d2e3a-4b5c-4d6e-8f90-a1b2c3d4e5f6"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The prompt is dismissed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "description": "`id` is not the caller's own id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Forbidden"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       }
@@ -1326,6 +1458,26 @@
             ]
           }
         }
+      },
+      "Me": {
+        "description": "The caller's user row, plus whether to offer linking an older wallet-based account.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/User"
+          },
+          {
+            "type": "object",
+            "required": [
+              "needsLegacyLink"
+            ],
+            "properties": {
+              "needsLegacyLink": {
+                "type": "boolean",
+                "description": "True while the account has no wallet and the prompt to link one has not been dismissed."
+              }
+            }
+          }
+        ]
       },
       "ProfileArtist": {
         "type": "object",

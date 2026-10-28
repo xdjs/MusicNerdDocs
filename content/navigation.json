@@ -128,9 +128,11 @@
       {
         "group": "Users and profile",
         "pages": [
+          "api-reference/users/get-me",
           "api-reference/users/get-user",
           "api-reference/users/update-user-name",
           "api-reference/users/name-prompt",
+          "api-reference/users/dismiss-legacy-link",
           "api-reference/users/has-claim",
           "api-reference/users/profile-image",
           "api-reference/users/upload-profile-image",
