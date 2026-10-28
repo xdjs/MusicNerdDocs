@@ -14,7 +14,7 @@
     "/api/artist/{id}/research/questions": {
       "post": {
         "summary": "Request question-directed research",
-        "description": "Enqueue or reuse bounded public-evidence research. Checks saved originals first. Explicit URL and date constraints can select stored originals even without matching words in their body. No scraping in enqueue. Never approves Lore or attaches a profile. Newest-available retrieval first checks stored dated public evidence, including own social captions and responses already published in Latest. Stored Spotify/Deezer release catalogs and InProcess moments share durable snapshots with the public Latest endpoint. Provider refreshes run only in queued latest_refresh work; question/status/original reads never refresh these providers. A bounded agent explores the saved public snapshot with paginated browsing, model-chosen searches and exact source-window reads before selecting unchanged evidence; exact supporting quotations and factual claims are checked during answer drafting. If stored evidence is insufficient, the model chooses a next lookup from server-validated web, page or connected social options based on the missing information. There is no fixed social-platform priority. Explicit URL/platform restrictions, account identity and existing provider budgets still constrain execution; the chosen plan is persisted and revalidated before subsequent job slices. Web pages retain explicit publication metadata when unambiguous; unknown dates remain unknown, never replaced by fetch time. Every new job reserves one slot in the rolling global saved-question admission cap (100 per 24 hours), with no per-artist saved-chat cap. This is an operational request limit, not a dollar spending guarantee. Direct or saved-source answers consume no outside-research slot. Only when insufficient saved evidence leads to a validated external lookup does the server reserve outside allowance (5 per artist and 100 globally per rolling 24 hours). That reservation is atomic, lease-fenced, and idempotent for the same job; all existing per-job provider/model/lifetime limits still apply. Exhausted outside allowance ends the job unresolved without starting a provider, with outsideResearchReason=quota plus quotaScope, retryAfterSeconds and resetAt. Exhausted global saved admission returns saved_evidence_quota (429), quotaScope=saved_global, and the same reset fields; Retry-After matches retryAfterSeconds. Reset timing comes from the actual rolling-window boundary and is an estimate assuming no newer reservations consume capacity. Old jobs retain their original quota accounting until their rolling window expires. Single-active-job research_busy remains distinct. Completed matching jobs can be reused independently of these admission limits, subject to current eligibility and cache lifetime. Cache identity preserves topic and all source/date/evidence constraints; reuse is not restricted to an arbitrary last-ten-jobs window. Saved research reads all eligible originals within the existing corpus guard, independently of the Latest UI card limits. Published answers retain publication eligibility and private answers remain excluded. Partial saved support is revalidated and combined with newly collected originals before final assessment. Saved selection returns at most 12,000 original characters; combined outside assessment can return at most six windows totaling 24,000 characters. Exploration uses a current public-research model through AI Gateway, with per-step reservation and usage tracking; external provider budgets are unchanged. Service callers may opt into preferDirectEvidence: true to offer bounded saved candidates before model-driven evidence exploration. This option is not part of the persisted neutral request. Selection candidates means evidence is ready for a checked answer attempt, not that it answers the question. At most six exact windows and 12,000 characters are selected. Latest reporting overviews select the six newest distinct canonical posts first, preferring written evidence over a duplicate transcript, then interleave providers only within that cohort. For overview follow-ups with excluded source URLs and no target URL, known In Process posts from the same connected account and stable collection URL contribute their newest eligible representative before the six-candidate limit. Other social posts remain separate activities. Collection names and question keywords do not determine grouping. This diversifies candidate evidence without treating an entire collection as excluded or answered; focused requests and overviews without exclusions keep individual-post selection. Explicit source, platform, evidence-kind, date and URL exclusions still apply. Semantic project exclusions remain an answer-layer obligation. An empty selection enters ordinary research. Candidate jobs reserve the same quota once and preserve normal claim and expiry checks. Legacy callers never reuse a candidate-only job. A client must register and verify its answer, reread current evidence, and continue the same job if the candidate answer is insufficient or fails verification.",
+        "description": "Queues research for a question about this artist, or reuses a matching finished job, and returns the job to follow. It reads the artist's saved public sources first and looks further only when they can't answer. New jobs count against a rolling 24-hour allowance; when it is spent, the 429 carries `retryAfterSeconds` and `resetAt`.",
         "security": [
           {
             "PrivyAuth": []
@@ -150,7 +150,7 @@
     "/api/artist/{id}/research/questions/{jobId}": {
       "get": {
         "summary": "Read question research progress",
-        "description": "Safe resumable progress and bounded original references; no raw request, provider payload or private interview memory.",
+        "description": "Returns the job's progress and the public sources it has found so far.",
         "security": [
           {
             "PrivyAuth": []
@@ -285,7 +285,7 @@
     "/api/artist/{id}/research/discoveries": {
       "get": {
         "summary": "List discoveries for artist review",
-        "description": "Current claimant/admin only. Pending originals and account candidates are separate from official Lore and Links.",
+        "description": "Lists the sources and accounts research found for this artist that are waiting for review. Only the artist's claimant or an admin can call it.",
         "security": [
           {
             "PrivyAuth": []
@@ -447,7 +447,7 @@
     "/api/artist/{id}/research/discoveries/{candidateId}/review": {
       "post": {
         "summary": "Review a research discovery",
-        "description": "Recheck claim and exact revision under the artist lock. Approve to Lore or supported profile Links atomically with attribution. Decline, wrong-artist and incorrect decisions suppress automatic resurfacing. Existing link conflicts return 409.",
+        "description": "Approves or declines one discovery. Approving adds it to the artist's Lore or profile links with attribution; declining stops it from coming back. A link that conflicts with an existing one returns 409.",
         "security": [
           {
             "PrivyAuth": []
@@ -601,7 +601,7 @@
     "/api/artist/{id}/research/evidence/{evidenceId}": {
       "get": {
         "summary": "Read a public research original",
-        "description": "Reopen an exact source/revision/window. A URL-encoded discovery:UUID, vault:UUID public_answer:UUID or social:UUID:caption|transcript sourceId is accepted; a bare evidence UUID remains supported. Saved Lore/social reads use the current eligible public revision and return 409 on change. Retained discovery versions remain readable while current curation and access permit them. Published responses already visible in Latest are eligible with exact response text; edited responses invalidate old revisions and unpublished/deleted responses become unavailable. Uploaded/private material, private interview sessions and correction history are excluded. Current claimant/admin may inspect unresolved discoveries for review.",
+        "description": "Returns the exact text of one public source that research read. Pass a reference's URL-encoded `sourceId` or an evidence ID; a 409 means the source has changed since. Private and uploaded material is never returned.",
         "security": [
           {
             "PrivyAuth": []
@@ -788,7 +788,7 @@
     "/api/artist/{id}/research/questions/{jobId}/continue": {
       "post": {
         "summary": "Continue after a saved-candidate answer attempt",
-        "description": "Service-only, idempotent transition of a candidate job into ordinary bounded research. Send no body or an empty JSON object; client routing, counters, permissions and source overrides are rejected. The same job ID, original neutral request, activity, quota lane, created time and model/provider counters are preserved. A candidate job transitions atomically once under the artist/job lock, subject to current claim, original lifetime and the one-active-question limit. Repeated calls return the current job status. Clients must fence an in-flight candidate answer lease before continuing, retain answer registration, and retry the checked answer against the new current references. This operation does not extend budgets, expiry or reset answer retry limits. It never decides that candidate evidence is sufficient. New-budget continuation preserves the single global saved admission and does not charge outside allowance; that is reserved only if validated external collection becomes necessary.",
+        "description": "Moves a job that offered saved candidates into ordinary research, keeping its ID, request and limits. Call it when the answer drafted from those candidates wasn't enough. Service credential only, with no body; repeated calls return the current status.",
         "security": [
           {
             "ResearchService": []
@@ -974,7 +974,7 @@
               "recent"
             ],
             "default": "stored",
-            "description": "For relevance retrieval, recent defaults to the past seven days unless fromDate is supplied. For latest retrieval, newest available evidence may be older; answers must preserve its actual date and coverage limitations."
+            "description": "With `relevance` retrieval, `recent` means the past seven days unless `fromDate` is set. With `latest` retrieval, the newest evidence may be older."
           },
           "targetUrl": {
             "type": "string",
@@ -991,7 +991,7 @@
               "spotify",
               "deezer"
             ],
-            "description": "Restrict evidence to this platform, including when targetUrl is supplied. InProcess and catalog providers use stored Latest snapshots. If these cannot answer, research ends unresolved with provider_latest_refresh_required; no unrelated social provider is selected. Conflicting platform and target URL ends unresolved with source_platform_mismatch."
+            "description": "Restrict evidence to this platform. If that platform's saved sources can't answer, or it conflicts with `targetUrl`, the job ends unresolved."
           },
           "fromDate": {
             "type": "string",
@@ -1008,7 +1008,7 @@
               "latest"
             ],
             "default": "relevance",
-            "description": "Use latest for a newest-available activity overview or newest post on a requested platform. Selects dated originals in descending order without requiring topic keyword overlap or imposing a seven-day cutoff. Explicit fromDate/toDate bounds still apply. Use relevance for a specific topic or fact; latest is not proof of current exhaustive coverage. For latest release_date requests, prefer eligible catalog originals with activityDateKind=release after applying explicit source and date constraints. If none exist, other eligible originals may be read as candidates; their publication dates never establish release dates."
+            "description": "`latest` for the newest activity or the newest post on a platform; `relevance` for a specific topic or fact. `fromDate` and `toDate` apply to both."
           },
           "excludeSourceUrls": {
             "type": "array",
@@ -1029,11 +1029,11 @@
               "overview"
             ],
             "default": "focused",
-            "description": "Use overview for a broad account of recent activity, focused for a specific post, release or detail. The agent can browse all eligible saved public sources by page or provider, search with its own terms, and read exact original windows. Broad browsing includes multiple available providers instead of selecting only the newest posts from one busy account. Source, date, URL, speech and exclusion constraints remain authoritative. Exploration is bounded by five model steps, twelve tool calls, 24,000 original-text characters, and the job slice deadline. Saved exploration returns at most six read windows and 12,000 characters; an overview selects up to three distinct useful activities. A limit or invalid selection is an operational failure, not evidence that information is absent. Outside collection keeps its existing budgets and can run only from a validated server plan. Saved exploration does not refresh providers. This is not a comprehensive freshness guarantee."
+            "description": "`overview` for a broad account of recent activity, `focused` for one post, release or detail."
           },
           "preferDirectEvidence": {
             "type": "boolean",
-            "description": "Service credential only. Offer bounded candidates for a checked answer attempt before normal research. Optional and false by default; not persisted in the neutral request or its identity."
+            "description": "Service credential only. Offer saved candidates for an answer attempt before ordinary research. Defaults to false."
           }
         }
       },
@@ -1142,7 +1142,7 @@
             "enum": [
               "quota"
             ],
-            "description": "Outside collection was not admitted. Saved sources may still provide a bounded answer. New quota-blocked jobs include a shared quota scope and reset time; retry from a new question after reset, without restarting this terminal job. Older saved-only jobs can omit reset metadata."
+            "description": "Why research didn't look beyond saved sources. Saved sources may still answer; a quota block includes when to ask again."
           },
           "selection": {
             "type": "string",
@@ -1150,7 +1150,7 @@
               "candidates",
               "research"
             ],
-            "description": "Optional for legacy jobs. candidates is an unassessed evidence selection, not an answer or a sufficiency finding. If the checked answer is insufficient, continue this same job. research means the normal bounded research path."
+            "description": "`candidates`: saved evidence offered for an answer attempt, not yet an answer; continue this job if it isn't enough. `research`: the ordinary research path."
           },
           "quotaScope": {
             "type": "string",
@@ -1187,7 +1187,7 @@
         "properties": {
           "sourceId": {
             "type": "string",
-            "description": "Stable current source reference, including latest:<spotify|deezer|inprocess>:<64hex> provider snapshot originals. Removing/changing the connected account or successfully refreshing away a hidden/removed item makes its old reference unavailable; changed originals have a different revision."
+            "description": "Stable reference to the source. It stops working if the source is removed or its account is disconnected; a changed source gets a new revision."
           },
           "revision": {
             "type": "string"
