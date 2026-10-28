@@ -1057,6 +1057,876 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/knowledge-doc": {
+      "get": {
+        "summary": "Read the Lore document",
+        "operationId": "getKnowledgeDoc",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Returns the artist's Lore document, the numbered sources it cites, and the corrections the artist has made to it. Only the artist's approved claimant or an admin may read it. An artist with no document yet gets `content: null` and empty lists.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The document, its sources and its corrections.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDoc"
+                },
+                "examples": {
+                  "doc": {
+                    "summary": "A document with one correction",
+                    "value": {
+                      "status": "ok",
+                      "content": "Bio Ritmo is a salsa band from Richmond, Virginia, formed in 1991 [1].",
+                      "sources": [
+                        {
+                          "id": 1,
+                          "kind": "vault",
+                          "label": "About · bioritmo.com",
+                          "url": "https://www.bioritmo.com/about",
+                          "publishedAt": null
+                        }
+                      ],
+                      "corrections": [
+                        {
+                          "id": "8e1d2c3b-4a5f-4e6d-8c7b-9a0f1e2d3c4b",
+                          "claim": "Bio Ritmo is a salsa band from Richmond, Virginia, formed in 1991.",
+                          "correction": "Bio Ritmo is a salsa band from Richmond, Virginia, formed in 1985.",
+                          "kind": "fix"
+                        }
+                      ]
+                    }
+                  },
+                  "none": {
+                    "summary": "No document yet",
+                    "value": {
+                      "status": "ok",
+                      "content": null,
+                      "sources": [],
+                      "corrections": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The read failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to load knowledge document"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge-doc/corrections": {
+      "post": {
+        "summary": "Correct a claim in the Lore",
+        "operationId": "postKnowledgeDocCorrection",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Marks one claim in the artist's Lore as wrong, or replaces it with the artist's own wording, then queues the Lore to rebuild. The correction is kept beside the document and applied on every rebuild; correcting the same claim again replaces the earlier correction. Only the artist's approved claimant or an admin may correct it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["claim", "kind"],
+                "properties": {
+                  "claim": {
+                    "type": "string",
+                    "description": "The claim as the document states it, without citation markers. Trimmed; the first 1,000 characters are kept."
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["wrong", "fix"],
+                    "description": "`wrong`: not true or not about this artist. `fix`: replace it with `correction`."
+                  },
+                  "correction": {
+                    "type": ["string", "null"],
+                    "description": "The artist's wording. Required for `fix`, ignored for `wrong`. Trimmed; the first 2,000 characters are kept."
+                  }
+                }
+              },
+              "examples": {
+                "wrong": {
+                  "summary": "Not true",
+                  "value": {
+                    "claim": "Bio Ritmo toured Japan in 2004.",
+                    "kind": "wrong"
+                  }
+                },
+                "fix": {
+                  "summary": "In the artist's words",
+                  "value": {
+                    "claim": "Bio Ritmo is a salsa band from Richmond, Virginia, formed in 1991.",
+                    "kind": "fix",
+                    "correction": "Bio Ritmo is a salsa band from Richmond, Virginia, formed in 1985."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. The Lore rebuild is queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, the body isn't valid, `claim` is blank, or `kind` is `fix` with no `correction`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "noClaim": {
+                    "summary": "No claim",
+                    "value": {
+                      "status": "error",
+                      "error": "No claim given"
+                    }
+                  },
+                  "noFix": {
+                    "summary": "A fix with no wording",
+                    "value": {
+                      "status": "error",
+                      "error": "Write your correction first"
+                    }
+                  },
+                  "invalid": {
+                    "summary": "Bad body",
+                    "value": {
+                      "status": "error",
+                      "error": "Invalid correction"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to save your correction"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artist/{id}/knowledge-doc/corrections/{correctionId}": {
+      "delete": {
+        "summary": "Undo a Lore correction",
+        "operationId": "deleteKnowledgeDocCorrection",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Removes one of the artist's corrections and queues the Lore to rebuild without it. Only the artist's approved claimant or an admin may undo it. Undoing a correction that is already gone also succeeds.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          },
+          {
+            "name": "correctionId",
+            "in": "path",
+            "required": true,
+            "description": "The correction's ID, from `corrections` in the Lore read.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "8e1d2c3b-4a5f-4e6d-8c7b-9a0f1e2d3c4b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed. The Lore rebuild is queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID or `correctionId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to undo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artistBio/{id}/versions": {
+      "get": {
+        "summary": "List bio versions",
+        "operationId": "getArtistBioVersions",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Lists the artist's saved bios, newest first, and marks the pinned one. Only the artist's approved claimant or an admin may read them.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The saved bios, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BioVersions"
+                },
+                "example": {
+                  "status": "ok",
+                  "versions": [
+                    {
+                      "id": "5b7f3c1e-2d4a-4e8b-9c6f-1a2b3c4d5e6f",
+                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
+                      "bioText": "Bio Ritmo is a 10-piece salsa band from Richmond, Virginia.",
+                      "isPinned": true,
+                      "createdAt": "2026-10-21 14:02:11.512+00"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The read failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to load bio versions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artistBio/{id}/versions/{versionId}": {
+      "delete": {
+        "summary": "Delete a bio version",
+        "operationId": "deleteArtistBioVersion",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Deletes one saved bio from the artist's history. The pinned bio can't be deleted; unpin it first. Only the artist's approved claimant or an admin may delete it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          },
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "description": "The saved bio's ID, from the version list.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "5b7f3c1e-2d4a-4e8b-9c6f-1a2b3c4d5e6f"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID or `versionId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The artist has no saved bio with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Bio version not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "That bio is pinned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Cannot delete a pinned bio version"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to delete bio version"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/artistBio/{id}/pin": {
+      "put": {
+        "summary": "Pin a bio version",
+        "operationId": "putArtistBioPin",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Pins one saved bio: it becomes the artist's About and stays locked until unpinned. The About it replaces is kept in the history. Only the artist's approved claimant or an admin may pin it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["versionId"],
+                "properties": {
+                  "versionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "The saved bio to pin."
+                  }
+                }
+              },
+              "example": {
+                "versionId": "5b7f3c1e-2d4a-4e8b-9c6f-1a2b3c4d5e6f"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pinned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID, or `versionId` is missing or isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "badId": {
+                    "summary": "Bad artist ID",
+                    "value": {
+                      "status": "error",
+                      "error": "artistId must be a UUID"
+                    }
+                  },
+                  "badVersion": {
+                    "summary": "Bad version ID",
+                    "value": {
+                      "status": "error",
+                      "error": "versionId must be a UUID"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The artist has no saved bio with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Bio version not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Failed to pin bio version"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Unpin the bio",
+        "operationId": "deleteArtistBioPin",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Unpins the artist's bio so the About can be edited or regenerated again. The About text stays as it is. Only the artist's approved claimant or an admin may unpin it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unpinned, or nothing was pinned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's claimant nor an admin, or the artist's claim changed during the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The write failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Could not unpin bio"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1255,6 +2125,130 @@
           "revision": {
             "type": "string",
             "description": "A fingerprint of the profile's public link destinations; a change means the links changed."
+          }
+        }
+      },
+      "Ok": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          }
+        }
+      },
+      "DocSource": {
+        "type": "object",
+        "required": ["id", "kind", "label", "url"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The number the document cites as `[n]`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["vault", "interview", "social"]
+          },
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": ["string", "null"],
+            "description": "Null for an interview answer."
+          },
+          "publishedAt": {
+            "type": ["string", "null"],
+            "description": "When the source says it was published, if known."
+          }
+        }
+      },
+      "DocCorrection": {
+        "type": "object",
+        "required": ["id", "claim", "correction", "kind"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "claim": {
+            "type": "string",
+            "description": "The corrected claim, as stored."
+          },
+          "correction": {
+            "type": ["string", "null"],
+            "description": "The artist's wording; null for `wrong`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["wrong", "fix"]
+          }
+        }
+      },
+      "KnowledgeDoc": {
+        "type": "object",
+        "required": ["status", "content", "sources", "corrections"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "content": {
+            "type": ["string", "null"],
+            "description": "The document as Markdown with `[n]` citation markers, or null when there is none."
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocSource"
+            }
+          },
+          "corrections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocCorrection"
+            }
+          }
+        }
+      },
+      "BioVersion": {
+        "type": "object",
+        "required": ["id", "artistId", "bioText", "isPinned", "createdAt"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bioText": {
+            "type": "string"
+          },
+          "isPinned": {
+            "type": "boolean",
+            "description": "True for the bio that is locked as the About."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "When the version was saved (UTC)."
+          }
+        }
+      },
+      "BioVersions": {
+        "type": "object",
+        "required": ["status", "versions"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok"]
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BioVersion"
+            }
           }
         }
       }
