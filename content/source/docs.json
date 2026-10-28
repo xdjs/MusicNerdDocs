@@ -206,8 +206,12 @@
             ]
           },
           {
-            "group": "Vault uploads",
+            "group": "Vault",
             "pages": [
+              "api-reference/vault/add-source",
+              "api-reference/vault/update-source",
+              "api-reference/vault/remove-source",
+              "api-reference/vault/remove-sources",
               "api-reference/vault/sign-upload",
               "api-reference/vault/complete-upload",
               "api-reference/vault/upload"
