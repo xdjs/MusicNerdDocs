@@ -1,7 +1,7 @@
 {
-  "navigationPages": 101,
+  "navigationPages": 102,
   "guidePages": 4,
-  "apiPages": 97,
+  "apiPages": 98,
   "specifications": [
     "accounts.json",
     "activity.json",
@@ -12,6 +12,7 @@
     "artist-latest.json",
     "artist-links.json",
     "artist-lookups.json",
+    "chat.json",
     "health.json",
     "interview-memory.json",
     "interview-responses.json",

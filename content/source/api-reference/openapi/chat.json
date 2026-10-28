@@ -1,0 +1,250 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: artist chat",
+    "version": "0.1.0",
+    "description": "A listener's conversation about one artist, answered from the artist's approved sources and the web and streamed as it is written."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/artist/{id}/chat": {
+      "post": {
+        "summary": "Chat about an artist",
+        "operationId": "postArtistChat",
+        "security": [
+          {
+            "privyBearer": []
+          },
+          {}
+        ],
+        "description": "Answers the latest question about this artist, using earlier messages as context, and streams the reply as it is written: progress while sources are searched and read, each source it cites, then the answer citing them as `[n]`. No credentials are needed; with a token, the hourly allowance follows the account instead of the IP.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              },
+              "example": {
+                "messages": [
+                  {
+                    "id": "msg_1",
+                    "role": "user",
+                    "parts": [
+                      {
+                        "type": "text",
+                        "text": "Where did Bio Ritmo record their latest album?"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reply as server-sent events, one JSON chunk per `data:` line, ending with `data: [DONE]`. `source-url` chunks are the cited sources (`sourceId` `\"1\"`, `\"2\"`, …, matching the `[n]` markers), `text-delta` chunks carry the answer, and `tool-*` chunks report progress.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "data: {\"type\":\"start\",\"messageId\":\"frAjrewNeeOFTMom\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"call_1\",\"toolName\":\"searchSources\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"call_1\",\"inputTextDelta\":\"{\\\"query\\\": \\\"Bio\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"call_1\",\"inputTextDelta\":\" Ritmo founders\\\"}\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"call_1\",\"toolName\":\"searchSources\",\"input\":{\"query\":\"Bio Ritmo founders\"}}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"call_1\",\"output\":{\"sources\":[{\"sourceId\":\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\",\"title\":\"richmondfolkfestival.org\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"snippet\":\"Bio Ritmo has been a fixture of the Richmond music scene since 1991…\"},{\"sourceId\":\"vault:635a4493-d845-43da-bfdf-b30bf7af1298\",\"title\":\"richmondmagazine.com\",\"url\":\"https://richmondmagazine.com/news/features/bio-ritmo\",\"snippet\":\"The band started as a college project at VCU…\"}]}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"tool-input-start\",\"toolCallId\":\"call_2\",\"toolName\":\"readSource\"}\n\ndata: {\"type\":\"tool-input-delta\",\"toolCallId\":\"call_2\",\"inputTextDelta\":\"{\\\"sourceId\\\": \\\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\\\"}\"}\n\ndata: {\"type\":\"tool-input-available\",\"toolCallId\":\"call_2\",\"toolName\":\"readSource\",\"input\":{\"sourceId\":\"vault:8c16811b-a6fb-484f-be99-70d56880dfc3\"}}\n\ndata: {\"type\":\"source-url\",\"sourceId\":\"1\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"title\":\"richmondfolkfestival.org\"}\n\ndata: {\"type\":\"tool-output-available\",\"toolCallId\":\"call_2\",\"output\":{\"n\":1,\"title\":\"richmondfolkfestival.org\",\"url\":\"https://www.richmondfolkfestival.org/2023-performers/2023/6/1/bio-ritmo\",\"text\":\"Bio Ritmo has been a fixture of the Richmond music scene since 1991…\"}}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"start-step\"}\n\ndata: {\"type\":\"text-start\",\"id\":\"0\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"0\",\"delta\":\"Bio Ritmo\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"0\",\"delta\":\" started in Richmond, Virginia, in 1991. [1]\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"0\"}\n\ndata: {\"type\":\"finish-step\"}\n\ndata: {\"type\":\"finish\",\"finishReason\":\"stop\"}\n\ndata: [DONE]\n\n"
+              }
+            }
+          },
+          "400": {
+            "description": "The body is invalid: no messages, the last message isn't a `user` message with text, or the question is over 500 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid chat request"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist with that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatError"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The question allowance is spent. `code` names it: `visitor_question_quota` (30 questions per visitor per hour) or `question_planning_quota` (200 across the site per rolling day).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the quota window resets, only when the response carries `retryAfterSeconds`.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "X-MusicNerd-Quota": {
+                "description": "`true` on a quota response, so a client can tell it from a transient 429.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatError"
+                },
+                "examples": {
+                  "visitorQuota": {
+                    "summary": "The visitor's hourly allowance",
+                    "value": {
+                      "status": "error",
+                      "code": "visitor_question_quota",
+                      "error": "You've reached your question limit for this hour. Try again in 42 minutes.",
+                      "retryAfterSeconds": 2520,
+                      "resetAt": "2026-10-21T15:42:00.000Z"
+                    }
+                  },
+                  "siteQuota": {
+                    "summary": "The site's daily allowance",
+                    "value": {
+                      "status": "error",
+                      "code": "question_planning_quota",
+                      "error": "Music Nerd has reached its daily chat allowance. Try again in 3 minutes.",
+                      "retryAfterSeconds": 180,
+                      "resetAt": "2026-10-21T15:03:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "Optional. The signed-in user's access token, so the allowance counts per account. Copy it at [musicnerd.net/access](https://musicnerd.net/access) after signing in."
+      }
+    },
+    "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/UIMessage"
+            },
+            "description": "The conversation so far, oldest first. The last message is the question; at most the last 12 are read."
+          }
+        }
+      },
+      "UIMessage": {
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "parts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Message parts. Only `text` parts `{ \"type\": \"text\", \"text\": \"…\" }` are read; other parts are ignored."
+          }
+        }
+      },
+      "ChatError": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "const": "error"
+          },
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "visitor_question_quota",
+              "question_planning_quota"
+            ]
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 86400
+          },
+          "resetAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

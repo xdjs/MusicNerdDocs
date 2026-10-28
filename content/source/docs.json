@@ -49,6 +49,12 @@
             ]
           },
           {
+            "group": "Artist chat",
+            "pages": [
+              "api-reference/chat/artist-chat"
+            ]
+          },
+          {
             "group": "Onboarding",
             "pages": [
               "api-reference/onboarding/build",

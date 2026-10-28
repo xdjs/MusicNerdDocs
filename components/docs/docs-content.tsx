@@ -6,6 +6,7 @@ import * as runtime from 'react/jsx-runtime';
 import { headingId, resolveDocsHref } from '@/lib/docs-paths';
 import { DocsCode, DocsCodeGroup, DocsTable } from './docs-interactive';
 import { renderDescriptionInline } from './description-inline';
+import { isExternalHref } from '@/lib/docs/ui/isExternalHref';
 
 function textContent(node: ReactNode): string {
  if(typeof node==='string'||typeof node==='number')return String(node);
@@ -33,7 +34,7 @@ export function DocsContent({compiled}:{compiled:string}) {
  return <div className="docs-prose"><Content components={components}/></div>;
 }
 function descriptionInline(text: string) {
- return renderDescriptionInline(text,(href,children,key)=><Link key={key} href={resolveDocsHref(href)}>{children}</Link>);
+ return renderDescriptionInline(text,(href,children,key)=>{const url=resolveDocsHref(href);return isExternalHref(url)?<a key={key} href={url} target="_blank" rel="noopener noreferrer">{children}</a>:<Link key={key} href={url}>{children}</Link>;});
 }
 
 export function DocInlineDescription({text}:{text:string}) {
