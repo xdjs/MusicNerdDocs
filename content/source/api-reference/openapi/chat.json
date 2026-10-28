@@ -173,13 +173,13 @@
             "type": "array",
             "minItems": 1,
             "items": {
-              "$ref": "#/components/schemas/ChatMessage"
+              "$ref": "#/components/schemas/UIMessage"
             },
             "description": "The conversation so far, oldest first. The last message is the question; at most the last 12 are read."
           }
         }
       },
-      "ChatMessage": {
+      "UIMessage": {
         "type": "object",
         "required": [
           "id",
