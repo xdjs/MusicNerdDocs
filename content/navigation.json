@@ -140,6 +140,15 @@
         ]
       },
       {
+        "group": "Artist claims",
+        "pages": [
+          "api-reference/claims/claim",
+          "api-reference/claims/approve",
+          "api-reference/claims/reject",
+          "api-reference/claims/revoke"
+        ]
+      },
+      {
         "group": "Account",
         "pages": [
           "api-reference/accounts/link-wallet"
