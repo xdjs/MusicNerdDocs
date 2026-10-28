@@ -21,7 +21,7 @@
           },
           {}
         ],
-        "description": "Answers the latest question about this artist, using earlier messages as context, and streams the reply as it is written: progress while sources are searched and read, each source it cites, then the answer citing them as `[n]`. No credentials are needed; with a token, the hourly allowance follows the account instead of the IP.",
+        "description": "Answers the latest question about this artist, using earlier messages as context, and streams the reply as it is written: progress while sources are searched and read, each source it cites, then the answer citing them as `[n]`. No credentials are needed; with a token, the hourly allowance follows the account instead of the IP. Recent-activity questions can search saved sources newest first within a platform, with publication or activity dates and citations. Saved results describe the stored evidence, not complete live coverage.",
         "parameters": [
           {
             "name": "id",
