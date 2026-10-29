@@ -131,7 +131,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Approves a claim: the claimant now manages the artist, gets an email, and their page starts building. When some of that follow-up work can't start, the claim is still approved and `warning` says what to retry.",
+        "description": "Approves a claim: the claimant now manages the artist and their page starts building. When some of that follow-up work can't start, the claim is still approved and `warning` says what to retry.",
         "parameters": [
           {
             "$ref": "#/components/parameters/claimId"
