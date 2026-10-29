@@ -132,6 +132,7 @@
           "api-reference/users/update-user-name",
           "api-reference/users/name-prompt",
           "api-reference/users/has-claim",
+          "api-reference/users/artist-viewer",
           "api-reference/users/profile-image",
           "api-reference/users/upload-profile-image",
           "api-reference/users/profile-artists",
@@ -193,7 +194,11 @@
           "api-reference/admin/search-users",
           "api-reference/admin/set-user-roles",
           "api-reference/admin/pending-submissions",
-          "api-reference/admin/approve-submissions"
+          "api-reference/admin/approve-submissions",
+          "api-reference/admin/list-claims",
+          "api-reference/admin/review-queue",
+          "api-reference/admin/artist-activity",
+          "api-reference/admin/contributions"
         ]
       },
       {
@@ -210,7 +215,8 @@
         "pages": [
           "api-reference/vault/sign-upload",
           "api-reference/vault/complete-upload",
-          "api-reference/vault/upload"
+          "api-reference/vault/upload",
+          "api-reference/vault/editor-view"
         ]
       }
     ]

@@ -914,20 +914,20 @@
     },
     "/api/admin/users": {
       "get": {
-        "summary": "Search users",
-        "operationId": "searchAdminUsers",
+        "summary": "List or search users",
+        "operationId": "listAdminUsers",
         "security": [
           {
             "adminBearer": []
           }
         ],
-        "description": "Users whose wallet address or username contains `search`, case-insensitive, ordered by username then wallet. Use a result's `id` to change that user's roles.",
+        "description": "Every user, or only those whose wallet address or username contains `search`, case-insensitive, ordered by username then wallet. Each comes with their email and role flags; use a user's `id` to change their roles.",
         "parameters": [
           {
             "name": "search",
             "in": "query",
-            "required": true,
-            "description": "At least 3 characters of a wallet address or username. Trimmed.",
+            "required": false,
+            "description": "At least 3 characters of a wallet address or username. Trimmed. Omit it, or leave it empty, for every user.",
             "schema": {
               "type": "string",
               "minLength": 3
@@ -937,7 +937,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The matching users; empty when none match.",
+            "description": "The users; empty when none match.",
             "content": {
               "application/json": {
                 "schema": {
@@ -951,7 +951,7 @@
                     "users": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/AdminUserMatch"
+                        "$ref": "#/components/schemas/AdminUser"
                       }
                     }
                   }
@@ -962,7 +962,12 @@
                     {
                       "id": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
                       "username": "dutchyyy",
-                      "wallet": null
+                      "email": null,
+                      "wallet": null,
+                      "isAdmin": false,
+                      "isWhiteListed": true,
+                      "isHidden": false,
+                      "updatedAt": "2026-10-20 14:03:11.52+00"
                     }
                   ]
                 }
@@ -970,7 +975,7 @@
             }
           },
           "400": {
-            "description": "`search` is missing or shorter than 3 characters.",
+            "description": "`search` is shorter than 3 characters.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1299,6 +1304,699 @@
           },
           "403": {
             "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/claims": {
+      "get": {
+        "summary": "List artist claims",
+        "operationId": "listAdminClaims",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Up to 200 artist claims with their artist and claimant: pending first, then approved, then rejected, newest first within each.",
+        "responses": {
+          "200": {
+            "description": "The claims.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "claims"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "claims": {
+                      "type": "array",
+                      "maxItems": 200,
+                      "items": {
+                        "$ref": "#/components/schemas/AdminClaim"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "claims": [
+                    {
+                      "id": "3c9e2a7d-1b4f-4e8a-9d6c-5f0b7a2e8c13",
+                      "status": "pending",
+                      "referenceCode": "MN-7K2Q",
+                      "artistId": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41",
+                      "artistName": "Dutchyyy",
+                      "artistInstagram": "dutchyyy",
+                      "userId": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                      "userName": "dutchyyy",
+                      "userEmail": null,
+                      "createdAt": "2026-10-28 16:20:05.113+00"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/review-queue": {
+      "get": {
+        "summary": "Read the review queue",
+        "operationId": "getAdminReviewQueue",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Everything waiting for review in one list, newest first, 25 per page: link suggestions, pending sources and About corrections, with counts per type.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`links`, `sources` or `corrections`; anything else is all three.",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "links", "sources", "corrections"]
+            },
+            "example": "all"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Matches the artist, title, URL, correction details, or the contributor's username or email. Trimmed to 100 characters.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "example": "dutch"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page, from 1. Past the last page answers the last page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the queue.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "items",
+                    "counts",
+                    "pendingCounts",
+                    "total",
+                    "page",
+                    "pageSize",
+                    "filters"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "items": {
+                      "type": "array",
+                      "maxItems": 25,
+                      "items": {
+                        "$ref": "#/components/schemas/ReviewItem"
+                      }
+                    },
+                    "counts": {
+                      "type": "object",
+                      "required": ["links", "sources", "corrections"],
+                      "properties": {
+                        "links": {
+                          "type": "integer"
+                        },
+                        "sources": {
+                          "type": "integer"
+                        },
+                        "corrections": {
+                          "type": "integer"
+                        }
+                      },
+                      "description": "Matches per type for `query`."
+                    },
+                    "pendingCounts": {
+                      "type": "object",
+                      "required": ["links", "sources", "corrections"],
+                      "properties": {
+                        "links": {
+                          "type": "integer"
+                        },
+                        "sources": {
+                          "type": "integer"
+                        },
+                        "corrections": {
+                          "type": "integer"
+                        }
+                      },
+                      "description": "Everything pending per type, ignoring `query`."
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Matches across every page."
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "The page returned."
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "enum": [25]
+                    },
+                    "filters": {
+                      "type": "object",
+                      "required": ["type", "query"],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["all", "links", "sources", "corrections"]
+                        },
+                        "query": {
+                          "type": "string"
+                        }
+                      },
+                      "description": "The filters as applied."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "items": [
+                    {
+                      "type": "links",
+                      "id": "5f2d0c1e-8a7b-4c3d-9e1f-0a2b3c4d5e6f",
+                      "artistId": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41",
+                      "artistName": "Dutchyyy",
+                      "title": "instagram",
+                      "url": "https://instagram.com/dutchyyy",
+                      "createdAt": "2026-10-28 15:02:44.81+00",
+                      "origin": "user",
+                      "actorKind": "user",
+                      "actorName": "dutchyyy",
+                      "actorId": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                      "activityId": null,
+                      "trigger": null,
+                      "bioSnapshot": null,
+                      "details": null,
+                      "reason": null
+                    }
+                  ],
+                  "counts": {
+                    "links": 1,
+                    "sources": 0,
+                    "corrections": 0
+                  },
+                  "pendingCounts": {
+                    "links": 4,
+                    "sources": 12,
+                    "corrections": 1
+                  },
+                  "total": 1,
+                  "page": 1,
+                  "pageSize": 25,
+                  "filters": {
+                    "type": "all",
+                    "query": "dutch"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/activity": {
+      "get": {
+        "summary": "Read the artist activity log",
+        "operationId": "getAdminArtistActivity",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Every recorded change to an artist and who made it, newest first, 25 per page. Filter by search, action or a single event.",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Matches the artist, or the actor's username, email or user ID. Trimmed to 100 characters.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "example": "dutch"
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "description": "Only this action. Cut to 60 characters.",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            },
+            "example": "source_added"
+          },
+          {
+            "name": "eventId",
+            "in": "query",
+            "required": false,
+            "description": "Only this event. Ignored unless it is a UUID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page, from 1. Past the last page answers the last page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the log.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "items", "total", "page", "pageSize", "filters"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "items": {
+                      "type": "array",
+                      "maxItems": 25,
+                      "items": {
+                        "$ref": "#/components/schemas/ActivityLogEntry"
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Matches across every page."
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "The page returned."
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "enum": [25]
+                    },
+                    "filters": {
+                      "type": "object",
+                      "required": ["query", "action", "eventId"],
+                      "properties": {
+                        "query": {
+                          "type": "string"
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "eventId": {
+                          "type": "string"
+                        }
+                      },
+                      "description": "The filters as applied; `eventId` is empty when it was not a UUID."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "items": [
+                    {
+                      "id": "8d1f3b6a-2c4e-4f7a-9b0d-6e5c4a3b2d1f",
+                      "artistId": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41",
+                      "artistName": "Dutchyyy",
+                      "action": "source_added",
+                      "trigger": "submission",
+                      "actorKind": "user",
+                      "actorId": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                      "actorName": "dutchyyy",
+                      "actorEmail": null,
+                      "createdAt": "2026-10-28 15:10:02.4+00",
+                      "sourceId": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d"
+                    }
+                  ],
+                  "total": 1,
+                  "page": 1,
+                  "pageSize": 25,
+                  "filters": {
+                    "query": "dutch",
+                    "action": "source_added",
+                    "eventId": ""
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/admin/contributions": {
+      "get": {
+        "summary": "List contributions",
+        "operationId": "listAdminContributions",
+        "security": [
+          {
+            "adminBearer": []
+          }
+        ],
+        "description": "Link suggestions, Lore sources and uploads across every artist, newest first, 25 per page, with counts by origin. Pass `userId` for one contributor's; the response then carries their account.",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "description": "Only this contributor's. A UUID.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Matches the artist, title, URL, or the contributor's username or email. Trimmed to 100 characters.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "example": "dutch"
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "description": "`user`, `research` or `unknown`; anything else is every origin.",
+            "schema": {
+              "type": "string",
+              "enum": ["user", "research", "unknown"]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "`link`, `lore` or `upload`; anything else is every type.",
+            "schema": {
+              "type": "string",
+              "enum": ["link", "lore", "upload"]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "`all`, `approved`, `rejected` or `pending`. Defaults to `all` with `userId`, `pending` without.",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "pending", "approved", "rejected"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page, from 1. Past the last page answers the last page.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of contributions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "items",
+                    "counts",
+                    "total",
+                    "page",
+                    "pageSize",
+                    "filters",
+                    "account"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "items": {
+                      "type": "array",
+                      "maxItems": 25,
+                      "items": {
+                        "$ref": "#/components/schemas/Contribution"
+                      }
+                    },
+                    "counts": {
+                      "type": "object",
+                      "required": ["user", "research", "unknown"],
+                      "properties": {
+                        "user": {
+                          "type": "object",
+                          "required": ["total", "pending"],
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "pending": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "research": {
+                          "type": "object",
+                          "required": ["total", "pending"],
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "pending": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "unknown": {
+                          "type": "object",
+                          "required": ["total", "pending"],
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "pending": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      },
+                      "description": "Per origin, for `userId`, `type` and `query`: every match and the pending ones."
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Matches across every page."
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "The page returned."
+                    },
+                    "pageSize": {
+                      "type": "integer",
+                      "enum": [25]
+                    },
+                    "filters": {
+                      "type": "object",
+                      "required": ["userId", "query", "origin", "type", "status"],
+                      "properties": {
+                        "userId": {
+                          "type": "string"
+                        },
+                        "query": {
+                          "type": "string"
+                        },
+                        "origin": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "description": "The filters as applied; empty strings for none."
+                    },
+                    "account": {
+                      "type": ["object", "null"],
+                      "required": ["id", "username", "email"],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "username": {
+                          "type": ["string", "null"]
+                        },
+                        "email": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "description": "The contributor named by `userId`; null without it."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "items": [
+                    {
+                      "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+                      "type": "lore",
+                      "origin": "user",
+                      "artistId": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41",
+                      "artistName": "Dutchyyy",
+                      "title": "Interview with Dutchyyy",
+                      "url": "https://example.com/dutchyyy-interview",
+                      "userId": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                      "username": "dutchyyy",
+                      "email": null,
+                      "actorKind": "user",
+                      "status": "pending",
+                      "createdAt": "2026-10-28 15:10:02.4+00",
+                      "trigger": "submission",
+                      "activityId": "8d1f3b6a-2c4e-4f7a-9b0d-6e5c4a3b2d1f"
+                    }
+                  ],
+                  "counts": {
+                    "user": {
+                      "total": 6,
+                      "pending": 1
+                    },
+                    "research": {
+                      "total": 0,
+                      "pending": 0
+                    },
+                    "unknown": {
+                      "total": 0,
+                      "pending": 0
+                    }
+                  },
+                  "total": 6,
+                  "page": 1,
+                  "pageSize": 25,
+                  "filters": {
+                    "userId": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                    "query": "",
+                    "origin": "",
+                    "type": "",
+                    "status": "all"
+                  },
+                  "account": {
+                    "id": "0b1e4c2a-7f3d-4a58-9c61-2d8e5f7a9b10",
+                    "username": "dutchyyy",
+                    "email": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`userId` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid user ID"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/NotAdmin"
+          },
+          "404": {
+            "description": "No user has that `userId`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "User not found"
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -2106,22 +2804,6 @@
           }
         }
       },
-      "AdminUserMatch": {
-        "type": "object",
-        "required": ["id", "username", "wallet"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "username": {
-            "type": ["string", "null"]
-          },
-          "wallet": {
-            "type": ["string", "null"]
-          }
-        }
-      },
       "PendingSubmission": {
         "type": "object",
         "required": ["id", "type", "title", "url", "artistName"],
@@ -2144,6 +2826,318 @@
           },
           "artistName": {
             "type": ["string", "null"]
+          }
+        }
+      },
+      "AdminUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "email",
+          "wallet",
+          "isAdmin",
+          "isWhiteListed",
+          "isHidden",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": ["string", "null"]
+          },
+          "email": {
+            "type": ["string", "null"]
+          },
+          "wallet": {
+            "type": ["string", "null"]
+          },
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "isWhiteListed": {
+            "type": "boolean"
+          },
+          "isHidden": {
+            "type": "boolean",
+            "description": "Hidden from leaderboards."
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminClaim": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "referenceCode",
+          "artistId",
+          "artistName",
+          "artistInstagram",
+          "userId",
+          "userName",
+          "userEmail",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"]
+          },
+          "referenceCode": {
+            "type": ["string", "null"]
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": ["string", "null"]
+          },
+          "artistInstagram": {
+            "type": ["string", "null"],
+            "description": "The artist's Instagram handle."
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userName": {
+            "type": ["string", "null"]
+          },
+          "userEmail": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewItem": {
+        "type": "object",
+        "required": [
+          "type",
+          "id",
+          "artistId",
+          "artistName",
+          "title",
+          "url",
+          "createdAt",
+          "origin",
+          "actorKind",
+          "actorName",
+          "actorId",
+          "activityId",
+          "trigger",
+          "bioSnapshot",
+          "details",
+          "reason"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["links", "sources", "corrections"]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": ["string", "null"]
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "The platform for a link, the source title, or the correction's reason."
+          },
+          "url": {
+            "type": ["string", "null"],
+            "description": "The suggested link, the source, or the correction's source URL."
+          },
+          "createdAt": {
+            "type": ["string", "null"]
+          },
+          "origin": {
+            "type": "string",
+            "enum": ["user", "research", "unknown"]
+          },
+          "actorKind": {
+            "type": ["string", "null"],
+            "description": "`user`, `system` or `unknown`: who added it."
+          },
+          "actorName": {
+            "type": ["string", "null"],
+            "description": "The contributor's username."
+          },
+          "actorId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "activityId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "trigger": {
+            "type": ["string", "null"],
+            "description": "What started the activity that added a source."
+          },
+          "bioSnapshot": {
+            "type": ["string", "null"],
+            "description": "A correction's copy of the About it reports."
+          },
+          "details": {
+            "type": ["string", "null"],
+            "description": "A correction's details."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "A correction's reason."
+          }
+        }
+      },
+      "ActivityLogEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "artistId",
+          "artistName",
+          "action",
+          "trigger",
+          "actorKind",
+          "actorId",
+          "actorName",
+          "actorEmail",
+          "createdAt",
+          "sourceId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": ["string", "null"]
+          },
+          "action": {
+            "type": "string",
+            "description": "What happened, for example `source_added`."
+          },
+          "trigger": {
+            "type": "string",
+            "description": "What started it."
+          },
+          "actorKind": {
+            "type": "string",
+            "enum": ["user", "system", "unknown"]
+          },
+          "actorId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "actorName": {
+            "type": ["string", "null"]
+          },
+          "actorEmail": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "The source it concerns, kept after the source is deleted."
+          }
+        }
+      },
+      "Contribution": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "origin",
+          "artistId",
+          "artistName",
+          "title",
+          "url",
+          "userId",
+          "username",
+          "email",
+          "actorKind",
+          "status",
+          "createdAt",
+          "trigger",
+          "activityId"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["link", "lore", "upload"]
+          },
+          "origin": {
+            "type": "string",
+            "enum": ["user", "research", "unknown"]
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistName": {
+            "type": ["string", "null"]
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "The platform for a link, the source title otherwise."
+          },
+          "url": {
+            "type": ["string", "null"]
+          },
+          "userId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "username": {
+            "type": ["string", "null"]
+          },
+          "email": {
+            "type": ["string", "null"]
+          },
+          "actorKind": {
+            "type": ["string", "null"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"]
+          },
+          "createdAt": {
+            "type": ["string", "null"]
+          },
+          "trigger": {
+            "type": ["string", "null"]
+          },
+          "activityId": {
+            "type": ["string", "null"],
+            "format": "uuid"
           }
         }
       }
