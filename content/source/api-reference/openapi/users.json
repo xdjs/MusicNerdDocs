@@ -1126,6 +1126,111 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/viewer": {
+      "get": {
+        "summary": "Read your relation to an artist",
+        "operationId": "getArtistViewer",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Whether the caller holds the artist's active claim, and whether they added the artist to Music Nerd.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The caller's relation to the artist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "claimStatus",
+                    "addedByCaller"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "claimStatus": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "pending",
+                        "approved",
+                        null
+                      ],
+                      "description": "The status of the artist's active claim when the caller made it; null when there is none or it is someone else's."
+                    },
+                    "addedByCaller": {
+                      "type": "boolean",
+                      "description": "The caller added this artist."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "claimStatus": "pending",
+                  "addedByCaller": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "description": "No artist has that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
     }
   },
   "components": {

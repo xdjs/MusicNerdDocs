@@ -626,6 +626,167 @@
           }
         }
       }
+    },
+    "/api/artist/{id}/editor": {
+      "get": {
+        "summary": "Read the editor view",
+        "operationId": "getArtistEditorView",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "What the artist's claimant or an admin sees when editing: the About as stored, and every approved and pending source in full with its contributor's name, newest first. Visitors get a public version of these on the artist page.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The artist's ID (a UUID).",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The editor view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["status", "bio", "approvedSources", "pendingSources"],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "bio": {
+                      "type": ["string", "null"],
+                      "description": "The artist's About as stored."
+                    },
+                    "approvedSources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EditorSource"
+                      }
+                    },
+                    "pendingSources": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EditorSource"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "bio": "Dutchyyy is a producer and DJ from Amsterdam.",
+                  "approvedSources": [],
+                  "pendingSources": [
+                    {
+                      "id": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d",
+                      "artistId": "6cb3d81a-27b4-4b4e-9d1c-3f0a5e8b2c41",
+                      "origin": "submission",
+                      "activityId": "8d1f3b6a-2c4e-4f7a-9b0d-6e5c4a3b2d1f",
+                      "url": "https://example.com/dutchyyy-interview",
+                      "title": "Interview with Dutchyyy",
+                      "snippet": "Dutchyyy talks about the new record.",
+                      "type": "article",
+                      "status": "pending",
+                      "fileName": null,
+                      "fileSize": null,
+                      "filePath": null,
+                      "contentType": null,
+                      "extractedText": null,
+                      "ogImage": null,
+                      "podcastEpisodeKey": null,
+                      "podcastShowTitle": null,
+                      "podcastEpisodeTitle": null,
+                      "publishedAt": null,
+                      "createdAt": "2026-10-28 15:10:02.4+00",
+                      "updatedAt": "2026-10-28 15:10:02.4+00",
+                      "contributorName": "dutchyyy"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`id` isn't a UUID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "artistId must be a UUID"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No token, an invalid or expired token, or no Music Nerd user for it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not signed in"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The user is neither the artist's approved claimant nor an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not your artist"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No artist has that ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Artist not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The database could not be read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -754,6 +915,97 @@
           },
           "updatedAt": {
             "type": ["string", "null"]
+          }
+        }
+      },
+      "EditorSource": {
+        "type": "object",
+        "description": "A source in the artist's vault, in full, with who contributed it.",
+        "required": ["id", "artistId", "origin", "url", "status", "createdAt", "contributorName"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artistId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "type": "string",
+            "description": "`upload` for an uploaded file, `submission` for a page a user added, `research` for one Music Nerd found."
+          },
+          "activityId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "The activity event that recorded the addition."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The web page, or an uploaded file's public URL in storage."
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "The page's title, or the uploaded file's name."
+          },
+          "snippet": {
+            "type": ["string", "null"],
+            "description": "A short excerpt. For an upload, the first 300 characters of extracted text, or `Uploaded file: <name>`."
+          },
+          "type": {
+            "type": ["string", "null"],
+            "description": "`article`, `interview`, `review`, `profile`, `document`, `image`, `audio`, `video`, `data`, `social`, `website` or `music`. An upload is `image` or `audio` by MIME type, `data` for CSV and JSON, `document` otherwise."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"],
+            "description": "An upload is always `approved`."
+          },
+          "fileName": {
+            "type": ["string", "null"]
+          },
+          "fileSize": {
+            "type": ["integer", "null"],
+            "description": "Bytes."
+          },
+          "filePath": {
+            "type": ["string", "null"],
+            "description": "The storage key (`<artistId>/<name>`), not the URL."
+          },
+          "contentType": {
+            "type": ["string", "null"],
+            "description": "The resolved MIME type."
+          },
+          "extractedText": {
+            "type": ["string", "null"],
+            "description": "The file's text, for text files and PDFs with readable text."
+          },
+          "ogImage": {
+            "type": ["string", "null"]
+          },
+          "podcastEpisodeKey": {
+            "type": ["string", "null"]
+          },
+          "podcastShowTitle": {
+            "type": ["string", "null"]
+          },
+          "podcastEpisodeTitle": {
+            "type": ["string", "null"]
+          },
+          "publishedAt": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": ["string", "null"]
+          },
+          "contributorName": {
+            "type": ["string", "null"],
+            "description": "The username of whoever submitted or uploaded it; null for research, and for a hidden user or a username that is an email or wallet."
           }
         }
       }
