@@ -21,7 +21,7 @@
           },
           {}
         ],
-        "description": "Answers the latest question about this artist, using earlier messages as context, and streams the reply as it is written: progress while sources are searched and read, each source it cites, then the answer citing them as `[n]`. No credentials are needed; with a token, the hourly allowance follows the account instead of the IP.",
+        "description": "Answers an artist question using approved sources and the web, streaming source citations and the reply as server-sent events. Authentication is optional; signed-in requests use the account’s hourly allowance instead of the IP allowance. Approved public PDFs require a current approved artist claim and are read from the original file under current permissions, with at most two read attempts per turn, 4 MiB and 50 pages per file. An explicitly named, uniquely matching PDF can be read in one operation; ambiguous names use discovery, and answers are instructed to cite physical pages, retain qualifications and acknowledge unavailable evidence without promising accuracy or response time.",
         "parameters": [
           {
             "name": "id",
@@ -210,7 +210,7 @@
                 }
               }
             },
-            "description": "Message parts. Only `text` parts `{ \"type\": \"text\", \"text\": \"…\" }` are read; other parts are ignored."
+            "description": "Message parts. Only `text` parts `{ \"type\": \"text\", \"text\": \"…\" }` are read; other parts are ignored. Earlier assistant turns containing PDF reads are not reused as evidence; the document must be read again under current publication permissions."
           }
         }
       },
