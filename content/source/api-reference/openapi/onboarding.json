@@ -347,7 +347,7 @@
             "researchService": []
           }
         ],
-        "description": "Starts building a claimed artist's page on the server and returns right away. The build links the artist's profiles, saves and approves sources, and writes the Lore and the About, whether or not anyone keeps the page open. Call it again to resume a build that stopped; only one build runs per artist at a time. Follow progress with [Onboarding state](/api-reference/onboarding/state).",
+        "description": "Starts building a claimed artist's profiles, sources, Lore and About on the server and returns right away; only one build runs per artist, whether or not anyone keeps the page open. Search-provider failures leave the affected stage unconfirmed and retain partial saved links and sources, so calling again can resume without deleting content; successful searches with no matches can complete. Older runs already marked complete still return `started: false` and need separate recovery. Follow progress with [Onboarding state](/api-reference/onboarding/state).",
         "parameters": [
           {
             "name": "artistId",
