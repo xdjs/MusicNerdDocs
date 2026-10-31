@@ -82,3 +82,13 @@ The worker stores no bearer token. Status responses expose only the job ID,
 preparation status and a safe error code, not generated candidates, private
 research payloads or provider error text. Administrative access alone does not
 authorize preparing or consuming an artist's interview question.
+
+## Catalog counterpart discovery (pending release)
+
+The repair tracked in [MusicNerdWeb #1649](https://github.com/xdjs/MusicNerdWeb/issues/1649) changes candidate discovery for automatic Spotify-to-Deezer matching. One Deezer artist search reads at most 25 results. Only names equal under the existing case, accent and punctuation normalization become candidates; a name never proves identity. Unrelated fuzzy results do not create identity ambiguity.
+
+The search must report a complete result set: pagination, a total inconsistent with the returned rows, or more than five distinct matching artist IDs produces an internal terminal `incomplete_search` outcome, with no attachment. Invalid provider payloads remain provider failures. Empty complete searches produce `not_found`. Names whose normalized form is empty are not matched automatically.
+
+Each candidate still requires at least two distinct exact ISRCs with credited artists, agreement with the saved Spotify anchor, and no ambiguous or conflicting qualifying identity. Incomplete Spotify recording results remain ambiguous. Explicit Deezer IDs skip name discovery but retain the recording checks. Shared provider cooldowns, explicit disconnects, exclusions, lease/anchor checks and duplicate-start guards are unchanged.
+
+This change does not replay terminal jobs or backfill existing profiles. Pete's prior ambiguous job remains evidence. A separately scoped repair must use a supported authenticated write path after independent identity verification; a catalog title or a historical name-search mapping alone is insufficient. Apple Music revalidation and any broader cohort remain separate work in the issue.
