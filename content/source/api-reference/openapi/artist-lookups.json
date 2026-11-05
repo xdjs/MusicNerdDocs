@@ -321,7 +321,7 @@
     "/api/findTwitterHandle": {
       "post": {
         "summary": "Find an artist's X handle",
-        "description": "Returns the X handle of an artist found by `ethAddress` (a wallet address or ENS name) or by `name` (a fuzzy search that uses the best match). If both are sent, `ethAddress` is used. `result` is `null` when the artist has no X handle, and a `name` that matches no artist returns `{}`.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
+        "description": "Returns the stored X handle of an artist found by `ethAddress` (a wallet address or ENS name) or by an unambiguous exact `name`. Name matching ignores case and leading/trailing spaces, but preserves punctuation, accents and internal spaces. There is no fuzzy fallback and no search of X. If both fields are sent, `ethAddress` is used. `result` is `null` when the matched artist has no X handle. A name matching zero or multiple artists returns `{}`; it never selects another artist just because that artist has a handle.\n\nClients should tag only when `result` contains a non-empty handle; neither `null` nor `{}` supplies a handle. Prefer a known wallet or ENS identity when names are ambiguous.\n\nResponses are `{ result }` with plain-text errors, not this API's `{ status }` envelope.",
         "operationId": "findTwitterHandle",
         "security": [],
         "requestBody": {
@@ -348,7 +348,7 @@
         },
         "responses": {
           "200": {
-            "description": "The artist's X handle, or `{}` when a name search matches nothing.",
+            "description": "The artist's stored X handle (null if absent), or `{}` when a name matches zero or multiple artists.",
             "content": {
               "application/json": {
                 "schema": {
@@ -369,6 +369,14 @@
                     }
                   },
                   "noNameMatch": {
+                    "value": {}
+                  },
+                  "noHandle": {
+                    "value": {
+                      "result": null
+                    }
+                  },
+                  "ambiguousName": {
                     "value": {}
                   }
                 }
