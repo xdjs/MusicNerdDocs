@@ -422,7 +422,7 @@
     "/api/searchArtists": {
       "post": {
         "summary": "Search artists",
-        "description": "Searches Music Nerd's artists and Deezer's catalogue by name and returns one ranked list, best matches first. Deezer artists not yet in Music Nerd come back with `isExternalOnly: true`, so they can be added.",
+        "description": "Searches Music Nerd and Deezer by name, or resolves a Spotify/Deezer artist ID or artist URL. Exact saved provider identities are returned first without a provider request; otherwise a direct provider lookup returns an external result for the existing add/review flow, without creating or linking an artist. Bare IDs also retain name-search results so numeric artist names remain searchable.",
         "operationId": "searchArtists",
         "security": [],
         "requestBody": {
@@ -437,7 +437,7 @@
                 "properties": {
                   "query": {
                     "type": "string",
-                    "description": "The name to search for."
+                    "description": "Artist name, 22-character Spotify ID, positive numeric Deezer ID, spotify:artist:<id>, or an HTTPS artist URL on open.spotify.com or deezer.com (including locale paths and share parameters). Track/album URLs and unsupported URLs return 400; short redirect links are not followed."
                   },
                   "bookmarkedArtistIds": {
                     "type": "array",
@@ -458,7 +458,7 @@
         },
         "responses": {
           "200": {
-            "description": "The ranked results. A Music Nerd artist carries its row's identity and link columns with `bio` always `null`; a Deezer-only artist has `id: null`.",
+            "description": "Ranked name results or exact provider identity results. Local artists carry public identity/link columns with bio null; external artists have id null. A missing provider artist returns no direct result; bare inputs can still return name matches.",
             "content": {
               "application/json": {
                 "schema": {
@@ -521,7 +521,7 @@
             }
           },
           "400": {
-            "description": "`query` is missing, empty or not a string.",
+            "description": "Invalid input or unsupported/non-artist URL.",
             "content": {
               "application/json": {
                 "schema": {
@@ -558,6 +558,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Direct provider lookup unavailable, including shared Spotify cooldown. Retry later; failures are not cached as empty results."
           }
         }
       }
