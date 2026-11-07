@@ -15,6 +15,9 @@ describe("About regeneration contract", () => {
     expect(description).toContain("45-second");
     expect(description).toContain("not a hard wall-clock guarantee");
     expect(description).toContain("check saved state");
+    // OpenAPI descriptions support paragraphs and inline formatting, not headings/lists.
+    expect(description).not.toMatch(/^#{1,6} /m);
+    expect(description).not.toMatch(/^- /m);
   });
 
   it.each(["get", "put"])("distinguishes unavailable material, busy and stale writes for %s", (method) => {
