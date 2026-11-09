@@ -1469,7 +1469,7 @@
       },
       "ExternalArtistResult": {
         "type": "object",
-        "description": "A Deezer artist not yet in Music Nerd.",
+        "description": "A Spotify or Deezer artist not yet in Music Nerd.",
         "required": [
           "id",
           "name",
@@ -1493,7 +1493,10 @@
           },
           "platform": {
             "type": "string",
-            "const": "deezer"
+            "enum": [
+              "spotify",
+              "deezer"
+            ]
           },
           "imageUrl": {
             "type": [
