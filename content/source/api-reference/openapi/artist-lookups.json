@@ -422,7 +422,7 @@
     "/api/searchArtists": {
       "post": {
         "summary": "Search artists",
-        "description": "Searches Music Nerd's artists and Deezer's catalogue by name and returns one ranked list, best matches first. Deezer artists not yet in Music Nerd come back with `isExternalOnly: true`, so they can be added.",
+        "description": "Searches Music Nerd and Deezer by name, or resolves a Spotify/Deezer artist ID or artist URL. Exact saved provider ownership is returned first without a direct provider lookup. Saved explicit URLs/URIs need no provider requests. Bare IDs also run the normal ranked name search so numeric artist names remain searchable, including when direct lookup is unavailable. Conflicting saved ownership returns 409 instead of presenting either profile as authoritative. Otherwise a direct lookup returns an external result for the existing add/review flow, without creating or linking an artist.",
         "operationId": "searchArtists",
         "security": [],
         "requestBody": {
@@ -437,7 +437,7 @@
                 "properties": {
                   "query": {
                     "type": "string",
-                    "description": "The name to search for."
+                    "description": "Artist name, 22-character Spotify ID, positive numeric Deezer ID, spotify:artist:<id>, or an HTTPS artist URL on open.spotify.com or deezer.com (including locale paths and share parameters). Track/album URLs and unsupported URLs return 400; short redirect links are not followed."
                   },
                   "bookmarkedArtistIds": {
                     "type": "array",
@@ -458,7 +458,7 @@
         },
         "responses": {
           "200": {
-            "description": "The ranked results. A Music Nerd artist carries its row's identity and link columns with `bio` always `null`; a Deezer-only artist has `id: null`.",
+            "description": "Ranked name results or exact provider identity results. Local artists carry public identity/link columns with bio null; external artists have id null. A missing provider artist returns no direct result. Bare inputs retain usable local/external name matches even when direct lookup is unavailable, and are not cached so a later request can recover the direct identity.",
             "content": {
               "application/json": {
                 "schema": {
@@ -521,7 +521,7 @@
             }
           },
           "400": {
-            "description": "`query` is missing, empty or not a string.",
+            "description": "Invalid input or unsupported/non-artist URL.",
             "content": {
               "application/json": {
                 "schema": {
@@ -555,6 +555,28 @@
                 },
                 "example": {
                   "error": "Internal server error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Direct provider lookup unavailable, including shared Spotify cooldown. Explicit URLs/URIs return 503; bare IDs return usable name matches when available, otherwise 503. Failures are not cached as empty results."
+          },
+          "409": {
+            "description": "The supplied provider identity has contradictory saved ownership, including different direct-column and mapping owners. No provider fallback, artist creation, or identity attachment occurs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "This artist ID has conflicting saved profiles. Please try searching by name."
+                    }
+                  }
                 }
               }
             }
@@ -1455,7 +1477,7 @@
       },
       "ExternalArtistResult": {
         "type": "object",
-        "description": "A Deezer artist not yet in Music Nerd.",
+        "description": "A Spotify or Deezer artist not yet in Music Nerd.",
         "required": [
           "id",
           "name",
@@ -1479,7 +1501,10 @@
           },
           "platform": {
             "type": "string",
-            "const": "deezer"
+            "enum": [
+              "spotify",
+              "deezer"
+            ]
           },
           "imageUrl": {
             "type": [
