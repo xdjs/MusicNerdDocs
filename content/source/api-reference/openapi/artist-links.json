@@ -278,7 +278,7 @@
             }
           },
           "400": {
-            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet — we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`). Catalog disconnect without a valid `expectedValue` is refused.",
+            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet \u2014 we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`). Catalog disconnect without a valid `expectedValue` is refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -709,7 +709,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The links contributors and research have proposed for the artist, pending first then newest, 100 per page, for the approved claimant or an admin. Song and album URLs are left out. Who suggested or reviewed each one is a display name only: `Automated research` for research, `Not recorded` when hidden or unknown.",
+        "description": "Lists contributor and automated-research suggestions for the approved claimant or an admin, pending first then newest, 100 per page, excluding song and album URLs. Provisional onboarding discoveries remain pending and unlinked until an eligible reviewer acts; repeat provisional discovery reuses pending records and preserves earlier decisions. Attribution uses display names only, with `Automated research` for research and `Not recorded` when hidden or unknown; a matching name is not ownership proof.",
         "parameters": [
           {
             "name": "id",
@@ -874,7 +874,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Approves, dismisses, removes or restores one suggestion, as the approved claimant or an admin. Approving a link writes it to the profile (an Apple Music or Beatport page becomes an approved Lore source), and approving a source also queues its text extraction; `remove` hides an approved source's icon and `restore` shows it again, both keeping it in Lore. Every decision is recorded in the artist's activity.",
+        "description": "Approves, dismisses, removes or restores one suggestion as the approved claimant or an admin, recording the decision in artist activity. Approval writes the profile link (Apple Music or Beatport artist pages become approved Lore sources), source approval queues text extraction, and source remove/restore hides or shows its icon without deleting the Lore entry. Explicit onboarding confirmation of a matching pending suggestion uses this same review, preserving the original submitter and checking ownership before the account and review status change together; contributor status alone does not grant approval rights.",
         "parameters": [
           {
             "name": "id",
