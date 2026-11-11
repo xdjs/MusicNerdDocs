@@ -347,7 +347,7 @@
             "researchService": []
           }
         ],
-        "description": "Starts one server-side build per claimed artist and returns immediately; follow [Onboarding state](/api-reference/onboarding/state), while provider failures leave stages unconfirmed and preserve partial results for retry, and previously completed runs still require separate recovery. Name-derived guesses and matching-name web results remain unlinked in [link suggestions](/api-reference/artist-links/link-suggestions) for claimant/admin review; pending provisional suggestions are reused and repeated provisional discovery does not reset reviewed decisions. A completed profiles step means discovery completed, not that every proposed account was verified or approved.",
+        "description": "Starts one server-side build per claimed artist and returns immediately; follow [Onboarding state](/api-reference/onboarding/state), while provider failures leave stages unconfirmed and preserve partial results for retry, and previously completed runs still require separate recovery. Name-derived guesses and matching-name web results remain unlinked in [link suggestions](/api-reference/artist-links/link-suggestions) for claimant/admin review; pending provisional suggestions are reused, and automatic discovery or source-account adoption cannot override existing pending/reviewed identities. A completed profiles step means discovery completed, not that every proposed account was verified or approved.",
         "parameters": [
           {
             "name": "artistId",
