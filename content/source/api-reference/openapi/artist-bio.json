@@ -20,7 +20,7 @@
         "summary": "Read the About",
         "operationId": "getArtistBio",
         "security": [],
-        "description": "The artist's About as the profile shows it: the saved bio for a claimed artist, otherwise the directory's prepared About when it is still current, otherwise the claim prompt. With `regenerate=true` the caller must be the artist's claimant or an admin; the About is rewritten from the artist's Lore and saved, with the previous text kept in the bio history.",
+        "description": "The artist's About as the profile shows it: the saved bio for a claimed artist, otherwise the directory's prepared About when it is still current, otherwise the claim prompt. The ordinary read is public and read-only.\n\nThe compatibility query `regenerate=true` changes saved data and requires the claimant's or an admin's Bearer token. Prefer [PUT /api/artistBio/{id}](/api-reference/artist-bio/update-about) for an explicit regeneration request and its authenticated Try it panel. GET regeneration returns its existing `{ status, bio, pinned?, message? }` shape, not PUT's `{ status, message, bio? }` shape, and keeps the previous text in bio history.\n\n**Saved-material regeneration**\n\nThe approved claimant or a Music Nerd admin must authenticate with a Privy access token as `Authorization: Bearer <token>`. Trusted-contributor status alone does not grant regeneration.\n\nRegeneration prepares missing or stale Lore from already saved eligible readable material, then generates About. A current Lore document is reused. It does not start source discovery/extraction, full research or onboarding. A newly submitted URL may still need processing or moderation before it is eligible. A pinned bio is returned unchanged; unpin it before requesting regeneration.\n\nA successful Lore step alone is not About success. If preparation succeeds but About generation fails, the prepared Lore may remain saved while the previous About is preserved. Claim, source, Lore document and About changes are checked before saving so an outdated generation does not overwrite newer state.\n\n**Errors and retries**\n\nErrors have `{ \"status\": \"error\", \"error\": \"...\", \"code\"?: \"...\" }`. The code is optional: clients must handle errors without one.\n\n`409 LORE_REQUIRED`: no usable approved, readable Lore could be prepared. Explain source processing/review prerequisites and retain the displayed About.\n\n`409 LORE_PREPARING`: another Lore/About generation owns the lease. Show a busy state and retry later rather than starting simultaneous generation.\n\n`409` without a required code: a source, claim, Lore document or About changed before save. Reload current state before retrying.\n\n`500 LORE_PREPARATION_FAILED`: preparation or settlement failed. Keep the displayed About and follow the returned recovery guidance; a lease cleanup failure asks the caller to wait a few minutes.\n\n`408`: a timeout mapped by the About generator. Preserve About and allow a deliberate later retry.\n\n`500` without a required code: About generation, lease cleanup or another operation failed. Do not claim success from an earlier Lore step.\n\nThe handler starts a 45-second generation budget at entry; the host route declares 60 seconds. This is not a hard wall-clock guarantee across authentication, database stalls and host termination. Preparation-stage aborts can surface as preparation failures rather than `408`. After a lost response or other uncertain outcome, check saved state with the ordinary read before retrying. An ordinary read never starts generation.\n\nThis is the regeneration contract for [MusicNerdWeb#1655](https://github.com/xdjs/MusicNerdWeb/issues/1655). Deployment availability is tracked separately; these docs do not establish production rollout.",
         "parameters": [
           {
             "name": "id",
@@ -37,7 +37,7 @@
             "name": "regenerate",
             "in": "query",
             "required": false,
-            "description": "`true` rewrites the About from the Lore document instead of reading it. Requires the claimant's or an admin's token.",
+            "description": "Compatibility regeneration request: `true` prepares missing/stale Lore from saved eligible material, then rewrites About. Requires the approved claimant or admin Bearer token; an ordinary read does not. Prefer PUT for regeneration.",
             "schema": {
               "type": "string",
               "enum": ["true"]
@@ -171,7 +171,7 @@
             }
           },
           "408": {
-            "description": "`regenerate=true`: the model did not answer in time. The existing About is kept.",
+            "description": "Regeneration: an abort or timeout mapped by the About generator. The existing About is kept. Preparation-stage aborts can instead return 500 LORE_PREPARATION_FAILED; the 45-second budget is not a hard response deadline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -185,7 +185,7 @@
             }
           },
           "409": {
-            "description": "`regenerate=true`: there is no Lore document yet (`code: \"LORE_REQUIRED\"`), or the bio changed, was pinned or the artist's claim changed while the About was being written.",
+            "description": "Regeneration: no usable saved Lore (LORE_REQUIRED), another active Lore/About generation (LORE_PREPARING), or a source, claim, Lore document or About changed before save. Codes are optional. Preserve the displayed About, follow the returned guidance, and reload current state before retrying a conflict.",
             "content": {
               "application/json": {
                 "schema": {
@@ -193,11 +193,19 @@
                 },
                 "examples": {
                   "loreRequired": {
-                    "summary": "No Lore document",
+                    "summary": "No usable saved material after Lore preparation",
                     "value": {
                       "status": "error",
                       "code": "LORE_REQUIRED",
-                      "error": "Build your Lore document before generating About. Your existing About has been kept."
+                      "error": "About needs approved, readable Lore. If you just added a link, wait for source processing or review to finish, then try again. Your existing About has been kept."
+                    }
+                  },
+                  "lorePreparing": {
+                    "summary": "Another Lore or About generation holds the lease",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_PREPARING",
+                      "error": "Lore or About generation is already in progress. Please try Regenerate About again shortly. Your existing About has been kept."
                     }
                   },
                   "conflict": {
@@ -212,15 +220,50 @@
             }
           },
           "500": {
-            "description": "The read or the generation failed.",
+            "description": "The read or the generation failed. Regeneration can fail while preparing Lore (optional code LORE_PREPARATION_FAILED), generating About or releasing the lease. Prepared Lore may remain saved without a successful About update. Follow recovery guidance and check saved state after an uncertain outcome.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/BioError"
                 },
-                "example": {
-                  "status": "error",
-                  "error": "Unable to read About. Please try again."
+                "examples": {
+                  "readFailed": {
+                    "summary": "The About read failed",
+                    "value": {
+                      "status": "error",
+                      "error": "Unable to read About. Please try again."
+                    }
+                  },
+                  "lorePreparationFailed": {
+                    "summary": "Lore preparation failed",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_PREPARATION_FAILED",
+                      "error": "Could not prepare Lore for About. Please try again. Your existing About has been kept."
+                    }
+                  },
+                  "loreSettlementFailed": {
+                    "summary": "Lore preparation could not release its job",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_PREPARATION_FAILED",
+                      "error": "Lore preparation could not finish or release its job. Your existing About has been kept. Wait a few minutes for recovery before trying again."
+                    }
+                  },
+                  "aboutGenerationFailed": {
+                    "summary": "About failed after Lore was prepared",
+                    "value": {
+                      "status": "error",
+                      "error": "Could not generate About from Lore. Your existing About has been kept."
+                    }
+                  },
+                  "aboutSettlementFailed": {
+                    "summary": "About could not release its preparation job",
+                    "value": {
+                      "status": "error",
+                      "error": "About could not finish or release its preparation job. Your existing About has been kept. Wait a few minutes for recovery before trying again."
+                    }
+                  }
                 }
               }
             }
@@ -235,7 +278,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Saves the About the artist wrote, or with `regenerate: true` rewrites it from the artist's Lore, for the approved claimant or an admin. Both the old and the new text are kept in the bio history, and a pinned bio is never replaced.",
+        "description": "Saves the About the artist wrote with `{ \"bio\": \"...\" }`, or prepares Lore and regenerates About with `{ \"regenerate\": true }`. Only the approved claimant or an admin may call it. Old and new saved text are kept in bio history; a pinned bio is never replaced. When `regenerate` is true, `bio` is ignored.\n\n**Saved-material regeneration**\n\nThe approved claimant or a Music Nerd admin must authenticate with a Privy access token as `Authorization: Bearer <token>`. Trusted-contributor status alone does not grant regeneration.\n\nRegeneration prepares missing or stale Lore from already saved eligible readable material, then generates About. A current Lore document is reused. It does not start source discovery/extraction, full research or onboarding. A newly submitted URL may still need processing or moderation before it is eligible. A pinned bio is returned unchanged; unpin it before requesting regeneration.\n\nA successful Lore step alone is not About success. If preparation succeeds but About generation fails, the prepared Lore may remain saved while the previous About is preserved. Claim, source, Lore document and About changes are checked before saving so an outdated generation does not overwrite newer state.\n\n**Errors and retries**\n\nErrors have `{ \"status\": \"error\", \"error\": \"...\", \"code\"?: \"...\" }`. The code is optional: clients must handle errors without one.\n\n`409 LORE_REQUIRED`: no usable approved, readable Lore could be prepared. Explain source processing/review prerequisites and retain the displayed About.\n\n`409 LORE_PREPARING`: another Lore/About generation owns the lease. Show a busy state and retry later rather than starting simultaneous generation.\n\n`409` without a required code: a source, claim, Lore document or About changed before save. Reload current state before retrying.\n\n`500 LORE_PREPARATION_FAILED`: preparation or settlement failed. Keep the displayed About and follow the returned recovery guidance; a lease cleanup failure asks the caller to wait a few minutes.\n\n`408`: a timeout mapped by the About generator. Preserve About and allow a deliberate later retry.\n\n`500` without a required code: About generation, lease cleanup or another operation failed. Do not claim success from an earlier Lore step.\n\nThe handler starts a 45-second generation budget at entry; the host route declares 60 seconds. This is not a hard wall-clock guarantee across authentication, database stalls and host termination. Preparation-stage aborts can surface as preparation failures rather than `408`. After a lost response or other uncertain outcome, check saved state with the ordinary read before retrying. An ordinary read never starts generation.\n\nThis is the regeneration contract for [MusicNerdWeb#1655](https://github.com/xdjs/MusicNerdWeb/issues/1655). Deployment availability is tracked separately; these docs do not establish production rollout.",
         "parameters": [
           {
             "name": "id",
@@ -259,12 +302,12 @@
                   "bio": {
                     "type": "string",
                     "maxLength": 10000,
-                    "description": "The About to save. Required unless `regenerate` is true; at most 10,000 characters."
+                    "description": "The non-blank About to save. Required unless `regenerate` is true; at most 10,000 characters. Ignored during regeneration."
                   },
                   "regenerate": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Rewrite the About from the Lore document instead of saving `bio`."
+                    "description": "Prepare missing/stale Lore from saved eligible readable material, then regenerate About. Reuses current Lore and does not start discovery, extraction or onboarding. Takes precedence over bio."
                   }
                 }
               },
@@ -276,7 +319,7 @@
                   }
                 },
                 "regenerate": {
-                  "summary": "Rewrite from Lore",
+                  "summary": "Prepare saved Lore and regenerate About",
                   "value": {
                     "regenerate": true
                   }
@@ -287,7 +330,7 @@
         },
         "responses": {
           "200": {
-            "description": "Saved, or regenerated. A regeneration returns the About that is now saved and a message saying whether it changed.",
+            "description": "An edit was saved, or regeneration completed. Regeneration returns the About now saved and a message saying whether it changed. A pinned bio returns unchanged with the unpin guidance; PUT does not return the GET-only pinned flag. Preparing Lore alone is not a successful About response.",
             "content": {
               "application/json": {
                 "schema": {
@@ -390,7 +433,7 @@
             }
           },
           "408": {
-            "description": "`regenerate: true`: the model did not answer in time. The existing About is kept.",
+            "description": "Regeneration: an abort or timeout mapped by the About generator. The existing About is kept. Preparation-stage aborts can instead return 500 LORE_PREPARATION_FAILED; the 45-second budget is not a hard response deadline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -404,26 +447,46 @@
             }
           },
           "409": {
-            "description": "`regenerate: true`: no Lore document yet (`code: \"LORE_REQUIRED\"`), or the bio changed, was pinned or the claim changed while the About was being written.",
+            "description": "Regeneration: no usable saved Lore (LORE_REQUIRED), another active Lore/About generation (LORE_PREPARING), or a source, claim, Lore document or About changed before save. Codes are optional. Preserve the displayed About, follow the returned guidance, and reload current state before retrying a conflict.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BioError"
                 },
-                "example": {
-                  "status": "error",
-                  "code": "LORE_REQUIRED",
-                  "error": "Build your Lore document before generating About. Your existing About has been kept."
+                "examples": {
+                  "loreRequired": {
+                    "summary": "No usable saved material after Lore preparation",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_REQUIRED",
+                      "error": "About needs approved, readable Lore. If you just added a link, wait for source processing or review to finish, then try again. Your existing About has been kept."
+                    }
+                  },
+                  "lorePreparing": {
+                    "summary": "Another Lore or About generation holds the lease",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_PREPARING",
+                      "error": "Lore or About generation is already in progress. Please try Regenerate About again shortly. Your existing About has been kept."
+                    }
+                  },
+                  "conflict": {
+                    "summary": "The bio changed during generation",
+                    "value": {
+                      "status": "error",
+                      "error": "Your bio changed or was pinned while generation was running. Your current bio is safe; review it before trying again."
+                    }
+                  }
                 }
               }
             }
           },
           "500": {
-            "description": "The write failed, the claim changed during the save, or an edit that differs from a pinned bio was refused.",
+            "description": "The write failed, the claim changed during the save, or an edit that differs from a pinned bio was refused. Regeneration can fail while preparing Lore (optional code LORE_PREPARATION_FAILED), generating About or releasing the lease. Prepared Lore may remain saved without a successful About update. Follow recovery guidance and check saved state after an uncertain outcome.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/BioError"
                 },
                 "examples": {
                   "pinned": {
@@ -438,6 +501,36 @@
                     "value": {
                       "status": "error",
                       "error": "Error updating bio"
+                    }
+                  },
+                  "lorePreparationFailed": {
+                    "summary": "Lore preparation failed",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_PREPARATION_FAILED",
+                      "error": "Could not prepare Lore for About. Please try again. Your existing About has been kept."
+                    }
+                  },
+                  "loreSettlementFailed": {
+                    "summary": "Lore preparation could not release its job",
+                    "value": {
+                      "status": "error",
+                      "code": "LORE_PREPARATION_FAILED",
+                      "error": "Lore preparation could not finish or release its job. Your existing About has been kept. Wait a few minutes for recovery before trying again."
+                    }
+                  },
+                  "aboutGenerationFailed": {
+                    "summary": "About failed after Lore was prepared",
+                    "value": {
+                      "status": "error",
+                      "error": "Could not generate About from Lore. Your existing About has been kept."
+                    }
+                  },
+                  "aboutSettlementFailed": {
+                    "summary": "About could not release its preparation job",
+                    "value": {
+                      "status": "error",
+                      "error": "About could not finish or release its preparation job. Your existing About has been kept. Wait a few minutes for recovery before trying again."
                     }
                   }
                 }
@@ -1095,8 +1188,8 @@
           },
           "code": {
             "type": "string",
-            "enum": ["LORE_REQUIRED"],
-            "description": "Present when the About cannot be generated because there is no Lore document."
+            "enum": ["LORE_REQUIRED", "LORE_PREPARING", "LORE_PREPARATION_FAILED"],
+            "description": "Optional regeneration detail. LORE_REQUIRED means no usable approved, readable Lore; LORE_PREPARING means a competing lease; LORE_PREPARATION_FAILED means preparation or settlement failed. Not every error has a code."
           }
         }
       },
