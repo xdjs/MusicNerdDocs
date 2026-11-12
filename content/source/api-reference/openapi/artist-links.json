@@ -278,7 +278,7 @@
             }
           },
           "400": {
-            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet — we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`). Catalog disconnect without a valid `expectedValue` is refused.",
+            "description": "Missing or wrong input: `artistId and action are required`, `artistId must be a UUID`, `action must be 'set' or 'clear'`, `url is required for set action`, `siteName is required for clear action`, `Add an artist profile link, not a song or album.`, or the platform is not supported (`We don't support that link yet \u2014 we currently accept links from a fixed set of platforms. Check the \"Supported links\" list to see them.`). Catalog disconnect without a valid `expectedValue` is refused.",
             "content": {
               "application/json": {
                 "schema": {
@@ -709,7 +709,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The links contributors and research have proposed for the artist, pending first then newest, 100 per page, for the approved claimant or an admin. Song and album URLs are left out. Who suggested or reviewed each one is a display name only: `Automated research` for research, `Not recorded` when hidden or unknown.",
+        "description": "Lists contributor and automated-research suggestions for the approved claimant or an admin, pending first then newest, 100 per page, excluding song and album URLs. Provisional onboarding discoveries remain pending and unlinked until an eligible reviewer acts; repeat provisional discovery reuses pending records and preserves earlier decisions. Attribution uses display names only, with `Automated research` for research and `Not recorded` when hidden or unknown; a matching name is not ownership proof. When recorded, optional candidate-specific evidence explains the discovery method and name used; older or unsupported evidence is null.",
         "parameters": [
           {
             "name": "id",
@@ -791,7 +791,32 @@
                         "name": "musicnerd_fan"
                       },
                       "reviewedAt": null,
-                      "reviewedBy": null
+                      "reviewedBy": null,
+                      "evidence": null
+                    },
+                    {
+                      "id": "0f3a7c62-1d7e-4b1e-9a7a-5b1f0c0e2a12",
+                      "kind": "ugc",
+                      "url": "https://x.com/peterango",
+                      "title": "x",
+                      "platform": "x",
+                      "hidden": false,
+                      "status": "pending",
+                      "origin": "research",
+                      "submittedAt": "2026-10-20T18:02:11.000Z",
+                      "suggestedBy": {
+                        "id": null,
+                        "name": "Automated research"
+                      },
+                      "reviewedAt": null,
+                      "reviewedBy": null,
+                      "evidence": {
+                        "method": "name_web_search",
+                        "summary": "A platform search returned this profile with a handle matching “Pete Rango”.",
+                        "artistName": "Pete Rango",
+                        "sourceUrl": "https://x.com/peterango",
+                        "observedTitle": "Pete Rango (@peterango) / X"
+                      }
                     }
                   ],
                   "hasMore": false,
@@ -874,7 +899,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Approves, dismisses, removes or restores one suggestion, as the approved claimant or an admin. Approving a link writes it to the profile (an Apple Music or Beatport page becomes an approved Lore source), and approving a source also queues its text extraction; `remove` hides an approved source's icon and `restore` shows it again, both keeping it in Lore. Every decision is recorded in the artist's activity.",
+        "description": "Approves, dismisses, removes or restores one suggestion as the approved claimant or an admin, recording the decision in artist activity. Approval writes the profile link (Apple Music or Beatport artist pages become approved Lore sources), source approval queues text extraction, and source remove/restore hides or shows its icon without deleting the Lore entry. Explicit onboarding confirmation of a matching pending suggestion uses this same review, preserving the original submitter and checking ownership before the account and review status change together; contributor status alone does not grant approval rights.",
         "parameters": [
           {
             "name": "id",
@@ -1177,6 +1202,17 @@
                 "type": "null"
               }
             ]
+          },
+          "evidence": {
+            "description": "Candidate-specific discovery observations, not proof of account ownership. Null when unavailable (including older records and sources); clients must also tolerate omission by older API versions. Review decisions do not change this historical basis.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinkSuggestionEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -1197,6 +1233,51 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "LinkSuggestionEvidence": {
+        "type": "object",
+        "required": [
+          "method",
+          "summary",
+          "artistName",
+          "sourceUrl",
+          "observedTitle"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "name_handle_probe",
+              "name_web_search"
+            ],
+            "description": "A name-derived handle with a matching page title, or a platform search result whose handle matches the artist name. Neither confirms ownership."
+          },
+          "summary": {
+            "type": "string",
+            "description": "A deterministic explanation of the recorded discovery method, never raw model reasoning."
+          },
+          "artistName": {
+            "type": "string",
+            "description": "Artist name used during this discovery.",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "The checked candidate URL, without query parameters or fragment.",
+            "maxLength": 2048,
+            "pattern": "^https://"
+          },
+          "observedTitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Untrusted title observed from the page (handle probe) or the search provider (web search). Not verified identity evidence; render as plain text. Search snippets are not evidence and are not returned.",
+            "maxLength": 2000
           }
         }
       }
