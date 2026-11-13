@@ -132,6 +132,7 @@
           {
             "group": "Users and profile",
             "pages": [
+              "api-reference/users/get-me",
               "api-reference/users/get-user",
               "api-reference/users/update-user-name",
               "api-reference/users/name-prompt",
