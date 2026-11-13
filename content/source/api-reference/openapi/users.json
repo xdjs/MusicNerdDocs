@@ -25,7 +25,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The caller's own user record and role flags, found from the token alone. A first call for a new sign-in creates the account, and an account without a usable name is given a generated one. `needsLegacyLink` is true while the account has no wallet and the caller has not dismissed the prompt to link one.",
+        "description": "Returns the signed-in caller's account and role flags. The first call for a new sign-in creates the account and gives it a generated name if it has none.",
         "responses": {
           "200": {
             "description": "The caller's account.",
