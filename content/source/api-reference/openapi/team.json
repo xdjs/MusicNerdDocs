@@ -25,7 +25,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Whether the signed-in user is on the Music Nerd team, and the name they go by, like `sweetman`. The team is a list of emails kept in the API's environment; the user's Privy email must be on it.",
+        "description": "Whether the signed-in user is on the Music Nerd team, and the name they go by, like `sweetman`.",
         "responses": {
           "200": {
             "description": "On the team.",

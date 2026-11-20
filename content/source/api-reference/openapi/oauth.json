@@ -54,7 +54,7 @@
         "summary": "Authorization server metadata",
         "operationId": "getAuthorizationServerMetadata",
         "security": [],
-        "description": "The OAuth authorization server metadata (RFC 8414) for the issuer `https://api.musicnerd.net/api/oauth`. Clients register themselves, then use the authorization code flow with PKCE (`S256`). Access tokens last five minutes; refresh tokens rotate on each use. Signing in opens a Music Nerd page where the user signs in with Privy and approves the agent.",
+        "description": "The OAuth authorization server metadata (RFC 8414) for `https://api.musicnerd.net/api/oauth`. Clients register, then use the authorization code flow with PKCE; access tokens last five minutes and refresh tokens rotate. Signing in opens a Music Nerd page where the user approves the agent.",
         "responses": {
           "200": {
             "description": "The metadata.",
@@ -165,7 +165,7 @@
             "privyBearer": []
           }
         ],
-        "description": "Disconnects one of the signed-in user's agents. Its access and refresh tokens stop working at once; to use it again, the agent connects again and the user approves it. Answers 200 when the connection is already gone or isn't the user's, without changing anyone else's.",
+        "description": "Disconnects one of the signed-in user's agents; its tokens stop working at once. Answers 200 when the connection is already gone or isn't the user's.",
         "parameters": [
           {
             "name": "id",

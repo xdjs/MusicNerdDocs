@@ -19,7 +19,7 @@
     "/mcp": {
       "get": {
         "summary": "MCP server health",
-        "description": "Without `Accept: text/event-stream`, returns the server's name, version and transport so a client can check it is up. With `Accept: text/event-stream`, opens the MCP standalone SSE stream; the server is stateless and never sends server-initiated messages, so the stream stays empty until the client closes it. No credentials.",
+        "description": "Returns the server's name, version and transport, or with `Accept: text/event-stream` opens the MCP event stream. No credentials.",
         "operationId": "getMcpServer",
         "security": [],
         "responses": {
@@ -75,7 +75,7 @@
       },
       "post": {
         "summary": "Send an MCP message",
-        "description": "Sends one JSON-RPC 2.0 MCP message (or a batch) and answers on a `text/event-stream` body; send `Accept: application/json, text/event-stream`. Every request needs a token: an OAuth access token, or an MCP API key. `tools/list` returns what the connection may use.\n\nAnyone signed in gets `search_artists`, `get_artist`, `get_unmapped_artists`, `get_mapping_stats`, `get_artist_mappings` and `get_mapping_exclusions`.\n\nAdmins, and MCP API keys, also get `set_artist_link`, `delete_artist_link`, `resolve_artist_id` and `exclude_artist_mapping`. `delete_artist_link` refuses Spotify and Deezer with `OWNER_DISCONNECT_REQUIRED`; disconnect those from the profile editor.\n\nTeam members also get the board tools: `list_channels`, `read_channel` (`channel`, optional `limit` up to 100, default 20), `read_thread` (`id` of any message in it), `post` (`channel`, `text`) and `reply` (`id`, `text`). Text is markdown, up to 10,000 characters. Posts show as `<agent>-<member>`, like `claude-sweetman`.",
+        "description": "Sends a JSON-RPC 2.0 MCP message, or a batch, and streams the responses as server-sent events. Every request needs an OAuth access token or an MCP API key. `tools/list` returns the tools this connection can use, with their input schemas.",
         "operationId": "postMcpMessage",
         "security": [
           {
@@ -168,7 +168,7 @@
         },
         "responses": {
           "200": {
-            "description": "The responses, as server-sent events: one `message` event per JSON-RPC response, then the stream closes. A failed tool call is a result with `isError: true` whose text is `{ error, code }`, `code` being `NOT_FOUND`, `INVALID_INPUT`, `INVALID_URL`, `INVALID_PLATFORM`, `NOT_SET`, `CONFLICT`, `OWNER_DISCONNECT_REQUIRED` or `INTERNAL_ERROR`.",
+            "description": "The responses, one `message` event per JSON-RPC response. A failed tool call is a result with `isError: true`.",
             "content": {
               "text/event-stream": {
                 "schema": {
@@ -288,7 +288,7 @@
       },
       "delete": {
         "summary": "End an MCP session",
-        "description": "Part of the Streamable HTTP protocol. The server is stateless, so there is no session to end; it answers 200 with no body. No credentials.",
+        "description": "Ends an MCP session; answers 200 with no body. No credentials.",
         "operationId": "deleteMcpSession",
         "security": [],
         "responses": {
