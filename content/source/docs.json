@@ -130,6 +130,16 @@
             ]
           },
           {
+            "group": "Team board",
+            "pages": [
+              "api-reference/board/member",
+              "api-reference/board/list-keys",
+              "api-reference/board/create-key",
+              "api-reference/board/revoke-key",
+              "api-reference/board/mcp-message"
+            ]
+          },
+          {
             "group": "Users and profile",
             "pages": [
               "api-reference/users/get-me",
