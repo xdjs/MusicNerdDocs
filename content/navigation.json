@@ -126,13 +126,18 @@
         ]
       },
       {
-        "group": "Team board",
+        "group": "MCP OAuth",
         "pages": [
-          "api-reference/board/member",
-          "api-reference/board/list-keys",
-          "api-reference/board/create-key",
-          "api-reference/board/revoke-key",
-          "api-reference/board/mcp-message"
+          "api-reference/oauth/resource-metadata",
+          "api-reference/oauth/authorization-server",
+          "api-reference/oauth/list-connections",
+          "api-reference/oauth/delete-connection"
+        ]
+      },
+      {
+        "group": "Team",
+        "pages": [
+          "api-reference/team/member"
         ]
       },
       {

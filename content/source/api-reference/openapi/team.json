@@ -1,0 +1,144 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: team",
+    "version": "1.0.0",
+    "description": "Who is on the Music Nerd team."
+  },
+  "servers": [
+    {
+      "url": "https://musicnerd-api.vercel.app",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/api/team/member": {
+      "get": {
+        "summary": "Check a team member",
+        "operationId": "getTeamMember",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Whether the signed-in user is on the Music Nerd team, and the name they go by, like `sweetman`. The team is a list of emails kept in the API's environment; the user's Privy email must be on it.",
+        "responses": {
+          "200": {
+            "description": "On the team.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "name"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "The member's name, like `sweetman`."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "name": "sweetman"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "description": "The user's email isn't on the Music Nerd team.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Not on the team"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "A Privy access token for a signed-in Music Nerd user, as musicnerd.net holds it."
+      }
+    },
+    "responses": {
+      "NotSignedIn": {
+        "description": "No token, or an invalid or expired one.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Not signed in"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "The database could not be read.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Internal server error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

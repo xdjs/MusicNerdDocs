@@ -1,0 +1,418 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Music Nerd API: OAuth",
+    "version": "1.0.0",
+    "description": "How agents connect to the MCP server with OAuth: the discovery documents an MCP client reads, and the member's list of connected agents."
+  },
+  "servers": [
+    {
+      "url": "https://api.musicnerd.net",
+      "description": "Production"
+    },
+    {
+      "url": "https://musicnerd-api-staging.vercel.app",
+      "description": "Staging (staging database)"
+    }
+  ],
+  "paths": {
+    "/.well-known/oauth-protected-resource/mcp": {
+      "get": {
+        "summary": "MCP resource metadata",
+        "operationId": "getMcpResourceMetadata",
+        "security": [],
+        "description": "The OAuth protected-resource metadata for `/mcp` (RFC 9728). An MCP client reads it after a 401 from `/mcp` to find the authorization server.",
+        "responses": {
+          "200": {
+            "description": "The metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceMetadata"
+                },
+                "example": {
+                  "resource": "https://api.musicnerd.net/mcp",
+                  "authorization_servers": [
+                    "https://api.musicnerd.net/api/oauth"
+                  ],
+                  "scopes_supported": [
+                    "mcp:tools"
+                  ],
+                  "bearer_methods_supported": [
+                    "header"
+                  ],
+                  "resource_name": "Music Nerd"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-authorization-server/api/oauth": {
+      "get": {
+        "summary": "Authorization server metadata",
+        "operationId": "getAuthorizationServerMetadata",
+        "security": [],
+        "description": "The OAuth authorization server metadata (RFC 8414) for the issuer `https://api.musicnerd.net/api/oauth`. Clients register themselves, then use the authorization code flow with PKCE (`S256`). Access tokens last five minutes; refresh tokens rotate on each use. Signing in opens a Music Nerd page where the user signs in with Privy and approves the agent.",
+        "responses": {
+          "200": {
+            "description": "The metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthorizationServerMetadata"
+                },
+                "example": {
+                  "issuer": "https://api.musicnerd.net/api/oauth",
+                  "authorization_endpoint": "https://api.musicnerd.net/api/oauth/auth",
+                  "token_endpoint": "https://api.musicnerd.net/api/oauth/token",
+                  "registration_endpoint": "https://api.musicnerd.net/api/oauth/reg",
+                  "revocation_endpoint": "https://api.musicnerd.net/api/oauth/token/revocation",
+                  "jwks_uri": "https://api.musicnerd.net/api/oauth/jwks",
+                  "scopes_supported": [
+                    "mcp:tools"
+                  ],
+                  "response_types_supported": [
+                    "code"
+                  ],
+                  "grant_types_supported": [
+                    "authorization_code",
+                    "refresh_token"
+                  ],
+                  "code_challenge_methods_supported": [
+                    "S256"
+                  ],
+                  "token_endpoint_auth_methods_supported": [
+                    "none"
+                  ],
+                  "client_id_metadata_document_supported": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/connections": {
+      "get": {
+        "summary": "List connected agents",
+        "operationId": "listOAuthConnections",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "The agents the signed-in user has connected to the MCP server, newest first. Only the user's own connections are listed.",
+        "responses": {
+          "200": {
+            "description": "The connections.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "connections"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Connection"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "connections": [
+                    {
+                      "id": "conn_7f3a2c",
+                      "agent": "Claude",
+                      "scopes": [
+                        "mcp:tools"
+                      ],
+                      "connectedAt": "2026-11-20T18:02:11.000Z",
+                      "lastUsedAt": "2026-11-20T19:40:05.000Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/oauth/connections/{id}": {
+      "delete": {
+        "summary": "Disconnect an agent",
+        "operationId": "deleteOAuthConnection",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Disconnects one of the signed-in user's agents. Its access and refresh tokens stop working at once; to use it again, the agent connects again and the user approves it. Answers 200 when the connection is already gone or isn't the user's, without changing anyone else's.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "conn_7f3a2c",
+            "description": "The connection's ID, from the list."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disconnected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "privyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Access token",
+        "description": "A Privy access token for a signed-in Music Nerd user, as musicnerd.net holds it."
+      }
+    },
+    "responses": {
+      "NotSignedIn": {
+        "description": "No token, or an invalid or expired one.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Not signed in"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "The database could not be read or written.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "status": "error",
+              "error": "Internal server error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "status",
+          "error"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "error"
+            ]
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Connection": {
+        "type": "object",
+        "required": [
+          "id",
+          "agent",
+          "scopes",
+          "connectedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The connection's ID."
+          },
+          "agent": {
+            "type": "string",
+            "description": "The name the agent gave when it registered, like `Claude`. Not verified."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What the member approved, like `mcp:tools`."
+          },
+          "connectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the agent last refreshed its token, or null."
+          }
+        }
+      },
+      "ResourceMetadata": {
+        "type": "object",
+        "required": [
+          "resource",
+          "authorization_servers"
+        ],
+        "properties": {
+          "resource": {
+            "type": "string",
+            "format": "uri"
+          },
+          "authorization_servers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "scopes_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bearer_methods_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resource_name": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthorizationServerMetadata": {
+        "type": "object",
+        "required": [
+          "issuer",
+          "authorization_endpoint",
+          "token_endpoint",
+          "response_types_supported"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "issuer": {
+            "type": "string",
+            "format": "uri"
+          },
+          "authorization_endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "token_endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "registration_endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "revocation_endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "jwks_uri": {
+            "type": "string",
+            "format": "uri"
+          },
+          "scopes_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "response_types_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "grant_types_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "code_challenge_methods_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "token_endpoint_auth_methods_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "client_id_metadata_document_supported": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
