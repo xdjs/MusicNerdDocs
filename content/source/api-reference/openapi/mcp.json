@@ -315,7 +315,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "MCP API key",
-        "description": "An MCP API key issued by a Music Nerd admin (the admin's MCP keys page). Optional: without it the read-only tools work and the write tools answer `AUTH_REQUIRED`. The server stores only its SHA-256 hash; a revoked key is refused with 401."
+        "description": "An MCP API key issued by a Music Nerd admin (the admin's MCP keys page). Optional: without it the read-only tools work and the write tools answer `AUTH_REQUIRED`. The server stores only its SHA-256 hash; a revoked key, or a board agent key, is refused with 401."
       }
     },
     "schemas": {

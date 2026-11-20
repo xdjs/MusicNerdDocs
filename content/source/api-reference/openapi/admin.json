@@ -644,7 +644,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Every MCP API key, newest first, including revoked ones. Only the first 8 characters of each key's hash are returned; the key itself is shown once, on creation. The response is a bare array, not this API's `{ status }` envelope.",
+        "description": "Every admin MCP API key, newest first, including revoked ones. Board agent keys aren't listed; each member manages their own on the board. Only the first 8 characters of each key's hash are returned; the key itself is shown once, on creation. The response is a bare array, not this API's `{ status }` envelope.",
         "responses": {
           "200": {
             "description": "The keys, newest first.",
