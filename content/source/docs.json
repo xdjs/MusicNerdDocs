@@ -124,9 +124,7 @@
           {
             "group": "MCP server",
             "pages": [
-              "api-reference/mcp/health",
-              "api-reference/mcp/message",
-              "api-reference/mcp/delete"
+              "api-reference/mcp/message"
             ]
           },
           {

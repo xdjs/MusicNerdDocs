@@ -17,62 +17,6 @@
   ],
   "paths": {
     "/mcp": {
-      "get": {
-        "summary": "MCP server health",
-        "description": "Returns the server's name, version and transport, or with `Accept: text/event-stream` opens the MCP event stream. No credentials.",
-        "operationId": "getMcpServer",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "The server is up.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerInfo"
-                },
-                "example": {
-                  "name": "Music Nerd",
-                  "version": "1.0.0",
-                  "status": "ok",
-                  "protocol": "mcp",
-                  "transport": "streamable-http"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "With `Accept: text/event-stream`: the `Mcp-Protocol-Version` header names a version the server does not support.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JsonRpcError"
-                },
-                "example": {
-                  "jsonrpc": "2.0",
-                  "error": {
-                    "code": -32000,
-                    "message": "Bad Request: Unsupported protocol version: 2020-01-01 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
-                  },
-                  "id": null
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server failed to answer.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": "Internal server error"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "summary": "Send an MCP message",
         "description": "Sends a JSON-RPC 2.0 MCP message, or a batch, and streams the responses as server-sent events. Every request needs an OAuth access token or an MCP API key. `tools/list` returns the tools this connection can use, with their input schemas.",
@@ -285,48 +229,6 @@
             }
           }
         }
-      },
-      "delete": {
-        "summary": "End an MCP session",
-        "description": "Ends an MCP session; answers 200 with no body. No credentials.",
-        "operationId": "deleteMcpSession",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Acknowledged; no body."
-          },
-          "400": {
-            "description": "The `Mcp-Protocol-Version` header names a version the server does not support.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JsonRpcError"
-                },
-                "example": {
-                  "jsonrpc": "2.0",
-                  "error": {
-                    "code": -32000,
-                    "message": "Bad Request: Unsupported protocol version: 2020-01-01 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
-                  },
-                  "id": null
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server failed to answer.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": "Internal server error"
-                }
-              }
-            }
-          }
-        }
       }
     }
   },
@@ -346,45 +248,6 @@
       }
     },
     "schemas": {
-      "ServerInfo": {
-        "type": "object",
-        "required": [
-          "name",
-          "version",
-          "status",
-          "protocol",
-          "transport"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "enum": [
-              "Music Nerd"
-            ]
-          },
-          "version": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok"
-            ]
-          },
-          "protocol": {
-            "type": "string",
-            "enum": [
-              "mcp"
-            ]
-          },
-          "transport": {
-            "type": "string",
-            "enum": [
-              "streamable-http"
-            ]
-          }
-        }
-      },
       "JsonRpcRequest": {
         "type": "object",
         "description": "A JSON-RPC 2.0 request or notification. A batch is an array of these.",
@@ -448,17 +311,6 @@
           },
           "id": {
             "type": "null"
-          }
-        }
-      },
-      "Error": {
-        "type": "object",
-        "required": [
-          "error"
-        ],
-        "properties": {
-          "error": {
-            "type": "string"
           }
         }
       }
