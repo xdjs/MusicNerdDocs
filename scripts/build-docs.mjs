@@ -51,7 +51,7 @@ for (const tab of nav) for (const group of tab.groups) for (const slug of group.
   for (const line of frontmatter.split('\n')) {
     const match=line.match(/^(\w+):\s*(.*)$/); if(match) meta[match[1]]=match[2].replace(/^(['"])([\s\S]*)\1$/, '$2');
   }
-  const entry={slug:slug==='index'?'':slug, title:meta.title || slug, description:meta.description || '', category:tab.tab, group:group.group, source:`${slug}.mdx`, body, headings:[]};
+  const entry={slug:slug==='index'?'':slug, title:meta.title || slug, ...(meta.sidebarTitle?{sidebarTitle:meta.sidebarTitle}:{}), description:meta.description || '', category:tab.tab, group:group.group, source:`${slug}.mdx`, body, headings:[]};
   if (body.trim()) {
     const normalized = body;
     // Links remain source-authored. Prefixing happens in the rendering component.

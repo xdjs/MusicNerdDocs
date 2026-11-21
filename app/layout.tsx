@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 /** Applies the saved or system theme before paint (same rule as lib/docs/ui/effectiveTheme). */
 const themeScript = `try{var s=localStorage.getItem("musicnerd-theme");document.documentElement.dataset.theme=s==="light"||s==="dark"?s:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch(e){}`;
 
-const navPages = docs.map(({ slug, title, category, group, api, searchText }) => ({ slug, title, category, group, api, searchText }));
+const navPages = docs.map(({ slug, title, sidebarTitle, category, group, api, searchText }) => ({ slug, title, sidebarTitle, category, group, api, searchText }));
 const tabs = docsCategories.map((name) => ({
   name,
   href: name === "API reference" ? "/api-reference" : docHref(docs.find((page) => page.category === name)?.slug ?? ""),
