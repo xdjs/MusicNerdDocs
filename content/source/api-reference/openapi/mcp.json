@@ -3,11 +3,11 @@
   "info": {
     "title": "Music Nerd API: MCP server",
     "version": "1.0.0",
-    "description": "The Music Nerd MCP server over Streamable HTTP: ten tools for searching artists, reading their links, and (with an MCP API key) writing links and cross-platform ID mappings."
+    "description": "The Music Nerd MCP server over Streamable HTTP. Agents connect with OAuth, and the tools they get depend on who approved the connection: artist search and links for anyone signed in, link and ID-mapping writes for admins, and the team board for team members."
   },
   "servers": [
     {
-      "url": "https://musicnerd-api.vercel.app",
+      "url": "https://api.musicnerd.net",
       "description": "Production"
     },
     {
@@ -16,72 +16,15 @@
     }
   ],
   "paths": {
-    "/api/mcp": {
-      "get": {
-        "summary": "MCP server health",
-        "description": "Without `Accept: text/event-stream`, returns the server's name, version and transport so a client can check it is up. With `Accept: text/event-stream`, opens the MCP standalone SSE stream; the server is stateless and never sends server-initiated messages, so the stream stays empty until the client closes it. No credentials.",
-        "operationId": "getMcpServer",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "The server is up.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerInfo"
-                },
-                "example": {
-                  "name": "Music Nerd",
-                  "version": "1.0.0",
-                  "status": "ok",
-                  "protocol": "mcp",
-                  "transport": "streamable-http"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "With `Accept: text/event-stream`: the `Mcp-Protocol-Version` header names a version the server does not support.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JsonRpcError"
-                },
-                "example": {
-                  "jsonrpc": "2.0",
-                  "error": {
-                    "code": -32000,
-                    "message": "Bad Request: Unsupported protocol version: 2020-01-01 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
-                  },
-                  "id": null
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server failed to answer.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": "Internal server error"
-                }
-              }
-            }
-          }
-        }
-      },
+    "/mcp": {
       "post": {
         "summary": "Send an MCP message",
-        "description": "Sends one JSON-RPC 2.0 MCP message (or a batch) and answers on a `text/event-stream` body; send `Accept: application/json, text/event-stream`. `tools/list` returns the ten tools with their input schemas. `search_artists`, `get_artist`, `get_unmapped_artists`, `get_mapping_stats`, `get_artist_mappings` and `get_mapping_exclusions` need no key; `set_artist_link`, `delete_artist_link`, `resolve_artist_id` and `exclude_artist_mapping` need an MCP API key as `Authorization: Bearer <key>`. The `delete_artist_link` tool refuses Spotify and Deezer with `OWNER_DISCONNECT_REQUIRED` after API-key authentication: use the authenticated profile editor/API with the displayed account ID. An MCP key alone does not confer claimant/contributor disconnect authority. Noncatalog deletions are unchanged.",
+        "description": "Sends a JSON-RPC 2.0 MCP message, or a batch, and streams the responses as server-sent events. Every request needs an OAuth access token. `tools/list` returns the tools this connection can use, with their input schemas.",
         "operationId": "postMcpMessage",
         "security": [
           {
-            "mcpApiKey": []
-          },
-          {}
+            "mcpOAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -116,7 +59,7 @@
                   }
                 },
                 "searchArtists": {
-                  "summary": "tools/call search_artists (no key)",
+                  "summary": "tools/call search_artists",
                   "value": {
                     "jsonrpc": "2.0",
                     "id": 3,
@@ -131,7 +74,7 @@
                   }
                 },
                 "setArtistLink": {
-                  "summary": "tools/call set_artist_link (key required)",
+                  "summary": "tools/call set_artist_link (admins)",
                   "value": {
                     "jsonrpc": "2.0",
                     "id": 4,
@@ -144,6 +87,21 @@
                       }
                     }
                   }
+                },
+                "reply": {
+                  "summary": "tools/call reply (team members)",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 5,
+                    "method": "tools/call",
+                    "params": {
+                      "name": "reply",
+                      "arguments": {
+                        "id": "msg_03dab9fa-322e-4fc5-9651-e3c9c7548036_1",
+                        "text": "Preview checks pass."
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -151,7 +109,7 @@
         },
         "responses": {
           "200": {
-            "description": "The responses, as server-sent events: one `message` event per JSON-RPC response, then the stream closes. A failed tool call is a result with `isError: true` whose text is `{ error, code }`, `code` being `AUTH_REQUIRED`, `NOT_FOUND`, `INVALID_INPUT`, `INVALID_URL`, `INVALID_PLATFORM`, `NOT_SET`, `CONFLICT` or `INTERNAL_ERROR`.",
+            "description": "The responses, one `message` event per JSON-RPC response. A failed tool call is a result with `isError: true`.",
             "content": {
               "text/event-stream": {
                 "schema": {
@@ -161,10 +119,6 @@
                   "searchArtists": {
                     "summary": "search_artists result",
                     "value": "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":3,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\n  \\\"artists\\\": [\\n    {\\n      \\\"id\\\": \\\"aab92f80-f9e1-4299-aa33-7dd85c8de5d3\\\",\\n      \\\"name\\\": \\\"Bio Ritmo\\\"\\n    }\\n  ],\\n  \\\"totalResults\\\": 1\\n}\"}]}}\n\n"
-                  },
-                  "toolError": {
-                    "summary": "A write tool called without a key",
-                    "value": "event: message\ndata: {\"jsonrpc\":\"2.0\",\"id\":4,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"error\\\":\\\"Authentication required\\\",\\\"code\\\":\\\"AUTH_REQUIRED\\\"}\"}],\"isError\":true}}\n\n"
                   }
                 }
               }
@@ -192,7 +146,15 @@
             }
           },
           "401": {
-            "description": "An `Authorization` header was sent but the key is unknown or revoked. A request without the header is not refused; its write tools answer `AUTH_REQUIRED` instead.",
+            "description": "No token, or an expired, revoked or unknown one. The `WWW-Authenticate` header points to the resource metadata, where an MCP client finds how to sign in.",
+            "headers": {
+              "WWW-Authenticate": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Bearer resource_metadata=\"https://api.musicnerd.net/.well-known/oauth-protected-resource/mcp\""
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -202,7 +164,7 @@
                   "jsonrpc": "2.0",
                   "error": {
                     "code": -32000,
-                    "message": "Invalid or revoked API key"
+                    "message": "Unauthorized"
                   },
                   "id": null
                 }
@@ -264,100 +226,19 @@
             }
           }
         }
-      },
-      "delete": {
-        "summary": "End an MCP session",
-        "description": "Part of the Streamable HTTP protocol. The server is stateless, so there is no session to end; it answers 200 with no body. No credentials.",
-        "operationId": "deleteMcpSession",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Acknowledged; no body."
-          },
-          "400": {
-            "description": "The `Mcp-Protocol-Version` header names a version the server does not support.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JsonRpcError"
-                },
-                "example": {
-                  "jsonrpc": "2.0",
-                  "error": {
-                    "code": -32000,
-                    "message": "Bad Request: Unsupported protocol version: 2020-01-01 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
-                  },
-                  "id": null
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "The server failed to answer.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                },
-                "example": {
-                  "error": "Internal server error"
-                }
-              }
-            }
-          }
-        }
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "mcpApiKey": {
+      "mcpOAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "MCP API key",
-        "description": "An MCP API key issued by a Music Nerd admin (the admin's MCP keys page). Optional: without it the read-only tools work and the write tools answer `AUTH_REQUIRED`. The server stores only its SHA-256 hash; a revoked key is refused with 401."
+        "bearerFormat": "OAuth access token",
+        "description": "An OAuth access token for `https://api.musicnerd.net/mcp`, scope `mcp:tools`. An MCP client gets one by adding the server URL: a Music Nerd page opens, the user signs in with Privy and approves the agent. Tokens last five minutes and refresh on their own; disconnecting the agent stops them at once. See [MCP resource metadata](/api-reference/oauth/resource-metadata)."
       }
     },
     "schemas": {
-      "ServerInfo": {
-        "type": "object",
-        "required": [
-          "name",
-          "version",
-          "status",
-          "protocol",
-          "transport"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "enum": [
-              "Music Nerd"
-            ]
-          },
-          "version": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok"
-            ]
-          },
-          "protocol": {
-            "type": "string",
-            "enum": [
-              "mcp"
-            ]
-          },
-          "transport": {
-            "type": "string",
-            "enum": [
-              "streamable-http"
-            ]
-          }
-        }
-      },
       "JsonRpcRequest": {
         "type": "object",
         "description": "A JSON-RPC 2.0 request or notification. A batch is an array of these.",
@@ -421,17 +302,6 @@
           },
           "id": {
             "type": "null"
-          }
-        }
-      },
-      "Error": {
-        "type": "object",
-        "required": [
-          "error"
-        ],
-        "properties": {
-          "error": {
-            "type": "string"
           }
         }
       }

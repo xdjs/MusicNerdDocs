@@ -1,6 +1,6 @@
 ---
 title: 'Authentication'
-description: 'Public endpoints, access tokens, and the scheduler secret.'
+description: 'Public endpoints, access tokens, MCP OAuth, and the scheduler secret.'
 ---
 
 Each endpoint's reference page states which of these it needs.
@@ -45,6 +45,8 @@ Each site issues tokens for its own API. A token from musicnerd.net works with t
 
 `GET /api/research/advance` is the research scheduler that Vercel Cron calls. When the deployment sets `CRON_SECRET`, it requires `Authorization: Bearer <CRON_SECRET>`.
 
-## MCP API key
+## MCP: OAuth
 
-The [MCP server](/api-reference/mcp/message) and the [agent reports](/api-reference/agents/heartbeat) take an MCP API key, issued by a Music Nerd admin on the admin's MCP keys page, as `Authorization: Bearer <key>`. The server stores only the key's SHA-256 hash and refuses a revoked key. On the MCP server the key is optional: without it the read-only tools work and the write tools answer `AUTH_REQUIRED`.
+Agents connect to the [Music Nerd MCP](/mcp) at `https://api.musicnerd.net/mcp` with OAuth. Add that URL to the agent and connect: a Music Nerd page opens, you sign in and approve the agent, and the agent gets its own token. The tools it gets follow your account: artist search for anyone, writes for admins, and the team board for team members.
+
+You can see and disconnect your agents with [List connected agents](/api-reference/oauth/list-connections) and [Disconnect an agent](/api-reference/oauth/delete-connection).

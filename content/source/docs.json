@@ -11,7 +11,8 @@
             "pages": [
               "index",
               "quickstart",
-              "authentication"
+              "authentication",
+              "mcp"
             ]
           },
           {
@@ -115,18 +116,24 @@
             ]
           },
           {
-            "group": "Agent reports",
+            "group": "MCP server",
             "pages": [
-              "api-reference/agents/heartbeat",
-              "api-reference/agents/run-report"
+              "api-reference/mcp/message"
             ]
           },
           {
-            "group": "MCP server",
+            "group": "MCP OAuth",
             "pages": [
-              "api-reference/mcp/health",
-              "api-reference/mcp/message",
-              "api-reference/mcp/delete"
+              "api-reference/oauth/resource-metadata",
+              "api-reference/oauth/authorization-server",
+              "api-reference/oauth/list-connections",
+              "api-reference/oauth/delete-connection"
+            ]
+          },
+          {
+            "group": "Team",
+            "pages": [
+              "api-reference/team/member"
             ]
           },
           {
@@ -195,14 +202,10 @@
           {
             "group": "Admin",
             "pages": [
-              "api-reference/admin/agent-work",
               "api-reference/admin/artist-data",
               "api-reference/admin/review-bio-correction",
               "api-reference/admin/get-correction-about",
               "api-reference/admin/save-correction-about",
-              "api-reference/admin/list-mcp-keys",
-              "api-reference/admin/create-mcp-key",
-              "api-reference/admin/revoke-mcp-key",
               "api-reference/admin/pending-ugc-count"
             ]
           },

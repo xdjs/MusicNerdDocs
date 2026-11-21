@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { siteConfig } from "@/lib/config";
-import { docs, docsCategories, docHref } from "@/lib/docs";
+import { docs, docsCategories, docHref, navPages } from "@/lib/docs";
 import { SiteHeader } from "@/components/docs/site-header";
 import "./globals.css";
 
@@ -14,7 +14,6 @@ export const metadata: Metadata = {
 /** Applies the saved or system theme before paint (same rule as lib/docs/ui/effectiveTheme). */
 const themeScript = `try{var s=localStorage.getItem("musicnerd-theme");document.documentElement.dataset.theme=s==="light"||s==="dark"?s:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}catch(e){}`;
 
-const navPages = docs.map(({ slug, title, category, group, api, searchText }) => ({ slug, title, category, group, api, searchText }));
 const tabs = docsCategories.map((name) => ({
   name,
   href: name === "API reference" ? "/api-reference" : docHref(docs.find((page) => page.category === name)?.slug ?? ""),

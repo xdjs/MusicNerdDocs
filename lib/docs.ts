@@ -3,13 +3,15 @@ import { docHref } from './docs-paths';
 export { docHref, headingId, resolveDocsHref } from './docs-paths';
 
 export type DocPage = {
-  slug: string; title: string; description: string; category: string; group: string;
+  slug: string; title: string; sidebarTitle?: string; description: string; category: string; group: string;
   source: string; body: string; searchText: string; compiled?: string; gap?: string;
   headings: {title: string; id: string}[];
   api?: {method: string; path: string; spec: string | null};
 };
 export const docs: DocPage[] = manifest as DocPage[];
 /** The slice of a page the header, sidebar and search need on the client. */
-export type NavPage = Pick<DocPage,'slug'|'title'|'category'|'group'|'api'|'searchText'>;
+export type NavPage = Pick<DocPage,'slug'|'title'|'sidebarTitle'|'category'|'group'|'api'|'searchText'>;
+/** Every page as the header, sidebar and search see it. */
+export const navPages: NavPage[] = docs.map(({slug,title,sidebarTitle,category,group,api,searchText})=>({slug,title,sidebarTitle,category,group,api,searchText}));
 export const docsRoutes = ['/', '/api-reference', ...docs.filter(p=>p.slug).map(p=>docHref(p.slug))];
 export const docsCategories = [...new Set(docs.map(page=>page.category))];

@@ -1,12 +1,11 @@
 {
-  "navigationPages": 107,
-  "guidePages": 4,
-  "apiPages": 103,
+  "navigationPages": 105,
+  "guidePages": 5,
+  "apiPages": 100,
   "specifications": [
     "accounts.json",
     "activity.json",
     "admin.json",
-    "agents.json",
     "artist-bio.json",
     "artist-images.json",
     "artist-latest.json",
@@ -20,9 +19,11 @@
     "interview-sessions.json",
     "knowledge.json",
     "mcp.json",
+    "oauth.json",
     "onboarding.json",
     "question-research.json",
     "research.json",
+    "team.json",
     "users.json",
     "vault.json"
   ],

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { siteConfig } from "@/lib/config";
 import { docHref, type NavPage } from "@/lib/docs";
 import { currentTab } from "@/lib/docs/ui/currentTab";
+import { navLabel } from "@/lib/docs/ui/navLabel";
 import { sidebarGroups } from "@/lib/docs/ui/sidebarGroups";
 import { MethodPill } from "./method-pill";
 
@@ -29,7 +30,7 @@ export function SidebarNav({ pages, onNavigate }: { pages: NavPage[]; onNavigate
             return (
               <Link key={page.slug} href={href} aria-current={href === pathname ? "page" : undefined} onClick={onNavigate}>
                 {page.api && <MethodPill method={page.api.method} />}
-                <span>{page.slug ? page.title : "Introduction"}</span>
+                <span>{navLabel(page)}</span>
               </Link>
             );
           })}
