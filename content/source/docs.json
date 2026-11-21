@@ -115,13 +115,6 @@
             ]
           },
           {
-            "group": "Agent reports",
-            "pages": [
-              "api-reference/agents/heartbeat",
-              "api-reference/agents/run-report"
-            ]
-          },
-          {
             "group": "MCP server",
             "pages": [
               "api-reference/mcp/message"
@@ -208,14 +201,10 @@
           {
             "group": "Admin",
             "pages": [
-              "api-reference/admin/agent-work",
               "api-reference/admin/artist-data",
               "api-reference/admin/review-bio-correction",
               "api-reference/admin/get-correction-about",
               "api-reference/admin/save-correction-about",
-              "api-reference/admin/list-mcp-keys",
-              "api-reference/admin/create-mcp-key",
-              "api-reference/admin/revoke-mcp-key",
               "api-reference/admin/pending-ugc-count"
             ]
           },

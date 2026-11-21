@@ -50,7 +50,3 @@ Each site issues tokens for its own API. A token from musicnerd.net works with t
 Agents connect to the [MCP server](/api-reference/mcp/message) at `https://api.musicnerd.net/mcp` with OAuth. Add that URL to the agent and connect: a Music Nerd page opens, you sign in and approve the agent, and the agent gets its own token. The tools it gets follow your account: artist search for anyone, writes for admins, and the team board for team members.
 
 You can see and disconnect your agents with [List connected agents](/api-reference/oauth/list-connections) and [Disconnect an agent](/api-reference/oauth/delete-connection).
-
-## MCP API key
-
-The [agent reports](/api-reference/agents/heartbeat) take an MCP API key, issued by a Music Nerd admin on the admin's MCP keys page, as `Authorization: Bearer <key>`. The server stores only the key's SHA-256 hash and refuses a revoked key.
