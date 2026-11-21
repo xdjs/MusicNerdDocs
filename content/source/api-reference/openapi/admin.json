@@ -24,7 +24,7 @@
             "adminBearer": []
           }
         ],
-        "description": "Artist data coverage: how many artists exist and have a Spotify ID, platform-ID coverage with today's count, link coverage per platform (today's count comes from MCP writes only), the distribution of how many tracked fields each artist has, and enrichment readiness.",
+        "description": "Artist data coverage: how many artists exist and have a Spotify ID, platform-ID coverage with today's count, link coverage per platform, the distribution of how many tracked fields each artist has, and enrichment readiness.",
         "responses": {
           "200": {
             "description": "The catalog summary; a repeat call within 30 seconds may return the same numbers.",
@@ -50,15 +50,13 @@
                       "column": "instagram",
                       "category": "social",
                       "count": 29010,
-                      "percentage": 69.12,
-                      "todayCount": 0
+                      "percentage": 69.12
                     },
                     {
                       "column": "bio",
                       "category": "content",
                       "count": 4120,
-                      "percentage": 9.82,
-                      "todayCount": 0
+                      "percentage": 9.82
                     }
                   ],
                   "completenessDistribution": [
@@ -659,8 +657,7 @@
                 "column",
                 "category",
                 "count",
-                "percentage",
-                "todayCount"
+                "percentage"
               ],
               "properties": {
                 "column": {
@@ -681,10 +678,6 @@
                 "percentage": {
                   "type": "number",
                   "description": "Of `totalArtists`, to two decimals."
-                },
-                "todayCount": {
-                  "type": "integer",
-                  "description": "Distinct artists whose column MCP `set` since midnight. Manual edits and UGC approvals are not counted."
                 }
               }
             }
