@@ -1,7 +1,7 @@
 {
-  "navigationPages": 105,
+  "navigationPages": 110,
   "guidePages": 5,
-  "apiPages": 100,
+  "apiPages": 105,
   "specifications": [
     "accounts.json",
     "activity.json",

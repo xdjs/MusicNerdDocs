@@ -126,6 +126,11 @@
             "pages": [
               "api-reference/oauth/resource-metadata",
               "api-reference/oauth/authorization-server",
+              "api-reference/oauth/register-client",
+              "api-reference/oauth/authorize",
+              "api-reference/oauth/token",
+              "api-reference/oauth/get-consent",
+              "api-reference/oauth/post-consent",
               "api-reference/oauth/list-connections",
               "api-reference/oauth/delete-connection"
             ]
