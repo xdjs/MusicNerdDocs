@@ -11,5 +11,7 @@ export type DocPage = {
 export const docs: DocPage[] = manifest as DocPage[];
 /** The slice of a page the header, sidebar and search need on the client. */
 export type NavPage = Pick<DocPage,'slug'|'title'|'sidebarTitle'|'category'|'group'|'api'|'searchText'>;
+/** Every page as the header, sidebar and search see it. */
+export const navPages: NavPage[] = docs.map(({slug,title,sidebarTitle,category,group,api,searchText})=>({slug,title,sidebarTitle,category,group,api,searchText}));
 export const docsRoutes = ['/', '/api-reference', ...docs.filter(p=>p.slug).map(p=>docHref(p.slug))];
 export const docsCategories = [...new Set(docs.map(page=>page.category))];

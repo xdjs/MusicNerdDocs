@@ -2,7 +2,7 @@ import { Arrow } from '@/components/arrow';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { docs, docHref, type DocPage } from '@/lib/docs';
+import { docs, docHref, navPages, type DocPage } from '@/lib/docs';
 import { documentationJsonLd } from '@/lib/seo/documentationJsonLd';
 import { documentationMetadata } from '@/lib/seo/documentationMetadata';
 import { SidebarNav } from '@/components/docs/sidebar-nav';
@@ -17,7 +17,6 @@ export const dynamicParams = false;
 export function generateStaticParams(){return [{slug:[]},{slug:['api-reference']},...docs.filter(page=>page.slug).map(page=>({slug:page.slug.split('/')}))];}
 export async function generateMetadata({params}:Props):Promise<Metadata>{const {slug=[]}=await params;const key=slug.join('/');const page=docs.find(item=>item.slug===key);if(!page&&key!=='api-reference')notFound();return documentationMetadata(page,key);}
 
-const navPages=docs.map(({slug,title,category,group,api,searchText})=>({slug,title,category,group,api,searchText}));
 const apiGroups=[...new Set(docs.filter(page=>page.api).map(page=>page.group))];
 const groupId=(group:string)=>group.toLowerCase().replace(/[^a-z]+/g,'-');
 
