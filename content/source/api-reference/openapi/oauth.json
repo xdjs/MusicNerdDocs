@@ -316,7 +316,7 @@
         "summary": "Get a token",
         "operationId": "getOAuthToken",
         "security": [],
-        "description": "Swaps an authorization code or a refresh token for a new access token and refresh token. Access tokens last five minutes. Refresh tokens rotate on every use and last until the user disconnects the agent; reusing one that was already used disconnects the agent.",
+        "description": "Swaps an authorization code or a refresh token for a new access token and refresh token. Access tokens last five minutes. Refresh tokens rotate on every use and last until the user disconnects the agent; reusing one that was already used disconnects the agent, if it is the last one used or was used in the past 30 days.",
         "requestBody": {
           "required": true,
           "content": {
@@ -691,7 +691,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The agents the signed-in user has connected to the MCP server, newest first. A connection lasts until the user disconnects it, and its refresh tokens rotate on every use. Reusing a refresh token that was already used disconnects the agent.",
+        "description": "The agents the signed-in user has connected to the MCP server, newest first. A connection lasts until the user disconnects it, and its refresh tokens rotate on every use. Reusing a refresh token that was already used disconnects the agent, if it is the last one used or was used in the past 30 days.",
         "responses": {
           "200": {
             "description": "The connections.",
