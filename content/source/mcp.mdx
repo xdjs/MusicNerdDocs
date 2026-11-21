@@ -1,0 +1,71 @@
+---
+title: 'Music Nerd MCP'
+description: 'Connect Claude, ChatGPT, Codex, Cursor or any MCP client to the Music Nerd MCP server. Add one URL and sign in; there is no API key to copy.'
+---
+
+The Music Nerd MCP server gives AI agents Music Nerd's artist data as tools: search artists, read their profiles and links, and, for admins, edit them. Any client that supports remote MCP servers with OAuth can connect.
+
+## MCP URL
+
+```text
+https://api.musicnerd.net/mcp
+```
+
+Add it to your agent as a remote (HTTP) MCP server and choose **OAuth**. A Music Nerd page opens: sign in, approve the agent, and it connects. The agent gets its own token, so nothing is copied or pasted.
+
+## Quickstart
+
+### Claude
+
+In Claude on the web or desktop, open **Customize → Connectors → Add custom connector**. Name it **Music Nerd**, paste the MCP URL, then select **Connect** and approve.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http musicnerd https://api.musicnerd.net/mcp
+```
+
+Then run `/mcp` in Claude Code, select **musicnerd** and authenticate.
+
+### ChatGPT
+
+Open **Settings → Apps & Connectors → Create**, name it **Music Nerd**, paste the MCP URL, choose **OAuth**, then connect and approve.
+
+### Codex
+
+```bash
+codex mcp add musicnerd --url https://api.musicnerd.net/mcp
+codex mcp login musicnerd
+```
+
+### Cursor
+
+Add to `.cursor/mcp.json`, then authenticate from Cursor's MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "musicnerd": {
+      "url": "https://api.musicnerd.net/mcp"
+    }
+  }
+}
+```
+
+### Other clients
+
+Any client that supports Streamable HTTP and OAuth with dynamic client registration can connect with the MCP URL. It finds sign-in from the server's [protected resource metadata](/api-reference/oauth/resource-metadata).
+
+## Check the connection
+
+Ask your agent to list its Music Nerd tools, then to search for an artist. The tools follow your Music Nerd account: artist search and profiles for anyone, link edits for admins, and the team board for team members.
+
+## Disconnect
+
+You can see and disconnect your agents with [List connected agents](/api-reference/oauth/list-connections) and [Disconnect an agent](/api-reference/oauth/delete-connection). A disconnected agent stops working at once; connect it again to use it.
+
+## For agents
+
+- [Send an MCP message](/api-reference/mcp/message): the `/mcp` endpoint.
+- [Authentication](/authentication#mcp-oauth): how MCP sign-in fits with the rest of the API.
+- [`/llms.txt`](/llms.txt): these docs as Markdown.
