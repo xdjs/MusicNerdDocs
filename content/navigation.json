@@ -7,8 +7,8 @@
         "pages": [
           "index",
           "quickstart",
-          "mcp",
-          "authentication"
+          "authentication",
+          "mcp"
         ]
       },
       {
