@@ -54,7 +54,7 @@
         "summary": "Authorization server metadata",
         "operationId": "getAuthorizationServerMetadata",
         "security": [],
-        "description": "The OAuth authorization server metadata (RFC 8414) for `https://api.musicnerd.net/api/oauth`. Clients register, then use the authorization code flow with PKCE; access tokens last five minutes and refresh tokens rotate. Signing in opens a Music Nerd page where the user approves the agent.",
+        "description": "The OAuth authorization server metadata (RFC 8414) for `https://api.musicnerd.net/api/oauth`. Clients register, then use the authorization code flow with PKCE; access tokens last five minutes and refresh tokens rotate on every use. Signing in opens a Music Nerd page where the user approves the agent.",
         "responses": {
           "200": {
             "description": "The metadata.",
@@ -68,8 +68,6 @@
                   "authorization_endpoint": "https://api.musicnerd.net/api/oauth/auth",
                   "token_endpoint": "https://api.musicnerd.net/api/oauth/token",
                   "registration_endpoint": "https://api.musicnerd.net/api/oauth/reg",
-                  "revocation_endpoint": "https://api.musicnerd.net/api/oauth/token/revocation",
-                  "jwks_uri": "https://api.musicnerd.net/api/oauth/jwks",
                   "scopes_supported": [
                     "mcp:tools"
                   ],
@@ -86,10 +84,600 @@
                   "token_endpoint_auth_methods_supported": [
                     "none"
                   ],
-                  "client_id_metadata_document_supported": true
+                  "authorization_response_iss_parameter_supported": true
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/oauth/reg": {
+      "post": {
+        "summary": "Register a client",
+        "operationId": "registerOAuthClient",
+        "security": [],
+        "description": "Registers an MCP client (RFC 7591) and returns its `client_id`. Redirect URIs must use HTTPS, or HTTP on `localhost` or `127.0.0.1`. Clients get no secret and prove themselves with PKCE instead.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "redirect_uris"
+                ],
+                "properties": {
+                  "client_name": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "description": "The agent's name, shown when the user approves it. Not verified."
+                  },
+                  "redirect_uris": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "description": "Where to send the user back after approving."
+                  },
+                  "grant_types": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Ignored; the client always gets `authorization_code` and `refresh_token`."
+                  },
+                  "token_endpoint_auth_method": {
+                    "type": "string",
+                    "description": "Ignored; always `none`."
+                  }
+                }
+              },
+              "example": {
+                "client_name": "Claude",
+                "redirect_uris": [
+                  "http://127.0.0.1:33418/callback"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRegistration"
+                },
+                "example": {
+                  "client_id": "2f6c1d0e-8a4b-4c47-9a51-3e0f7b9d2c18",
+                  "client_name": "Claude",
+                  "redirect_uris": [
+                    "http://127.0.0.1:33418/callback"
+                  ],
+                  "grant_types": [
+                    "authorization_code",
+                    "refresh_token"
+                  ],
+                  "response_types": [
+                    "code"
+                  ],
+                  "token_endpoint_auth_method": "none"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A redirect URI is missing or not allowed (`invalid_redirect_uri`), or the body is invalid (`invalid_client_metadata`). Errors use the standard OAuth shape.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthError"
+                },
+                "example": {
+                  "error": "invalid_redirect_uri",
+                  "error_description": "Redirect URIs must use https, or http on localhost"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/auth": {
+      "get": {
+        "summary": "Start authorization",
+        "operationId": "authorizeOAuthClient",
+        "security": [],
+        "description": "Where an MCP client sends the user's browser to connect. A valid request redirects to the Music Nerd page where the user signs in and approves the agent; an invalid one redirects back to the client with `error` and `state`.",
+        "parameters": [
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            },
+            "example": "code",
+            "description": "Always `code`."
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2f6c1d0e-8a4b-4c47-9a51-3e0f7b9d2c18",
+            "description": "The `client_id` from registration."
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "http://127.0.0.1:33418/callback",
+            "description": "One of the client's registered redirect URIs, exactly."
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            "description": "The PKCE challenge: base64url SHA-256 of the code verifier."
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "S256"
+              ]
+            },
+            "example": "S256",
+            "description": "Always `S256`."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "af0ifjsldkj",
+            "description": "Returned unchanged to the client."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "mcp:tools",
+            "description": "`mcp:tools`, the only scope. Optional."
+          },
+          {
+            "name": "resource",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://api.musicnerd.net/mcp",
+            "description": "`https://api.musicnerd.net/mcp`, if sent."
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "To the Music Nerd sign-in page with the same query, or back to `redirect_uri` with `error` and `state` when the request is invalid.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "description": "The sign-in page, or the client's redirect URI with the error."
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown `client_id`, or a `redirect_uri` the client didn't register. Nothing is redirected.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthError"
+                },
+                "example": {
+                  "error": "invalid_request",
+                  "error_description": "Unknown client or redirect_uri"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/token": {
+      "post": {
+        "summary": "Get a token",
+        "operationId": "getOAuthToken",
+        "security": [],
+        "description": "Swaps an authorization code or a refresh token for a new access token and refresh token. Access tokens last five minutes. Refresh tokens rotate on every use and last until the user disconnects the agent; reusing one that was already used disconnects the agent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "grant_type",
+                  "client_id"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "refresh_token"
+                    ]
+                  },
+                  "client_id": {
+                    "type": "string",
+                    "description": "The `client_id` from registration."
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "For `authorization_code`: the code from the redirect. Single use, valid for 60 seconds."
+                  },
+                  "code_verifier": {
+                    "type": "string",
+                    "description": "For `authorization_code`: the PKCE verifier behind `code_challenge`."
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "For `authorization_code`: the same `redirect_uri` as the authorization request."
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "For `refresh_token`: the latest refresh token. Single use."
+                  }
+                }
+              },
+              "example": {
+                "grant_type": "authorization_code",
+                "client_id": "2f6c1d0e-8a4b-4c47-9a51-3e0f7b9d2c18",
+                "code": "mn_code_EXAMPLE",
+                "code_verifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+                "redirect_uri": "http://127.0.0.1:33418/callback"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A new access token and refresh token, with `Cache-Control: no-store`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                },
+                "example": {
+                  "access_token": "mn_at_EXAMPLE",
+                  "token_type": "Bearer",
+                  "expires_in": 300,
+                  "refresh_token": "mn_rt_EXAMPLE",
+                  "scope": "mcp:tools"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The code or refresh token is invalid, expired or already used, or the verifier, client or redirect URI doesn't match (`invalid_grant`); or the request is malformed (`invalid_request`, `unsupported_grant_type`). Errors use the standard OAuth shape.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthError"
+                },
+                "example": {
+                  "error": "invalid_grant",
+                  "error_description": "The code is invalid, expired or already used"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/oauth/consent": {
+      "get": {
+        "summary": "Read a connection request",
+        "operationId": "getOAuthConsent",
+        "security": [],
+        "description": "Checks an authorization request and says which agent is asking, for the Music Nerd sign-in page to show before the user approves. Takes the same query as Start authorization.",
+        "parameters": [
+          {
+            "name": "response_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            },
+            "example": "code",
+            "description": "Always `code`."
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "2f6c1d0e-8a4b-4c47-9a51-3e0f7b9d2c18",
+            "description": "The `client_id` from registration."
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "http://127.0.0.1:33418/callback",
+            "description": "One of the client's registered redirect URIs, exactly."
+          },
+          {
+            "name": "code_challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            "description": "The PKCE challenge: base64url SHA-256 of the code verifier."
+          },
+          {
+            "name": "code_challenge_method",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "S256"
+              ]
+            },
+            "example": "S256",
+            "description": "Always `S256`."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "af0ifjsldkj",
+            "description": "Returned unchanged to the client."
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "mcp:tools",
+            "description": "`mcp:tools`, the only scope. Optional."
+          },
+          {
+            "name": "resource",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "https://api.musicnerd.net/mcp",
+            "description": "`https://api.musicnerd.net/mcp`, if sent."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "agent",
+                    "redirectHost"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "agent": {
+                      "type": "string",
+                      "description": "The name the agent gave when it registered. Not verified."
+                    },
+                    "redirectHost": {
+                      "type": "string",
+                      "description": "The host the user is sent back to, like `127.0.0.1:33418`."
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "agent": "Claude",
+                  "redirectHost": "127.0.0.1:33418"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid: unknown client, unregistered redirect or missing PKCE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid authorization request"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Approve or deny an agent",
+        "operationId": "postOAuthConsent",
+        "security": [
+          {
+            "privyBearer": []
+          }
+        ],
+        "description": "Records the signed-in user's decision on an authorization request and returns where to send the browser. Approving connects the agent and adds a single-use code, valid for 60 seconds; denying adds `error=access_denied`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "The query of the authorization request, plus the decision.",
+                "required": [
+                  "response_type",
+                  "client_id",
+                  "redirect_uri",
+                  "code_challenge",
+                  "code_challenge_method",
+                  "decision"
+                ],
+                "properties": {
+                  "response_type": {
+                    "type": "string",
+                    "enum": [
+                      "code"
+                    ]
+                  },
+                  "client_id": {
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "type": "string"
+                  },
+                  "code_challenge": {
+                    "type": "string"
+                  },
+                  "code_challenge_method": {
+                    "type": "string",
+                    "enum": [
+                      "S256"
+                    ]
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "deny"
+                    ]
+                  }
+                }
+              },
+              "example": {
+                "response_type": "code",
+                "client_id": "2f6c1d0e-8a4b-4c47-9a51-3e0f7b9d2c18",
+                "redirect_uri": "http://127.0.0.1:33418/callback",
+                "code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+                "code_challenge_method": "S256",
+                "state": "af0ifjsldkj",
+                "decision": "approve"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Where to send the browser: the client's redirect URI with `code`, `state` and `iss`, or with `error=access_denied` and `state`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "status",
+                    "redirectUrl"
+                  ],
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "redirectUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                },
+                "example": {
+                  "status": "ok",
+                  "redirectUrl": "http://127.0.0.1:33418/callback?code=mn_code_EXAMPLE&state=af0ifjsldkj&iss=https%3A%2F%2Fapi.musicnerd.net%2Fapi%2Foauth"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is invalid: unknown client, unregistered redirect, missing PKCE or no decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "status": "error",
+                  "error": "Invalid authorization request"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         }
       }
@@ -103,7 +691,7 @@
             "privyBearer": []
           }
         ],
-        "description": "The agents the signed-in user has connected to the MCP server, newest first. Only the user's own connections are listed.",
+        "description": "The agents the signed-in user has connected to the MCP server, newest first. A connection lasts until the user disconnects it, and its refresh tokens rotate on every use. Reusing a refresh token that was already used disconnects the agent.",
         "responses": {
           "200": {
             "description": "The connections.",
@@ -370,14 +958,6 @@
             "type": "string",
             "format": "uri"
           },
-          "revocation_endpoint": {
-            "type": "string",
-            "format": "uri"
-          },
-          "jwks_uri": {
-            "type": "string",
-            "format": "uri"
-          },
           "scopes_supported": {
             "type": "array",
             "items": {
@@ -408,8 +988,100 @@
               "type": "string"
             }
           },
-          "client_id_metadata_document_supported": {
+          "authorization_response_iss_parameter_supported": {
             "type": "boolean"
+          }
+        }
+      },
+      "OAuthError": {
+        "type": "object",
+        "description": "The standard OAuth error shape (RFC 6749), used by registration, authorization and the token endpoint instead of `{status, error}`.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "An OAuth error code, like `invalid_grant`."
+          },
+          "error_description": {
+            "type": "string"
+          }
+        }
+      },
+      "ClientRegistration": {
+        "type": "object",
+        "required": [
+          "client_id",
+          "redirect_uris",
+          "grant_types",
+          "response_types",
+          "token_endpoint_auth_method"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "redirect_uris": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "grant_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "response_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "token_endpoint_auth_method": {
+            "type": "string",
+            "enum": [
+              "none"
+            ]
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "refresh_token",
+          "scope"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "Send as `Authorization: Bearer` to `/mcp`."
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Seconds until the access token expires: 300."
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Single use; the next refresh returns a new one."
+          },
+          "scope": {
+            "type": "string"
           }
         }
       }
