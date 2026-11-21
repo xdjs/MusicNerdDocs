@@ -19,14 +19,11 @@
     "/mcp": {
       "post": {
         "summary": "Send an MCP message",
-        "description": "Sends a JSON-RPC 2.0 MCP message, or a batch, and streams the responses as server-sent events. Every request needs an OAuth access token or an MCP API key. `tools/list` returns the tools this connection can use, with their input schemas.",
+        "description": "Sends a JSON-RPC 2.0 MCP message, or a batch, and streams the responses as server-sent events. Every request needs an OAuth access token. `tools/list` returns the tools this connection can use, with their input schemas.",
         "operationId": "postMcpMessage",
         "security": [
           {
             "mcpOAuth": []
-          },
-          {
-            "mcpApiKey": []
           }
         ],
         "requestBody": {
@@ -239,12 +236,6 @@
         "scheme": "bearer",
         "bearerFormat": "OAuth access token",
         "description": "An OAuth access token for `https://api.musicnerd.net/mcp`, scope `mcp:tools`. An MCP client gets one by adding the server URL: a Music Nerd page opens, the user signs in with Privy and approves the agent. Tokens last five minutes and refresh on their own; disconnecting the agent stops them at once. See [MCP resource metadata](/api-reference/oauth/resource-metadata)."
-      },
-      "mcpApiKey": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "MCP API key",
-        "description": "An MCP API key issued by a Music Nerd admin on the admin's MCP keys page. It opens the same tools as an admin's connection. The server stores only its SHA-256 hash; a revoked key is refused with 401."
       }
     },
     "schemas": {
