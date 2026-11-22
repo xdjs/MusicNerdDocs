@@ -21,7 +21,7 @@
         "summary": "Activity feed",
         "operationId": "getActivity",
         "security": [],
-        "description": "The 15 most recent public events, newest first: agent link mappings, approved submissions, artists' own profile edits and new artists. Pass `since` to get only events after a timestamp. Unmoderated submissions never appear.",
+        "description": "The 15 most recent public events, newest first: approved submissions, artists' own profile edits and new artists. Pass `since` to get only events after a timestamp. Unmoderated submissions never appear.",
         "parameters": [
           {
             "name": "since",
@@ -58,13 +58,6 @@
                       "artistName": "Bio Ritmo",
                       "platform": "instagram",
                       "createdAt": "2026-10-20 17:02:55.118+00"
-                    },
-                    {
-                      "type": "agent_mapping",
-                      "artistId": "aab92f80-f9e1-4299-aa33-7dd85c8de5d3",
-                      "artistName": "Bio Ritmo",
-                      "platform": "deezer",
-                      "createdAt": "2026-10-20 16:30:12.004+00"
                     },
                     {
                       "type": "artist_added",
@@ -523,13 +516,12 @@
           "type": {
             "type": "string",
             "enum": [
-              "agent_mapping",
               "ugc_approved",
               "self_edit_added",
               "self_edit_updated",
               "artist_added"
             ],
-            "description": "`agent_mapping`: an agent resolved a platform link. `ugc_approved`: an admin approved a submitted link. `self_edit_added` / `self_edit_updated`: the artist added or changed one of their own links. `artist_added`: a new artist."
+            "description": "`ugc_approved`: an admin approved a submitted link. `self_edit_added` / `self_edit_updated`: the artist added or changed one of their own links. `artist_added`: a new artist."
           },
           "artistId": {
             "type": "string",
@@ -546,7 +538,7 @@
               "string",
               "null"
             ],
-            "description": "The platform the event concerns (`mapping:` stripped from agent mappings), or null for a new artist."
+            "description": "The platform the event concerns, or null for a new artist."
           },
           "createdAt": {
             "type": "string",
