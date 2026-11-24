@@ -12,7 +12,8 @@
               "index",
               "quickstart",
               "authentication",
-              "mcp"
+              "mcp",
+              "plugin"
             ]
           },
           {

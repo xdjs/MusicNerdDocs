@@ -1,0 +1,67 @@
+---
+title: 'Music Nerd plugin'
+sidebarTitle: 'Plugin'
+description: 'One install gives your agent the Music Nerd team skills and the Music Nerd MCP server. Steps for Claude Code, Codex and Cursor.'
+---
+
+The Music Nerd plugin is for the Music Nerd team. It adds the skills we use to build and market Music Nerd, and connects your agent to the [Music Nerd MCP server](/mcp). The plugin is called `musicnerd` and lives in [xdjs/MusicNerdSkills](https://github.com/xdjs/MusicNerdSkills).
+
+## What it bundles
+
+| Part | What it does |
+| --- | --- |
+| `mn-dev` | How we plan, track and ship work: the tracking issue and its PR matrix, docs first, preview checks, release. |
+| `mn-marketing` | Short videos that get artists to claim their Music Nerd profile. |
+| `mn-feed-fwd-podcast` | Editing and packaging FEED//FWD podcast episodes. |
+| `mn-feed-fwd-recap` | Written recaps of FEED//FWD sessions. |
+| `musicnerd` MCP server | `https://api.musicnerd.net/mcp`: artist search, profiles and links, link edits for admins, and the team board. |
+
+## Install
+
+### Claude Code
+
+```bash
+claude plugin install musicnerd --marketplace xdjs/MusicNerdSkills
+```
+
+Inside a session, run the same thing as `/plugin install musicnerd --marketplace xdjs/MusicNerdSkills`. Then run `/mcp`, select **plugin:musicnerd:musicnerd** and authenticate.
+
+### Codex
+
+```bash
+codex plugin marketplace add xdjs/MusicNerdSkills
+codex plugin add musicnerd@musicnerd
+codex mcp login musicnerd
+```
+
+Start a new Codex session to use the skills.
+
+### Cursor
+
+If your Cursor team has a team marketplace, an admin imports the repository once: **Dashboard → Plugins & MCPs → Team Marketplaces → Add Marketplace → Import from Repo**, with `https://github.com/xdjs/MusicNerdSkills`. Everyone else opens **Customize**, finds **Music Nerd** and selects **Install**.
+
+Without a team marketplace, clone the plugin into Cursor's local plugins folder, then run **Developer: Reload Window**:
+
+```bash
+git clone https://github.com/xdjs/MusicNerdSkills ~/.cursor/plugins/local/musicnerd
+```
+
+The MCP server shows in Cursor as **plugin-musicnerd-musicnerd**. Connect it from Cursor's MCP settings.
+
+## Sign in
+
+The MCP server uses your Music Nerd account. When your agent connects, a Music Nerd page opens: sign in and approve the agent. There is no API key. See [Music Nerd MCP](/mcp) for how sign-in works and how to disconnect an agent.
+
+## Check it works
+
+Ask your agent which Music Nerd skills it has, then ask it to read the team board. If it lists the four skills and reads the board, the plugin is installed and connected.
+
+## Other agents
+
+For skills only, in any agent that reads them:
+
+```bash
+npx skills add xdjs/MusicNerdSkills
+```
+
+Then connect the MCP server with the steps on [Music Nerd MCP](/mcp).
